@@ -20,11 +20,11 @@ public final class SimulationPrefsStore {
     }
 
     public String getRouteSpeed() {
-        return preferences.getString(KEY_ROUTE_SPEED, "3.8");
+        return preferences.getString(KEY_ROUTE_SPEED, "15");
     }
 
     public String getRouteLoopCount() {
-        return preferences.getString(KEY_ROUTE_LOOP_COUNT, "10");
+        return preferences.getString(KEY_ROUTE_LOOP_COUNT, "100");
     }
 
     public boolean isRouteSpeedFloat() {
@@ -37,8 +37,8 @@ public final class SimulationPrefsStore {
 
     public void saveRouteConfig(String speed, String loopCount, boolean speedFloat, String routeId) {
         preferences.edit()
-                .putString(KEY_ROUTE_SPEED, normalize(speed, "3.8"))
-                .putString(KEY_ROUTE_LOOP_COUNT, normalize(loopCount, "10"))
+                .putString(KEY_ROUTE_SPEED, normalize(speed, "15"))
+                .putString(KEY_ROUTE_LOOP_COUNT, normalize(loopCount, "100"))
                 .putBoolean(KEY_ROUTE_SPEED_FLOAT, speedFloat)
                 .putString(KEY_ROUTE_LAST_ID, normalize(routeId, ""))
                 .apply();

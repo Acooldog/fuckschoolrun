@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -9,9 +10,54 @@
         android:layout_height="match_parent"
         android:clickable="true" />
 
+    <LinearLayout
+        android:id="@+id/route_search_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        android:background="#F8FFFFFF"
+        android:elevation="6dp"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <SearchView
+            android:id="@+id/route_create_search_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:iconifiedByDefault="false"
+            android:queryHint="@string/route_search_placeholder" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/route_search_hint"
+            android:textColor="#555555"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:id="@+id/route_search_result_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ListView
+                android:id="@+id/route_search_result_list"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:divider="#22000000"
+                android:dividerHeight="1dp" />
+        </LinearLayout>
+    </LinearLayout>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/route_search_container"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="10dp"
         android:background="#80000000"

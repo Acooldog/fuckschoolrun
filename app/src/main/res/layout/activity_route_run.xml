@@ -66,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="numberDecimal"
-                android:text="3.8" />
+                android:text="15" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -88,7 +88,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="number"
-                android:text="10" />
+                android:text="100" />
 
             <View
                 android:layout_width="10dp"

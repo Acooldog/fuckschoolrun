@@ -1,84 +1,75 @@
 <p align="center">
-  <img src="./docs/images/LOGO.png" height="80" alt="SchoolRun logo" />
+  <img src="./docs/images/LOGO.png" height="80" alt="Toolbox logo" />
 </p>
+
+<div align="center">
+
+[![GitHub stars](https://img.shields.io/github/stars/Acooldog/fuckschoolrun?style=for-the-badge&logo=github)](https://github.com/Acooldog/fuckschoolrun/stargazers)
+[![GPLv3 License](https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0.html)
+
+</div>
 
 # 牢大肘击校园跑
 
-一个独立维护的 Android 虚拟定位与路线/NFC 工具项目，面向 Android 8.0+。
-
-## 项目状态
-
-- 当前仓库: `https://github.com/Acooldog/fuckschoolrun`
-- 当前维护者: `Acooldog`
-- 当前定位: 独立维护，不再跟随上游项目的发布节奏
+一个独立维护的 Android 虚拟定位、路线模拟与 NFC 工具项目，面向 Android 8.0+。
 
 ## 当前能力
 
-- 虚拟定位与摇杆移动
-- 路线绘制、本地保存、导入
-- 共享路线上传与下载
-- 隐私路线白色地图模拟遮罩
-- NFC 读取、模拟、共享与下载
+- 路线绘制、地点搜索、本地保存、共享上传与下载
+- 路线模拟，支持记住上次速度、循环次数和最近路线
+- NFC 读取、模拟、共享与下载，支持记住上次 URL 与包名
+- 后端管理面板，可修改和删除用户上传的共享数据
+
+## 操作说明
+
+1. 首页先看“操作提示”卡片，按步骤进入功能页。
+2. 绘制路线时可以先搜索地点，再点击地图绘制路线。
+3. 路线模拟默认值为 `15m/s`、循环 `100`，并会自动记住你上次配置。
+4. NFC 工具会自动记住你上次输入的 URL、包名和来源。
 
 ## 本地配置
 
-请把本地敏感配置写在 `local.properties`，不要提交真实密钥。
+请把本地敏感配置写在 `local.properties`：
 
 ```properties
 sdk.dir=C\:\\path\\to\\Android\\Sdk
 MAPS_API_KEY=your_baidu_android_ak
 MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
-SHARE_API_BASE_URL=http://your-server-host:8080/
+SHARE_API_BASE_URL=http://47.113.226.102:5000/
 ```
 
-注意：
+当前 APK 包名：
 
-- 当前 APK 包名已经切到 `com.acooldog.toolbox`
-- 如果你之前的百度地图 Android AK 绑定的是旧包名，需要重新绑定或重新申请
-- 如果你使用自定义签名，`MAPS_SAFE_CODE` 里的 `SHA1;包名` 也要同步更新
-
-## 构建
-
-```bash
-./gradlew :app:assembleDebug
+```text
+com.acooldog.toolbox
 ```
 
-Windows:
+## 后端地址
 
-```powershell
-.\gradlew.bat :app:assembleDebug
-```
+- 后端接口：`http://47.113.226.102:5000/`
+- 后台管理：`http://47.113.226.102:5000/admin`
 
-默认输出文件名:
+## 免责声明
 
-- `SchoolRun_<version>_arm64-v8a_debug.apk`
-- `SchoolRun_<version>_arm64-v8a_release.apk`
+本项目仅供合法合规的开发、调试、学习与研究用途。
 
-## 后端对接
+- 请勿将本项目用于作弊、绕过平台规则、冒充第三方软件或其他违法违规用途。
+- 使用者应自行承担使用行为带来的全部后果。
+- 维护者不对因不当使用本项目造成的直接或间接损失承担责任。
 
-共享路线和共享 NFC 的接口文档见:
+## 开源协议
 
-- [docs/shared-backend-api.md](./docs/shared-backend-api.md)
-
-地图 AK 与包名绑定说明见:
-
-- [docs/map-config.md](./docs/map-config.md)
-
-## 独立维护说明
-
-这个仓库已经按当前项目身份独立维护，包括：
-
-- 仓库文档与对外链接切换到当前仓库
-- 安装包 `applicationId` 切换到当前项目
-- 构建产物命名切换到当前项目
-- 设置页中的项目链接切换为当前维护地址
-
-为避免一次性大范围重构带来不必要风险，当前 Java 源码内部包路径仍保留历史结构；这不会影响 APK 的独立发布与安装包身份。
-
-## 开源与来源
-
-本仓库包含基于上游开源项目继续演化的代码，当前继续遵循原许可证：
+本项目继续遵循：
 
 - `GPL-3.0-only`
 
-如果你继续分发、修改或再发布本项目，请一并遵守 GPL 许可证要求，并保留必要的来源与许可证信息。
+## 上游说明
+
+本项目已作为独立项目维护，但在 README 中保留来源说明：
+
+- 使用并演化自上游开源项目：`https://github.com/ZCShou/GoGoGo`
+
+## 文档
+
+- 后端接口文档：[docs/shared-backend-api.md](./docs/shared-backend-api.md)
+- 地图配置文档：[docs/map-config.md](./docs/map-config.md)

@@ -3,11 +3,17 @@ package com.zcshou.gogogo;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.SearchView;
+import android.widget.SimpleAdapter;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
@@ -25,6 +31,9 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.search.sug.SuggestionResult;
+import com.baidu.mapapi.search.sug.SuggestionSearch;
+import com.baidu.mapapi.search.sug.SuggestionSearchOption;
 import com.zcshou.gogogo.route.domain.model.RoutePoint;
 import com.zcshou.gogogo.route.presentation.RouteCreateViewModel;
 import com.zcshou.gogogo.share.domain.model.SharedRoutePayload;
@@ -35,18 +44,29 @@ import com.zcshou.utils.MapUtils;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class RouteCreateActivity extends BaseActivity {
+    private static final String POI_NAME = "poi_name";
+    private static final String POI_ADDRESS = "poi_address";
+    private static final String POI_LONGITUDE = "poi_longitude";
+    private static final String POI_LATITUDE = "poi_latitude";
+
     private MapView mapView;
     private BaiduMap baiduMap;
     private RouteCreateViewModel viewModel;
     private LocationClient locationClient;
     private LatLng currentLocation;
     private ExecutorService ioExecutor;
+    private SuggestionSearch suggestionSearch;
+    private String currentCity = "";
+    private LinearLayout searchResultContainer;
+    private ListView searchResultList;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -65,6 +85,7 @@ public class RouteCreateActivity extends BaseActivity {
 
         initMap();
         initButtons();
+        initSearch();
         initLocationClient();
         observeRoutePoints();
     }
@@ -85,6 +106,9 @@ public class RouteCreateActivity extends BaseActivity {
     protected void onDestroy() {
         if (locationClient != null) {
             locationClient.stop();
+        }
+        if (suggestionSearch != null) {
+            suggestionSearch.destroy();
         }
         if (ioExecutor != null) {
             ioExecutor.shutdownNow();
@@ -111,6 +135,7 @@ public class RouteCreateActivity extends BaseActivity {
                         wgsCoordinates[1],
                         55d
                 ));
+                searchResultContainer.setVisibility(View.GONE);
             }
 
             @Override
@@ -132,6 +157,99 @@ public class RouteCreateActivity extends BaseActivity {
         locationButton.setOnClickListener(v -> moveToCurrentLocation());
     }
 
+    private void initSearch() {
+        SearchView searchView = findViewById(R.id.route_create_search_view);
+        searchResultContainer = findViewById(R.id.route_search_result_container);
+        searchResultList = findViewById(R.id.route_search_result_list);
+        suggestionSearch = SuggestionSearch.newInstance();
+        suggestionSearch.setOnGetSuggestionResultListener(suggestionResult -> {
+            if (suggestionResult == null || suggestionResult.getAllSuggestions() == null) {
+                GoUtils.DisplayToast(this, getString(R.string.route_search_empty));
+                return;
+            }
+
+            List<Map<String, Object>> data = getSuggestionMapList(suggestionResult);
+            if (data.isEmpty()) {
+                GoUtils.DisplayToast(this, getString(R.string.route_search_empty));
+                searchResultContainer.setVisibility(View.GONE);
+                return;
+            }
+
+            SimpleAdapter adapter = new SimpleAdapter(
+                    this,
+                    data,
+                    R.layout.search_poi_item,
+                    new String[]{POI_NAME, POI_ADDRESS, POI_LONGITUDE, POI_LATITUDE},
+                    new int[]{R.id.poi_name, R.id.poi_address, R.id.poi_longitude, R.id.poi_latitude}
+            );
+            searchResultList.setAdapter(adapter);
+            searchResultContainer.setVisibility(View.VISIBLE);
+        });
+
+        searchResultList.setOnItemClickListener((parent, view, position, id) -> {
+            String lng = ((android.widget.TextView) view.findViewById(R.id.poi_longitude)).getText().toString();
+            String lat = ((android.widget.TextView) view.findViewById(R.id.poi_latitude)).getText().toString();
+            LatLng target = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
+            baiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLngZoom(target, 18f));
+            searchResultContainer.setVisibility(View.GONE);
+            GoUtils.DisplayToast(this, getString(R.string.route_search_use_result));
+        });
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                requestSuggestion(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                if (TextUtils.isEmpty(newText)) {
+                    searchResultContainer.setVisibility(View.GONE);
+                    return true;
+                }
+                requestSuggestion(newText);
+                return true;
+            }
+        });
+    }
+
+    private void requestSuggestion(String keyword) {
+        if (TextUtils.isEmpty(keyword)) {
+            return;
+        }
+        try {
+            suggestionSearch.requestSuggestion(
+                    new SuggestionSearchOption()
+                            .keyword(keyword)
+                            .city(currentCity)
+            );
+        } catch (Exception exception) {
+            GoUtils.DisplayToast(this, getString(R.string.app_error_search));
+        }
+    }
+
+    @NonNull
+    private List<Map<String, Object>> getSuggestionMapList(SuggestionResult suggestionResult) {
+        List<Map<String, Object>> data = new ArrayList<>();
+        int retCnt = suggestionResult.getAllSuggestions().size();
+
+        for (int i = 0; i < retCnt; i++) {
+            SuggestionResult.SuggestionInfo info = suggestionResult.getAllSuggestions().get(i);
+            if (info.pt == null) {
+                continue;
+            }
+
+            Map<String, Object> poiItem = new HashMap<>();
+            poiItem.put(POI_NAME, info.key);
+            poiItem.put(POI_ADDRESS, (info.city == null ? "" : info.city) + " " + (info.district == null ? "" : info.district));
+            poiItem.put(POI_LONGITUDE, String.valueOf(info.pt.longitude));
+            poiItem.put(POI_LATITUDE, String.valueOf(info.pt.latitude));
+            data.add(poiItem);
+        }
+        return data;
+    }
+
     private void initLocationClient() {
         try {
             locationClient = new LocationClient(getApplicationContext());
@@ -146,6 +264,9 @@ public class RouteCreateActivity extends BaseActivity {
                     return;
                 }
                 currentLocation = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
+                if (!TextUtils.isEmpty(bdLocation.getCity())) {
+                    currentCity = bdLocation.getCity();
+                }
                 baiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLngZoom(currentLocation, 18f));
             }
         });
@@ -229,7 +350,7 @@ public class RouteCreateActivity extends BaseActivity {
             return;
         }
 
-        android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_route_share, null);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_route_share, null);
         EditText nameInput = dialogView.findViewById(R.id.route_share_name_input);
         CheckBox privacyCheckBox = dialogView.findViewById(R.id.route_share_privacy_checkbox);
         nameInput.setText(buildDefaultRouteName());
