@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="@dimen/joystick_ctrl_btn_width"
+            android:layout_height="@dimen/joystick_ctrl_btn_height"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/circle_shape_bg"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clickable="false"
+                android:contentDescription="@string/joystick_move"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_move"/>
+        </LinearLayout>
+
+        <Space
+            android:layout_width="2dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="@dimen/joystick_ctrl_btn_width"
+            android:layout_height="@dimen/joystick_ctrl_btn_height"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/circle_shape_bg"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/joystick_history"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/joystick_history"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_history"/>
+        </LinearLayout>
+
+        <Space
+            android:layout_width="2dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="@dimen/joystick_ctrl_btn_width"
+            android:layout_height="@dimen/joystick_ctrl_btn_height"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/circle_shape_bg"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/joystick_position"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/joystick_map"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_map"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <com.zcshou.joystick.ButtonView
+        android:id="@+id/joystick_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+    <com.zcshou.joystick.RockerView
+        android:id="@+id/joystick_rocker"
+        android:layout_width="@dimen/joystick_rockerview_width"
+        android:layout_height="@dimen/joystick_rockerview_height"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="@dimen/joystick_ctrl_btn_width"
+            android:layout_height="@dimen/joystick_ctrl_btn_height"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/circle_shape_bg"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/joystick_walk"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/joystick_walk"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_walk"/>
+        </LinearLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="@dimen/joystick_ctrl_btn_width"
+            android:layout_height="@dimen/joystick_ctrl_btn_height"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/circle_shape_bg"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/joystick_run"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/joystick_run"
+                android:src="@drawable/ic_run"/>
+        </LinearLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="@dimen/joystick_ctrl_btn_width"
+            android:layout_height="@dimen/joystick_ctrl_btn_height"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/circle_shape_bg"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/joystick_bike"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/joystick_bike"
+                android:src="@drawable/ic_bike"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
+

@@ -1,0 +1,118 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:iconSpaceReserved="false">
+
+    <PreferenceCategory
+        app:title="@string/setting_group_move"
+        app:iconSpaceReserved="false">
+        <ListPreference
+            app:key="setting_joystick_type"
+            app:title="@string/setting_joystick"
+            app:entries="@array/array_joystick_type"
+            app:entryValues="@array/array_joystick_type_values"
+            app:dialogTitle="@string/setting_joystick_tips"
+            app:defaultValue="0"
+            app:iconSpaceReserved="false">
+        </ListPreference>
+
+        <EditTextPreference
+            app:key="setting_walk"
+            app:title="@string/setting_walk"
+            app:defaultValue="@string/setting_walk_default"
+            app:summary="@string/setting_walk_default"
+            app:iconSpaceReserved="false"/>
+
+        <EditTextPreference
+            app:key="setting_run"
+            app:title="@string/setting_run"
+            app:defaultValue="@string/setting_run_default"
+            app:summary="@string/setting_run_default"
+            app:iconSpaceReserved="false"/>
+
+        <EditTextPreference
+            app:key="setting_bike"
+            app:title="@string/setting_bike"
+            app:defaultValue="@string/setting_bike_default"
+            app:summary="@string/setting_bike_default"
+            app:iconSpaceReserved="false"/>
+
+        <EditTextPreference
+            app:key="setting_altitude"
+            app:title="@string/setting_altitude"
+            app:defaultValue="@string/setting_altitude_default"
+            app:summary="@string/setting_altitude_default"
+            app:iconSpaceReserved="false"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/setting_location"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            app:key="setting_random_offset"
+            app:title="@string/setting_random_offset"
+            app:summary="@string/setting_random_offset_summary"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"/>
+        <EditTextPreference
+            app:key="setting_lat_max_offset"
+            app:title="@string/setting_lat_max_offset"
+            app:defaultValue="@string/setting_random_offset_default"
+            app:summary="@string/setting_random_offset_default"
+            app:iconSpaceReserved="false"/>
+        <EditTextPreference
+            app:key="setting_lon_max_offset"
+            app:title="@string/setting_lon_max_offset"
+            app:defaultValue="@string/setting_random_offset_default"
+            app:summary="@string/setting_random_offset_default"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/setting_group_log"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            app:key="setting_log_off"
+            app:title="@string/setting_log_off"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"/>
+        <EditTextPreference
+            app:key="setting_pos_history"
+            app:title="@string/setting_pos_history"
+            app:defaultValue="@string/history_expiration"
+            app:summary="@string/history_expiration"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/setting_group_about"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            app:key="setting_version"
+            app:title="@string/setting_version"
+            app:iconSpaceReserved="false"/>
+
+        <Preference
+            app:key="setting_author"
+            app:title="@string/setting_author"
+            app:defaultValue="@string/app_author"
+            app:summary="@string/app_author"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/setting_group_sys"
+        app:isPreferenceVisible="false"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            app:key="setting_startup_num"
+            app:iconSpaceReserved="false"/>
+
+        <Preference
+            app:key="setting_reg_code"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+</PreferenceScreen>

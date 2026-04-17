@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group>
+        <item
+            android:id="@+id/nav_route_create"
+            android:icon="@drawable/ic_map"
+            android:title="绘制路线" />
+        <item
+            android:id="@+id/nav_route_run"
+            android:icon="@drawable/ic_run"
+            android:title="路线模拟" />
+        <item
+            android:id="@+id/nav_route"
+            android:icon="@drawable/ic_map"
+            android:title="路线管理" />
+    </group>
+
+    <group>
+        <item android:title="@string/nav_menu_settings">
+            <menu>
+                <item
+                    android:id="@+id/nav_dev"
+                    android:icon="@drawable/ic_menu_dev"
+                    android:title="@string/nav_menu_dev" />
+            </menu>
+        </item>
+    </group>
+
+    <item android:title="@string/nav_menu_more">
+        <menu>
+            <item
+                android:id="@+id/nav_feedback"
+                android:icon="@drawable/ic_menu_feedback"
+                android:title="@string/nav_menu_feedback" />
+            <item
+                android:id="@+id/nav_contact"
+                android:icon="@drawable/ic_contact"
+                android:title="@string/nav_menu_contact" />
+        </menu>
+    </item>
+</menu>
