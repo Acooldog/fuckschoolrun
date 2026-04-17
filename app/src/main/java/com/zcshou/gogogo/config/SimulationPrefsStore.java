@@ -20,11 +20,19 @@ public final class SimulationPrefsStore {
     }
 
     public String getRouteSpeed() {
-        return preferences.getString(KEY_ROUTE_SPEED, "15");
+        String value = preferences.getString(KEY_ROUTE_SPEED, "15");
+        if ("3.8".equals(value)) {
+            return "15";
+        }
+        return value;
     }
 
     public String getRouteLoopCount() {
-        return preferences.getString(KEY_ROUTE_LOOP_COUNT, "100");
+        String value = preferences.getString(KEY_ROUTE_LOOP_COUNT, "100");
+        if ("10".equals(value)) {
+            return "100";
+        }
+        return value;
     }
 
     public boolean isRouteSpeedFloat() {

@@ -34,7 +34,9 @@ import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.search.sug.SuggestionResult;
 import com.baidu.mapapi.search.sug.SuggestionSearch;
 import com.baidu.mapapi.search.sug.SuggestionSearchOption;
+import com.zcshou.gogogo.route.domain.model.RouteDefinition;
 import com.zcshou.gogogo.route.domain.model.RoutePoint;
+import com.zcshou.gogogo.route.presentation.RouteModule;
 import com.zcshou.gogogo.route.presentation.RouteCreateViewModel;
 import com.zcshou.gogogo.share.domain.model.SharedRoutePayload;
 import com.zcshou.gogogo.share.presentation.ShareModule;
@@ -219,10 +221,11 @@ public class RouteCreateActivity extends BaseActivity {
             return;
         }
         try {
+            String city = TextUtils.isEmpty(currentCity) ? "北京" : currentCity;
             suggestionSearch.requestSuggestion(
                     new SuggestionSearchOption()
                             .keyword(keyword)
-                            .city(currentCity)
+                            .city(city)
             );
         } catch (Exception exception) {
             GoUtils.DisplayToast(this, getString(R.string.app_error_search));
@@ -345,15 +348,60 @@ public class RouteCreateActivity extends BaseActivity {
     }
 
     private void showShareDialog() {
-        if (!viewModel.canSave()) {
+        boolean hasCurrentPoints = viewModel.canSave();
+        List<RouteDefinition> localRoutes = getLocalRoutes();
+        boolean hasLocalRoutes = !localRoutes.isEmpty();
+        if (!hasCurrentPoints && !hasLocalRoutes) {
             GoUtils.DisplayToast(this, getString(R.string.route_share_need_points));
             return;
         }
 
+        if (hasCurrentPoints && hasLocalRoutes) {
+            String[] options = {
+                    getString(R.string.route_share_current_option),
+                    getString(R.string.route_share_local_option)
+            };
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.route_share_dialog_title)
+                    .setItems(options, (dialog, which) -> {
+                        if (which == 0) {
+                            showShareDetailDialog(buildDefaultRouteName(), new ArrayList<>(viewModel.getCurrentPoints()));
+                        } else {
+                            showLocalRouteSelector(localRoutes);
+                        }
+                    })
+                    .show();
+            return;
+        }
+
+        if (hasCurrentPoints) {
+            showShareDetailDialog(buildDefaultRouteName(), new ArrayList<>(viewModel.getCurrentPoints()));
+            return;
+        }
+
+        showLocalRouteSelector(localRoutes);
+    }
+
+    private void showLocalRouteSelector(List<RouteDefinition> routes) {
+        CharSequence[] routeNames = new CharSequence[routes.size()];
+        for (int index = 0; index < routes.size(); index++) {
+            routeNames[index] = routes.get(index).getName();
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.route_share_select_local_title)
+                .setItems(routeNames, (dialog, which) -> {
+                    RouteDefinition selected = routes.get(which);
+                    showShareDetailDialog(selected.getName(), new ArrayList<>(selected.getPoints()));
+                })
+                .show();
+    }
+
+    private void showShareDetailDialog(String defaultName, List<RoutePoint> points) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_route_share, null);
         EditText nameInput = dialogView.findViewById(R.id.route_share_name_input);
         CheckBox privacyCheckBox = dialogView.findViewById(R.id.route_share_privacy_checkbox);
-        nameInput.setText(buildDefaultRouteName());
+        nameInput.setText(defaultName);
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.route_share_dialog_title)
@@ -368,17 +416,16 @@ public class RouteCreateActivity extends BaseActivity {
                 return;
             }
             dialog.dismiss();
-            uploadSharedRoute(routeName, privacyCheckBox.isChecked());
+            uploadSharedRoute(routeName, privacyCheckBox.isChecked(), points);
         }));
         dialog.show();
     }
 
-    private void uploadSharedRoute(String routeName, boolean privacyMode) {
+    private void uploadSharedRoute(String routeName, boolean privacyMode, List<RoutePoint> points) {
         if (!GoUtils.isNetworkAvailable(this)) {
             GoUtils.DisplayToast(this, getString(R.string.app_error_network));
             return;
         }
-        List<RoutePoint> points = new ArrayList<>(viewModel.getCurrentPoints());
         GoUtils.DisplayToast(this, getString(R.string.route_share_uploading));
         ioExecutor.execute(() -> {
             try {
@@ -398,6 +445,15 @@ public class RouteCreateActivity extends BaseActivity {
                 runOnUiThread(() -> GoUtils.DisplayToast(this, buildDetailedToast(R.string.route_share_failed, exception)));
             }
         });
+    }
+
+    @NonNull
+    private List<RouteDefinition> getLocalRoutes() {
+        try {
+            return RouteModule.from(getApplicationContext()).getRoutesUseCase().execute();
+        } catch (Exception ignored) {
+            return new ArrayList<>();
+        }
     }
 
     private String buildDetailedToast(int prefixResId, Exception exception) {

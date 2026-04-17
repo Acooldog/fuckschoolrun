@@ -23,41 +23,15 @@ public class HomeActivity extends BaseActivity {
 
     private void bindNavigation() {
         findViewById(R.id.card_operation_tips).setOnClickListener(v -> open(OperationTipsActivity.class));
-        findViewById(R.id.card_nfc_tools).setOnClickListener(v -> showNfcActions());
+        findViewById(R.id.card_nfc_tools).setOnClickListener(v -> open(NfcToolsActivity.class));
         findViewById(R.id.card_route_run).setOnClickListener(v -> open(RouteRunActivity.class));
         findViewById(R.id.card_route_create).setOnClickListener(v -> open(RouteCreateActivity.class));
         findViewById(R.id.card_settings).setOnClickListener(v -> open(SettingsActivity.class));
         findViewById(R.id.card_dev).setOnClickListener(this::openDeveloperSettings);
     }
 
-    private void showNfcActions() {
-        String[] actions = {
-                getString(R.string.home_nfc_open_action),
-                getString(R.string.home_nfc_share_action),
-                getString(R.string.home_nfc_download_action)
-        };
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.home_nfc_action_title)
-                .setItems(actions, (dialog, which) -> {
-                    if (which == 0) {
-                        open(NfcToolsActivity.class);
-                    } else if (which == 1) {
-                        openNfcAction(NfcToolsActivity.ACTION_SHARE);
-                    } else {
-                        openNfcAction(NfcToolsActivity.ACTION_DOWNLOAD);
-                    }
-                })
-                .show();
-    }
-
     private void open(Class<?> activityClass) {
         startActivity(new Intent(this, activityClass));
-    }
-
-    private void openNfcAction(String action) {
-        Intent intent = new Intent(this, NfcToolsActivity.class);
-        intent.putExtra(NfcToolsActivity.EXTRA_START_ACTION, action);
-        startActivity(intent);
     }
 
     private void openDeveloperSettings(View ignored) {

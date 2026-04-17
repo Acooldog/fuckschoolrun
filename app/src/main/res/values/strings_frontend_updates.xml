@@ -1,12 +1,15 @@
 <resources>
     <string name="home_operation_title">操作提示</string>
-    <string name="home_operation_steps">1. 点击“绘制路线”先搜索地点或直接点地图。\n2. 完成后可保存路线或分享路线。\n3. 点击“路线模拟”会自动记住你上次的速度、循环和路线。\n4. 点击“NFC 工具”可读取、模拟、共享或下载 NFC 数据。</string>
+    <string name="home_operation_steps">1. 点击“绘制路线”先搜索地点或直接点地图。\n2. 完成后可保存路线或分享路线。\n3. 点击“路线模拟”会自动记住你上次的速度、循环和路线。\n4. 路线模拟后请开小窗或分屏，否则无法继续模拟。\n5. 点击“NFC 工具”可读取、模拟、共享或下载 NFC 数据。</string>
     <string name="home_operation_click_more">点击卡片查看完整操作说明</string>
-    <string name="home_operation_steps_detail">1. 首页点击“绘制路线”进入绘制页面，可以先搜索地点，再点击地图添加路径点。\n\n2. 绘制路线完成后，可以保存到本地，也可以直接分享给其他用户。\n\n3. 进入“路线模拟”后，默认速度是 15m/s，默认循环次数是 100，并且会自动记住你上次使用的参数和路线。\n\n4. 点击“NFC 工具”可以读取公开 NFC、手动填写 URL 和包名进行模拟，也支持共享和下载别人上传的数据。\n\n5. 如果下载的是隐私路线，模拟时地图会变成白色遮罩，但路线仍会正常执行。\n\n6. 如果你修改了包名或签名，请同步更新 local.properties 中的 MAPS_SAFE_CODE 和百度地图 AK 绑定。</string>
+    <string name="home_operation_steps_detail">1. 首页点击“绘制路线”进入绘制页面，可以先搜索地点，再点击地图添加路径点。\n\n2. 绘制路线完成后，可以保存到本地，也可以直接分享给其他用户；现在也支持选择本地已有路线进行分享。\n\n3. 进入“路线模拟”后，默认速度是 15m/s，默认循环次数是 100，并且会自动记住你上次使用的参数和路线。\n\n4. 开始路线模拟后，请把目标应用开成小窗或分屏，否则无法继续进行模拟。\n\n5. 点击“NFC 工具”可以读取公开 NFC、手动填写 URL 和包名进行模拟，也支持共享和下载别人上传的数据。\n\n6. 如果下载的是隐私路线，模拟时地图会变成白色遮罩，但路线仍会正常执行。\n\n7. 如果你修改了包名或签名，请同步更新 local.properties 中的 MAPS_SAFE_CODE 和百度地图 AK 绑定。</string>
     <string name="route_search_hint">搜索地点后移动到目标位置，再点击地图绘制路线</string>
     <string name="route_search_placeholder">输入地点名称</string>
     <string name="route_search_use_result">已定位到搜索结果，可继续在地图上绘制路线</string>
     <string name="route_search_empty">没有搜索到地点结果</string>
+    <string name="route_share_current_option">分享当前绘制路线</string>
+    <string name="route_share_local_option">选择本地已有路线</string>
+    <string name="route_share_select_local_title">选择本地路线</string>
     <string name="app_entry_notice_title">使用说明</string>
     <string name="app_entry_notice_message">本软件为完全免费开源软件，基于影梭打造，仅供学习交流，禁止盈利，目前仅测试过阳光校园跑，其他的你们自行测试，QQ群号：1073565389</string>
     <string name="app_entry_notice_copy_group">复制群号</string>
