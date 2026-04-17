@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.baidu.mapapi.map.MapView
+        android:id="@+id/map_create"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:background="#80000000"
+        android:padding="5dp"
+        android:text="@string/route_draw_hint"
+        android:textColor="#ffffff" />
+
+    <ImageButton
+        android:id="@+id/btn_create_location"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_above="@+id/layout_bottom_control"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/circle_shape_bg"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_position" />
+
+    <LinearLayout
+        android:id="@+id/layout_bottom_control"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#ffffffff"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_create_clear"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:layout_weight="1"
+                android:text="@string/route_clear_button" />
+
+            <Button
+                android:id="@+id/btn_create_share"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_weight="1"
+                android:text="@string/route_share_button" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_create_save"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/colorPrimary"
+            android:text="@string/route_save_button"
+            android:textColor="#ffffff" />
+    </LinearLayout>
+</RelativeLayout>

@@ -1,0 +1,6 @@
+<resources>
+    <string name="setting_upstream_link">上游来源</string>
+    <string name="setting_upstream_link_summary">https://github.com/ZCShou/GoGoGo</string>
+    <string name="setting_reference_repo_link">参考仓库</string>
+    <string name="setting_reference_repo_link_summary">https://github.com/DuckXiu/GoGoGo</string>
+</resources>

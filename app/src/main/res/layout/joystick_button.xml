@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <ImageButton
+            android:id="@+id/btn_north_west"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_left_up"
+            android:theme="@style/RippleWhite" />
+
+        <ImageButton
+            android:id="@+id/btn_north"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_up"
+            android:theme="@style/RippleWhite"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <ImageButton
+            android:id="@+id/btn_north_east"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_right_up"
+            android:theme="@style/RippleWhite" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <ImageButton
+            android:id="@+id/btn_west"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_left"
+            android:theme="@style/RippleWhite" />
+
+        <ImageButton
+            android:id="@+id/btn_center"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_lock_close"
+            android:theme="@style/RippleWhite" />
+
+        <ImageButton
+            android:id="@+id/btn_east"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_right"
+            android:theme="@style/RippleWhite" />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <ImageButton
+            android:id="@+id/btn_south_west"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_left_down"
+            android:theme="@style/RippleWhite" />
+
+        <ImageButton
+            android:id="@+id/btn_south"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_down"
+            android:theme="@style/RippleWhite" />
+
+        <ImageButton
+            android:id="@+id/btn_south_east"
+            android:layout_width="@dimen/joystick_btn_width"
+            android:layout_height="@dimen/joystick_btn_height"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_right_down"
+            android:theme="@style/RippleWhite" />
+
+    </LinearLayout>
+
+</LinearLayout>
+

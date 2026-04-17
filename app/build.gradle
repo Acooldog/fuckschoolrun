@@ -1,0 +1,163 @@
+apply plugin: 'com.android.application'
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
+}
+
+def readLocalConfig = { name, defaultValue = "" ->
+    def value = localProperties.getProperty(name)
+    if (value == null || value.toString().trim().isEmpty()) {
+        value = project.findProperty(name)
+    }
+    if (value == null || value.toString().trim().isEmpty()) {
+        value = System.getenv(name)
+    }
+    value == null ? defaultValue : value.toString()
+}
+
+def escapeBuildConfigString = { value ->
+    value.replace('\\', '\\\\').replace('"', '\\"')
+}
+
+def mapsApiKey = readLocalConfig("MAPS_API_KEY")
+def mapsSafeCode = readLocalConfig("MAPS_SAFE_CODE")
+def shareApiBaseUrl = readLocalConfig("SHARE_API_BASE_URL")
+def baiduManifestApiKey = mapsApiKey.trim().isEmpty() ? "NO_BAIDU_MAPS_API_KEY_CONFIGURED" : mapsApiKey
+def preferredKeystore = file('..\\keystore\\SchoolRun.jks')
+def legacyKeystore = file('..\\keystore\\GoGoGo.jks')
+def projectKeystore = preferredKeystore.exists() ? preferredKeystore : legacyKeystore
+
+android {
+    signingConfigs {
+        local {
+            if (projectKeystore.exists()) {
+                storeFile projectKeystore
+                storePassword 'GoGoGo'
+                keyAlias 'GoGoKey'
+                keyPassword 'GoGoGo'
+            }
+        }
+    }
+    ndkVersion '26.2.11394342'
+    compileSdk 32
+    defaultConfig {
+        applicationId "com.acooldog.toolbox"
+        minSdkVersion 27
+        //noinspection ExpiredTargetSdkVersion
+        targetSdkVersion 32
+        versionCode 1123
+        versionName '1.12.3' // https://semver.org/lang/zh-CN/
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        resourceConfigurations += ['zh', 'zh-rCN', 'en', 'en-rUS']
+        ndk {
+            //noinspection ChromeOsAbiSupport
+            abiFilters "arm64-v8a"
+        }
+        if (projectKeystore.exists()) {
+            signingConfig signingConfigs.local
+        }
+        manifestPlaceholders = [
+                BAIDU_MAPS_API_KEY: baiduManifestApiKey
+        ]
+        buildConfigField "String", "MAPS_SAFE_CODE", "\"${escapeBuildConfigString(mapsSafeCode)}\""
+        buildConfigField "String", "MAPS_API_KEY", "\"${escapeBuildConfigString(mapsApiKey)}\""
+        buildConfigField "String", "SHARE_API_BASE_URL", "\"${escapeBuildConfigString(shareApiBaseUrl)}\""
+    }
+    buildTypes {
+        release {
+            // Enables code shrinking, obfuscation, and optimization for only
+            // your project's release build type.
+            minifyEnabled true
+
+            // Enables resource shrinking, which is performed by the
+            // Android Gradle plugin.
+            shrinkResources true
+
+            // Includes the default ProGuard rules files that are packaged with
+            // the Android Gradle plugin. To learn more, go to the section about
+            // R8 configuration files.
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            if (projectKeystore.exists()) {
+                signingConfig signingConfigs.local
+            }
+            multiDexEnabled true
+        }
+        debug {
+            if (projectKeystore.exists()) {
+                signingConfig signingConfigs.local
+            }
+        }
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    packagingOptions {
+        jniLibs {
+            excludes += ['lib/armeabi/**']
+        }
+        resources {
+            excludes += ['lib/armeabi/**']
+        }
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+    dependenciesInfo {
+        includeInApk false
+        includeInBundle false
+    }
+    namespace 'com.zcshou.gogogo'
+//    lintOptions {
+//        checkReleaseBuilds false
+//        // Or, if you prefer, you can continue to check for errors in release builds,
+//        // but continue the build even when errors are found:
+//        abortOnError false
+//    }
+
+    // 指定输出的可执行程序的名字
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                def fileName
+                if (variant.buildType.name == 'release') {
+                    fileName = "SchoolRun_${defaultConfig.versionName}_arm64-v8a_release.apk"
+                } else {
+                    fileName = "SchoolRun_${defaultConfig.versionName}_arm64-v8a_debug.apk"
+                }
+                outputFileName=fileName
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    // AppCompat 1.5.1 开始显式依赖于 Lifecycle 2.5.1 和 SavedState 1.2.0
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'com.google.android.material:material:1.7.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.elvishew:xlog:1.11.1'
+    implementation 'io.noties.markwon:core:4.6.2'
+    implementation files('libs/BaiduLBS_Android.jar')
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation('androidx.test.espresso:espresso-core:3.5.1', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+}

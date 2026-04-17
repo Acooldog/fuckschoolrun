@@ -1,0 +1,34 @@
+<resources>
+    <string name="route_share_button">分享路线</string>
+    <string name="route_share_dialog_title">分享路线</string>
+    <string name="route_share_name_hint">共享路线名称</string>
+    <string name="route_share_privacy_label">开启隐私模式</string>
+    <string name="route_share_privacy_hint">勾选后，其他用户下载此路线进行模拟时，地图会显示为白色，并提示分享者已开启隐私模式，但路线仍可正常模拟。</string>
+    <string name="route_share_confirm">上传共享</string>
+    <string name="route_share_cancel">取消</string>
+    <string name="route_share_need_points">至少绘制两个点后才能分享路线。</string>
+    <string name="route_share_name_empty">共享路线名称不能为空。</string>
+    <string name="route_share_uploading">正在上传共享路线…</string>
+    <string name="route_share_success">共享路线已上传，并保存到本地。</string>
+    <string name="route_share_success_private">隐私共享路线已上传，下载者模拟时会看到白色地图提示。</string>
+    <string name="route_share_failed">分享路线失败：</string>
+    <string name="route_pick_source_title">选择路线来源</string>
+    <string name="route_pick_local_option">本地路线</string>
+    <string name="route_pick_shared_option">下载共享路线</string>
+    <string name="route_shared_pick_title">选择共享路线</string>
+    <string name="route_shared_loading">正在获取共享路线列表…</string>
+    <string name="route_shared_load_failed">加载共享路线失败：</string>
+    <string name="route_shared_empty">当前还没有可下载的共享路线。</string>
+    <string name="route_shared_downloading">正在下载共享路线…</string>
+    <string name="route_shared_downloaded">共享路线已下载并选中。</string>
+    <string name="route_shared_downloaded_private">隐私共享路线已下载，模拟时会显示白色地图提示。</string>
+    <string name="route_shared_download_failed">下载共享路线失败：</string>
+    <string name="route_shared_privacy_tag">[隐私]</string>
+    <string name="route_privacy_overlay_message">分享者已开启隐私模式
+地图内容已隐藏，但仍可正常模拟路线。</string>
+    <string name="route_current_format">当前路线: %1$s</string>
+    <string name="route_label_shared_uploaded">%1$s [已共享]</string>
+    <string name="route_label_shared_downloaded">%1$s [共享下载]</string>
+    <string name="route_label_shared_private">%1$s [隐私共享]</string>
+    <string name="route_points_unit">点</string>
+</resources>
