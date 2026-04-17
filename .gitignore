@@ -64,3 +64,6 @@ backend/.env
 backend/.pytest_cache/
 backend/**/__pycache__/
 backend/**/*.pyc
+
+/docs/map-config.md
+/docs/shared-backend-api.md
