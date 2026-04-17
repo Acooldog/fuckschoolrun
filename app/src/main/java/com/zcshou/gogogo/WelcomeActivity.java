@@ -3,6 +3,8 @@ package com.zcshou.gogogo;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -55,6 +57,7 @@ public class WelcomeActivity extends AppCompatActivity {
         startBtn.setOnClickListener(v -> startMainActivity());
 
         checkAgreementAndPrivacy();
+        showEntryNoticeDialog();
     }
 
     @Override
@@ -315,5 +318,20 @@ public class WelcomeActivity extends AppCompatActivity {
         int privacy_end = str.indexOf("》", agreement_end) + 1;
         builder.setSpan(clickSpanPrivacy, privacy_start, privacy_end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         return builder;
+    }
+
+    private void showEntryNoticeDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.app_entry_notice_title)
+                .setMessage(R.string.app_entry_notice_message)
+                .setNegativeButton(R.string.app_entry_notice_copy_group, (dialog, which) -> {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    if (clipboard != null) {
+                        clipboard.setPrimaryClip(ClipData.newPlainText("qq_group", "1073565389"));
+                        GoUtils.DisplayToast(this, getString(R.string.app_entry_notice_group_copied));
+                    }
+                })
+                .setPositiveButton(R.string.app_entry_notice_known, null)
+                .show();
     }
 }

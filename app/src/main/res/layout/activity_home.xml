@@ -64,9 +64,13 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_operation_tips"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
                 app:cardCornerRadius="18dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -92,6 +96,15 @@
                         android:text="@string/home_operation_steps"
                         android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
                         android:textColor="?android:attr/textColorSecondary" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/home_operation_click_more"
+                        android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
+                        android:textColor="@color/colorPrimary"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

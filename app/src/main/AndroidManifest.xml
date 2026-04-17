@@ -121,6 +121,13 @@
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
+            android:name=".OperationTipsActivity"
+            android:label="@string/home_operation_title"
+            android:parentActivityName=".HomeActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
             android:name=".RouteCreateActivity"
             android:label="绘制路线"
             android:parentActivityName=".HomeActivity" />

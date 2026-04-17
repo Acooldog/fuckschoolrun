@@ -22,6 +22,7 @@ public class HomeActivity extends BaseActivity {
     }
 
     private void bindNavigation() {
+        findViewById(R.id.card_operation_tips).setOnClickListener(v -> open(OperationTipsActivity.class));
         findViewById(R.id.card_nfc_tools).setOnClickListener(v -> showNfcActions());
         findViewById(R.id.card_route_run).setOnClickListener(v -> open(RouteRunActivity.class));
         findViewById(R.id.card_route_create).setOnClickListener(v -> open(RouteCreateActivity.class));
