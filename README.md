@@ -35,7 +35,6 @@
 sdk.dir=C\:\\path\\to\\Android\\Sdk
 MAPS_API_KEY=your_baidu_android_ak
 MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
-SHARE_API_BASE_URL=http://47.113.226.102:5000/
 SHARE_API_BASE_URL=http://your-server-host:8080/
 ```
 
