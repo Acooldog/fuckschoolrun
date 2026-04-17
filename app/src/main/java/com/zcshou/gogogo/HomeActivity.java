@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.content.Intent;
 import android.provider.Settings;
@@ -7,7 +7,7 @@ import android.view.View;
 import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.appbar.MaterialToolbar;
-import com.zcshou.utils.GoUtils;
+import com.acooldog.toolbox.utils.GoUtils;
 
 public class HomeActivity extends BaseActivity {
     @Override

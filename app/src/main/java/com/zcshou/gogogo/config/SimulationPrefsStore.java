@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.config;
+package com.acooldog.toolbox.config;
 
 import android.content.Context;
 import android.content.SharedPreferences;

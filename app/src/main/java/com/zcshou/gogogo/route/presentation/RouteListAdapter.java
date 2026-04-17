@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.route.presentation;
+package com.acooldog.toolbox.route.presentation;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -7,9 +7,9 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-import com.zcshou.gogogo.R;
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.utils.GoUtils;
+import com.acooldog.toolbox.R;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.utils.GoUtils;
 
 import java.util.ArrayList;
 import java.util.List;

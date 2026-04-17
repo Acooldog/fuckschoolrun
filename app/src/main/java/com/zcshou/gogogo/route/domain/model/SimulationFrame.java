@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.route.domain.model;
+package com.acooldog.toolbox.route.domain.model;
 
 public final class SimulationFrame {
     private final RoutePoint point;

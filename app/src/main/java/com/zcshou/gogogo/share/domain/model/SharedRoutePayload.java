@@ -1,7 +1,7 @@
-package com.zcshou.gogogo.share.domain.model;
+package com.acooldog.toolbox.share.domain.model;
 
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.gogogo.route.domain.model.RouteShareInfo;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.route.domain.model.RouteShareInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;

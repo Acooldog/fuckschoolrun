@@ -1,16 +1,16 @@
-package com.zcshou.gogogo.share.data;
+package com.acooldog.toolbox.share.data;
 
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import com.zcshou.gogogo.BuildConfig;
-import com.zcshou.gogogo.nfc.domain.NfcPayload;
-import com.zcshou.gogogo.route.data.RoutePointJsonCodec;
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.gogogo.share.domain.model.SharedNfcEntry;
-import com.zcshou.gogogo.share.domain.model.SharedRoutePayload;
-import com.zcshou.gogogo.share.domain.model.SharedRouteSummary;
+import com.acooldog.toolbox.BuildConfig;
+import com.acooldog.toolbox.nfc.domain.NfcPayload;
+import com.acooldog.toolbox.route.data.RoutePointJsonCodec;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.share.domain.model.SharedNfcEntry;
+import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
+import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
 
 import org.json.JSONArray;
 import org.json.JSONException;

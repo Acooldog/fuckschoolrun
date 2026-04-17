@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -33,8 +33,8 @@ import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 
-import com.zcshou.database.DataBaseHistoryLocation;
-import com.zcshou.utils.GoUtils;
+import com.acooldog.toolbox.database.DataBaseHistoryLocation;
+import com.acooldog.toolbox.utils.GoUtils;
 
 public class HistoryActivity extends BaseActivity {
     public static final String KEY_ID = "KEY_ID";

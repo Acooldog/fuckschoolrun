@@ -1,4 +1,4 @@
-package com.zcshou.joystick;
+package com.acooldog.toolbox.joystick;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -17,7 +17,7 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
-import com.zcshou.gogogo.R;
+import com.acooldog.toolbox.R;
 
 public class RockerView extends View {
     private Paint outerCirclePaint;

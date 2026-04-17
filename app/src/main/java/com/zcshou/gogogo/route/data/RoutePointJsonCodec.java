@@ -1,7 +1,7 @@
-package com.zcshou.gogogo.route.data;
+package com.acooldog.toolbox.route.data;
 
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.utils.MapUtils;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.utils.MapUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;

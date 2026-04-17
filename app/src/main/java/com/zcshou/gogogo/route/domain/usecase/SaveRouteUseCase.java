@@ -1,9 +1,9 @@
-package com.zcshou.gogogo.route.domain.usecase;
+package com.acooldog.toolbox.route.domain.usecase;
 
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.gogogo.route.domain.model.RouteShareInfo;
-import com.zcshou.gogogo.route.domain.repository.RouteRepository;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.route.domain.model.RouteShareInfo;
+import com.acooldog.toolbox.route.domain.repository.RouteRepository;
 
 import java.io.IOException;
 import java.util.List;

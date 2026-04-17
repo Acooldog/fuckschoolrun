@@ -1,8 +1,8 @@
-package com.zcshou.gogogo.route.domain.usecase;
+package com.acooldog.toolbox.route.domain.usecase;
 
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.gogogo.route.domain.model.RouteSimulationConfig;
-import com.zcshou.gogogo.route.domain.service.RouteSimulationEngine;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.domain.model.RouteSimulationConfig;
+import com.acooldog.toolbox.route.domain.service.RouteSimulationEngine;
 
 public final class CreateRouteSimulationEngineUseCase {
     public RouteSimulationEngine execute(RouteDefinition routeDefinition, RouteSimulationConfig config) {

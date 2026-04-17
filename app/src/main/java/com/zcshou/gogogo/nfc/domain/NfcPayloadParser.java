@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.nfc.domain;
+package com.acooldog.toolbox.nfc.domain;
 
 import android.text.TextUtils;
 

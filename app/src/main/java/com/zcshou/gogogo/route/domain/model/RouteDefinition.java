@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.route.domain.model;
+package com.acooldog.toolbox.route.domain.model;
 
 import java.io.File;
 import java.util.ArrayList;

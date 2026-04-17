@@ -1,4 +1,4 @@
-package com.zcshou.service;
+package com.acooldog.toolbox.service;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -25,8 +25,8 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
 import com.elvishew.xlog.XLog;
-import com.zcshou.gogogo.MainActivity;
-import com.zcshou.gogogo.R;
+import com.acooldog.toolbox.MainActivity;
+import com.acooldog.toolbox.R;
 
 public class ServiceGo extends Service {
     public static final double DEFAULT_LAT = 36.667662;

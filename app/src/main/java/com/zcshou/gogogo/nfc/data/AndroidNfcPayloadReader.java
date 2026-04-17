@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.nfc.data;
+package com.acooldog.toolbox.nfc.data;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -7,8 +7,8 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.os.Parcelable;
 
-import com.zcshou.gogogo.nfc.domain.AndroidNfcRecordReader;
-import com.zcshou.gogogo.nfc.domain.NfcRecordData;
+import com.acooldog.toolbox.nfc.domain.AndroidNfcRecordReader;
+import com.acooldog.toolbox.nfc.domain.NfcRecordData;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

@@ -1,8 +1,8 @@
-package com.zcshou.gogogo.share.presentation;
+package com.acooldog.toolbox.share.presentation;
 
 import android.content.Context;
 
-import com.zcshou.gogogo.share.data.ShareApiClient;
+import com.acooldog.toolbox.share.data.ShareApiClient;
 
 import java.io.IOException;
 

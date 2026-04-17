@@ -1,6 +1,6 @@
-package com.zcshou.gogogo.share.domain.model;
+package com.acooldog.toolbox.share.domain.model;
 
-import com.zcshou.gogogo.nfc.domain.NfcPayload;
+import com.acooldog.toolbox.nfc.domain.NfcPayload;
 
 public final class SharedNfcEntry {
     private final String id;

@@ -1,8 +1,8 @@
-package com.zcshou.gogogo.route.domain.repository;
+package com.acooldog.toolbox.route.domain.repository;
 
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.gogogo.route.domain.model.RouteShareInfo;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.route.domain.model.RouteShareInfo;
 
 import java.io.IOException;
 import java.io.InputStream;

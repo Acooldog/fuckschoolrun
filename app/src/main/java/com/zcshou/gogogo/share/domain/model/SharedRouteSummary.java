@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.share.domain.model;
+package com.acooldog.toolbox.share.domain.model;
 
 public final class SharedRouteSummary {
     private final String id;

@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -14,11 +14,11 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.gogogo.route.presentation.RouteListAdapter;
-import com.zcshou.gogogo.route.presentation.RouteListViewModel;
-import com.zcshou.utils.GoUtils;
-import com.zcshou.utils.ShareUtils;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.presentation.RouteListAdapter;
+import com.acooldog.toolbox.route.presentation.RouteListViewModel;
+import com.acooldog.toolbox.utils.GoUtils;
+import com.acooldog.toolbox.utils.ShareUtils;
 
 public class RouteActivity extends BaseActivity {
     private RouteListViewModel viewModel;

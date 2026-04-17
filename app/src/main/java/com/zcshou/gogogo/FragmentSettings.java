@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.os.Bundle;
 import android.content.Intent;
@@ -12,7 +12,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.elvishew.xlog.XLog;
-import com.zcshou.utils.GoUtils;
+import com.acooldog.toolbox.utils.GoUtils;
 
 import java.util.Objects;
 

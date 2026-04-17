@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -26,17 +26,17 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
-import com.zcshou.gogogo.config.SimulationPrefsStore;
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.gogogo.route.domain.model.RouteSimulationConfig;
-import com.zcshou.gogogo.route.domain.service.LocationSimulationGateway;
-import com.zcshou.gogogo.route.presentation.RouteRunViewModel;
-import com.zcshou.gogogo.share.domain.model.SharedRoutePayload;
-import com.zcshou.gogogo.share.domain.model.SharedRouteSummary;
-import com.zcshou.gogogo.share.presentation.ShareModule;
-import com.zcshou.service.ServiceGo;
-import com.zcshou.utils.GoUtils;
+import com.acooldog.toolbox.config.SimulationPrefsStore;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.route.domain.model.RouteSimulationConfig;
+import com.acooldog.toolbox.route.domain.service.LocationSimulationGateway;
+import com.acooldog.toolbox.route.presentation.RouteRunViewModel;
+import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
+import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
+import com.acooldog.toolbox.share.presentation.ShareModule;
+import com.acooldog.toolbox.service.ServiceGo;
+import com.acooldog.toolbox.utils.GoUtils;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.os.Bundle;
 import android.text.InputType;
@@ -34,14 +34,14 @@ import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.search.sug.SuggestionResult;
 import com.baidu.mapapi.search.sug.SuggestionSearch;
 import com.baidu.mapapi.search.sug.SuggestionSearchOption;
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.gogogo.route.presentation.RouteModule;
-import com.zcshou.gogogo.route.presentation.RouteCreateViewModel;
-import com.zcshou.gogogo.share.domain.model.SharedRoutePayload;
-import com.zcshou.gogogo.share.presentation.ShareModule;
-import com.zcshou.utils.GoUtils;
-import com.zcshou.utils.MapUtils;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.route.presentation.RouteModule;
+import com.acooldog.toolbox.route.presentation.RouteCreateViewModel;
+import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
+import com.acooldog.toolbox.share.presentation.ShareModule;
+import com.acooldog.toolbox.utils.GoUtils;
+import com.acooldog.toolbox.utils.MapUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

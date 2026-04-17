@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.route.presentation;
+package com.acooldog.toolbox.route.presentation;
 
 import android.app.Application;
 import android.net.Uri;
@@ -8,7 +8,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
 
 import java.io.IOException;
 import java.io.InputStream;

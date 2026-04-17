@@ -1,9 +1,9 @@
-package com.zcshou.gogogo.route.domain.service;
+package com.acooldog.toolbox.route.domain.service;
 
-import com.zcshou.gogogo.route.domain.model.RouteDefinition;
-import com.zcshou.gogogo.route.domain.model.RoutePoint;
-import com.zcshou.gogogo.route.domain.model.RouteSimulationConfig;
-import com.zcshou.gogogo.route.domain.model.SimulationFrame;
+import com.acooldog.toolbox.route.domain.model.RouteDefinition;
+import com.acooldog.toolbox.route.domain.model.RoutePoint;
+import com.acooldog.toolbox.route.domain.model.RouteSimulationConfig;
+import com.acooldog.toolbox.route.domain.model.SimulationFrame;
 
 import java.util.List;
 

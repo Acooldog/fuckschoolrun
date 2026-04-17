@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
@@ -96,12 +96,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.zcshou.service.ServiceGo;
-import com.zcshou.database.DataBaseHistoryLocation;
-import com.zcshou.database.DataBaseHistorySearch;
-import com.zcshou.utils.ShareUtils;
-import com.zcshou.utils.GoUtils;
-import com.zcshou.utils.MapUtils;
+import com.acooldog.toolbox.service.ServiceGo;
+import com.acooldog.toolbox.database.DataBaseHistoryLocation;
+import com.acooldog.toolbox.database.DataBaseHistorySearch;
+import com.acooldog.toolbox.utils.ShareUtils;
+import com.acooldog.toolbox.utils.GoUtils;
+import com.acooldog.toolbox.utils.MapUtils;
 
 import com.elvishew.xlog.XLog;
 

@@ -1,4 +1,4 @@
-package com.zcshou.gogogo;
+package com.acooldog.toolbox;
 
 import android.app.PendingIntent;
 import android.content.ClipData;
@@ -19,17 +19,17 @@ import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
-import com.zcshou.gogogo.config.SimulationPrefsStore;
-import com.zcshou.gogogo.nfc.data.AndroidNfcPayloadDispatcher;
-import com.zcshou.gogogo.nfc.data.AndroidNfcPayloadReader;
-import com.zcshou.gogogo.nfc.domain.NfcPayload;
-import com.zcshou.gogogo.nfc.domain.NfcPayloadDispatchResult;
-import com.zcshou.gogogo.nfc.domain.NfcPayloadParser;
-import com.zcshou.gogogo.nfc.domain.ReadNfcPayloadUseCase;
-import com.zcshou.gogogo.nfc.domain.SendNfcPayloadUseCase;
-import com.zcshou.gogogo.share.domain.model.SharedNfcEntry;
-import com.zcshou.gogogo.share.presentation.ShareModule;
-import com.zcshou.utils.GoUtils;
+import com.acooldog.toolbox.config.SimulationPrefsStore;
+import com.acooldog.toolbox.nfc.data.AndroidNfcPayloadDispatcher;
+import com.acooldog.toolbox.nfc.data.AndroidNfcPayloadReader;
+import com.acooldog.toolbox.nfc.domain.NfcPayload;
+import com.acooldog.toolbox.nfc.domain.NfcPayloadDispatchResult;
+import com.acooldog.toolbox.nfc.domain.NfcPayloadParser;
+import com.acooldog.toolbox.nfc.domain.ReadNfcPayloadUseCase;
+import com.acooldog.toolbox.nfc.domain.SendNfcPayloadUseCase;
+import com.acooldog.toolbox.share.domain.model.SharedNfcEntry;
+import com.acooldog.toolbox.share.presentation.ShareModule;
+import com.acooldog.toolbox.utils.GoUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

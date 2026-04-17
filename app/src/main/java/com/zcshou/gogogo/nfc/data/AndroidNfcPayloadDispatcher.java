@@ -1,4 +1,4 @@
-package com.zcshou.gogogo.nfc.data;
+package com.acooldog.toolbox.nfc.data;
 
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -9,9 +9,9 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.os.Parcelable;
 
-import com.zcshou.gogogo.nfc.domain.NfcPayload;
-import com.zcshou.gogogo.nfc.domain.NfcPayloadDispatchResult;
-import com.zcshou.gogogo.nfc.domain.NfcPayloadDispatcher;
+import com.acooldog.toolbox.nfc.domain.NfcPayload;
+import com.acooldog.toolbox.nfc.domain.NfcPayloadDispatchResult;
+import com.acooldog.toolbox.nfc.domain.NfcPayloadDispatcher;
 
 public final class AndroidNfcPayloadDispatcher implements NfcPayloadDispatcher {
     @Override

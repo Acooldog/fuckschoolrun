@@ -1,6 +1,6 @@
-package com.zcshou.gogogo.route.domain.usecase;
+package com.acooldog.toolbox.route.domain.usecase;
 
-import com.zcshou.gogogo.route.domain.repository.RouteRepository;
+import com.acooldog.toolbox.route.domain.repository.RouteRepository;
 
 import java.io.IOException;
 
