@@ -14,7 +14,7 @@
 app\build\outputs\apk\debug\SchoolRun_v1.0.0_arm64-v8a_debug.apk
 ```
 
-如果想只校验 Java 编译是否通过：
+如果只想先检查 Java 是否能正常编译：
 
 ```powershell
 .\gradlew.bat :app:compileDebugJavaWithJavac
@@ -39,7 +39,50 @@ app\build\outputs\apk\release\SchoolRun_v1.0.0_arm64-v8a_release.apk
 - `keystore/SchoolRun.jks`
 - 若不存在，则回退到 `keystore/GoGoGo.jks`
 
-## 3. 如何改包名
+## 3. 版本号在哪里修改
+
+版本号在下面这个文件里编辑：
+
+- `app/build.gradle`
+
+当前关键配置是：
+
+```groovy
+defaultConfig {
+    applicationId "com.acooldog.toolbox"
+    minSdkVersion 21
+    targetSdkVersion 32
+    versionCode 10000
+    versionName 'v1.0.0'
+}
+```
+
+说明：
+
+- `versionName` 是用户看到的版本号，比如 `v1.0.0`
+- `versionCode` 是 Android 内部版本号，发新版时通常要递增
+- APK 文件名也会跟着 `versionName` 变化，因为输出命名里用了 `defaultConfig.versionName`
+
+例如你要发布 `v1.0.1`，可以改成：
+
+```groovy
+versionCode 10001
+versionName 'v1.0.1'
+```
+
+改完后建议重新执行：
+
+```powershell
+.\gradlew.bat clean :app:assembleDebug
+```
+
+或者发行版：
+
+```powershell
+.\gradlew.bat clean :app:assembleRelease
+```
+
+## 4. 如何改包名
 
 当前包名是：
 
@@ -47,7 +90,7 @@ app\build\outputs\apk\release\SchoolRun_v1.0.0_arm64-v8a_release.apk
 com.acooldog.toolbox
 ```
 
-### 3.1 修改 Gradle 中的 applicationId
+### 4.1 修改 Gradle 里的 `applicationId`
 
 文件：
 
@@ -59,7 +102,7 @@ com.acooldog.toolbox
 applicationId "com.acooldog.toolbox"
 ```
 
-### 3.2 修改 namespace
+### 4.2 修改 `namespace`
 
 同样在：
 
@@ -71,7 +114,7 @@ applicationId "com.acooldog.toolbox"
 namespace 'com.acooldog.toolbox'
 ```
 
-### 3.3 修改百度地图安全码
+### 4.3 修改百度地图安全码
 
 文件：
 
@@ -84,11 +127,11 @@ namespace 'com.acooldog.toolbox'
 MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
 ```
 
-如果你更换了包名或签名证书，必须同步去百度地图 / 百度 LBS 后台重新绑定 Android AK。
+如果你改了包名或签名证书，还需要去百度地图 / 百度 LBS 后台重新绑定 Android AK。
 
-### 3.4 重新编译
+### 4.4 重新编译
 
-包名改完后建议先执行：
+包名改完后，建议先执行：
 
 ```powershell
 .\gradlew.bat clean :app:assembleDebug
@@ -100,7 +143,7 @@ MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
 .\gradlew.bat clean :app:assembleRelease
 ```
 
-## 4. 说明
+## 5. 说明
 
 - 当前 Android 内部 Java 命名空间已经迁移到 `com.acooldog.toolbox`
-- 若要安装到模拟器，可用 `adb install -r <apk路径>`
+- 如果要安装到模拟器，可使用 `adb install -r <apk路径>`
