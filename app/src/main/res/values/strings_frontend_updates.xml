@@ -18,4 +18,11 @@
     <string name="app_error_agreement_dialog_title">请先确认协议</string>
     <string name="app_error_agreement_dialog_message">继续进入主页前，请先阅读并勾选用户协议与隐私政策。</string>
     <string name="app_error_agreement_dialog_button">我知道了</string>
+    <string name="route_nfc_entry_button">模拟 NFC 进校园跑</string>
+    <string name="route_nfc_setup_title">先配置 NFC 进入参数</string>
+    <string name="route_nfc_setup_message">当前还没有可用的 NFC 配置，请先选择共享配置，或手动输入一次。</string>
+    <string name="route_nfc_download_option">下载共享配置</string>
+    <string name="route_nfc_manual_option">手动输入配置</string>
+    <string name="route_nfc_manual_title">手动输入 NFC 配置</string>
+    <string name="route_nfc_manual_confirm">保存并模拟</string>
 </resources>

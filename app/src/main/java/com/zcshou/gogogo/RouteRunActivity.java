@@ -26,12 +26,17 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.acooldog.toolbox.nfc.data.AndroidNfcPayloadDispatcher;
+import com.acooldog.toolbox.nfc.domain.NfcPayload;
+import com.acooldog.toolbox.nfc.domain.NfcPayloadDispatchResult;
+import com.acooldog.toolbox.nfc.domain.SendNfcPayloadUseCase;
 import com.acooldog.toolbox.config.SimulationPrefsStore;
 import com.acooldog.toolbox.route.domain.model.RouteDefinition;
 import com.acooldog.toolbox.route.domain.model.RoutePoint;
 import com.acooldog.toolbox.route.domain.model.RouteSimulationConfig;
 import com.acooldog.toolbox.route.domain.service.LocationSimulationGateway;
 import com.acooldog.toolbox.route.presentation.RouteRunViewModel;
+import com.acooldog.toolbox.share.domain.model.SharedNfcEntry;
 import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
 import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
 import com.acooldog.toolbox.share.presentation.ShareModule;
@@ -63,6 +68,7 @@ public class RouteRunActivity extends BaseActivity {
     private TextView privacyMaskText;
     private ExecutorService ioExecutor;
     private SimulationPrefsStore prefsStore;
+    private SendNfcPayloadUseCase sendNfcPayloadUseCase;
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -96,13 +102,16 @@ public class RouteRunActivity extends BaseActivity {
         privacyMaskPanel = findViewById(R.id.route_privacy_mask_panel);
         privacyMaskText = findViewById(R.id.route_privacy_mask_text);
         Button loadButton = findViewById(R.id.btn_run_load);
+        Button nfcEntryButton = findViewById(R.id.btn_run_nfc_entry);
         toggleButton = findViewById(R.id.btn_run_toggle);
         ioExecutor = Executors.newSingleThreadExecutor();
         prefsStore = new SimulationPrefsStore(getApplicationContext());
+        sendNfcPayloadUseCase = new SendNfcPayloadUseCase(new AndroidNfcPayloadDispatcher());
 
         restoreSimulationPrefs();
 
         loadButton.setOnClickListener(v -> showLoadOptions());
+        nfcEntryButton.setOnClickListener(v -> simulateCampusRunEntry());
         toggleButton.setOnClickListener(v -> toggleSimulation());
 
         observeViewModel();
@@ -297,6 +306,124 @@ public class RouteRunActivity extends BaseActivity {
                 runOnUiThread(() -> GoUtils.DisplayToast(this, buildDetailedToast(R.string.route_shared_download_failed, exception)));
             }
         });
+    }
+
+    private void simulateCampusRunEntry() {
+        String url = prefsStore.getNfcUrl();
+        String packageName = prefsStore.getNfcPackageName();
+        if (TextUtils.isEmpty(url) || TextUtils.isEmpty(packageName)) {
+            showNfcConfigChoiceDialog();
+            return;
+        }
+        dispatchNfcPayload(new NfcPayload(url, packageName, prefsStore.getNfcSource()));
+    }
+
+    private void showNfcConfigChoiceDialog() {
+        String[] options = {
+                getString(R.string.route_nfc_download_option),
+                getString(R.string.route_nfc_manual_option)
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.route_nfc_setup_title)
+                .setMessage(R.string.route_nfc_setup_message)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        loadSharedNfcEntriesForSimulation();
+                    } else {
+                        showManualNfcInputDialog();
+                    }
+                })
+                .setNegativeButton(R.string.nfc_share_cancel, null)
+                .show();
+    }
+
+    private void loadSharedNfcEntriesForSimulation() {
+        if (!GoUtils.isNetworkAvailable(this)) {
+            GoUtils.DisplayToast(this, getString(R.string.app_error_network));
+            return;
+        }
+        GoUtils.DisplayToast(this, getString(R.string.nfc_download_loading));
+        ioExecutor.execute(() -> {
+            try {
+                List<SharedNfcEntry> entries = ShareModule.from(getApplicationContext())
+                        .shareApiClient()
+                        .getSharedNfcEntries();
+                runOnUiThread(() -> showSharedNfcPickerForSimulation(entries));
+            } catch (Exception exception) {
+                runOnUiThread(() -> GoUtils.DisplayToast(this, buildDetailedToast(R.string.nfc_download_failed, exception)));
+            }
+        });
+    }
+
+    private void showSharedNfcPickerForSimulation(List<SharedNfcEntry> entries) {
+        if (entries == null || entries.isEmpty()) {
+            GoUtils.DisplayToast(this, getString(R.string.nfc_download_empty));
+            return;
+        }
+
+        CharSequence[] items = new CharSequence[entries.size()];
+        for (int index = 0; index < entries.size(); index++) {
+            SharedNfcEntry entry = entries.get(index);
+            items[index] = entry.getName() + " · " + entry.getPackageName();
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.nfc_download_pick_title)
+                .setItems(items, (dialog, which) -> applyNfcConfigAndSimulate(entries.get(which)))
+                .show();
+    }
+
+    private void showManualNfcInputDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_nfc_manual_input, null);
+        EditText urlEdit = dialogView.findViewById(R.id.nfc_manual_url_input);
+        EditText packageEdit = dialogView.findViewById(R.id.nfc_manual_package_input);
+        urlEdit.setText(prefsStore.getNfcUrl());
+        packageEdit.setText(prefsStore.getNfcPackageName());
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.route_nfc_manual_title)
+                .setView(dialogView)
+                .setPositiveButton(R.string.route_nfc_manual_confirm, null)
+                .setNegativeButton(R.string.nfc_share_cancel, null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String url = urlEdit.getText() == null ? "" : urlEdit.getText().toString().trim();
+            String packageName = packageEdit.getText() == null ? "" : packageEdit.getText().toString().trim();
+            if (TextUtils.isEmpty(url)) {
+                GoUtils.DisplayToast(this, getString(R.string.nfc_mock_need_url));
+                return;
+            }
+            if (TextUtils.isEmpty(packageName)) {
+                GoUtils.DisplayToast(this, getString(R.string.nfc_mock_need_package));
+                return;
+            }
+            dialog.dismiss();
+            applyNfcConfigAndSimulate(new SharedNfcEntry("", "", url, packageName, "manual", System.currentTimeMillis()));
+        }));
+        dialog.show();
+    }
+
+    private void applyNfcConfigAndSimulate(SharedNfcEntry entry) {
+        String source = TextUtils.isEmpty(entry.getSource()) ? "manual" : entry.getSource();
+        prefsStore.saveNfcConfig(entry.getUrl(), entry.getPackageName(), source);
+        dispatchNfcPayload(new NfcPayload(entry.getUrl(), entry.getPackageName(), source));
+    }
+
+    private void dispatchNfcPayload(NfcPayload payload) {
+        NfcPayloadDispatchResult result = sendNfcPayloadUseCase.send(this, payload);
+        if (result.getStatus() == NfcPayloadDispatchResult.Status.NDEF_SENT) {
+            GoUtils.DisplayToast(this, getString(R.string.nfc_mock_sent));
+            return;
+        }
+        if (result.getStatus() == NfcPayloadDispatchResult.Status.FALLBACK_VIEW_SENT) {
+            GoUtils.DisplayToast(this, getString(R.string.nfc_mock_opened_browser));
+            return;
+        }
+        String detail = result.getDetail();
+        GoUtils.DisplayToast(
+                this,
+                getString(R.string.nfc_mock_failed) + (TextUtils.isEmpty(detail) ? "" : detail)
+        );
     }
 
     private void toggleSimulation() {
