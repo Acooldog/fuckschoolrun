@@ -25,6 +25,7 @@ import okhttp3.OkHttpClient;
 
 public class HomeActivity extends BaseActivity {
     private static final String PREF_IGNORED_RELEASE = "pref_ignored_gitee_release";
+    private static final String PREF_LAST_AUTO_CHECK_VERSION = "pref_last_auto_check_version";
 
     private ExecutorService ioExecutor;
     private SharedPreferences sharedPreferences;
@@ -43,7 +44,7 @@ public class HomeActivity extends BaseActivity {
         okHttpClient = new OkHttpClient();
 
         bindNavigation();
-        checkGiteeReleaseUpdate();
+        checkGiteeReleaseUpdate(false);
     }
 
     @Override
@@ -57,6 +58,7 @@ public class HomeActivity extends BaseActivity {
     private void bindNavigation() {
         findViewById(R.id.card_operation_tips).setOnClickListener(v -> open(OperationTipsActivity.class));
         findViewById(R.id.card_nfc_tools).setOnClickListener(v -> open(NfcToolsActivity.class));
+        findViewById(R.id.card_update_check).setOnClickListener(v -> checkGiteeReleaseUpdate(true));
         findViewById(R.id.card_route_run).setOnClickListener(v -> open(RouteRunActivity.class));
         findViewById(R.id.card_route_create).setOnClickListener(v -> open(RouteCreateActivity.class));
         findViewById(R.id.card_settings).setOnClickListener(v -> open(SettingsActivity.class));
@@ -80,31 +82,55 @@ public class HomeActivity extends BaseActivity {
         }
     }
 
-    private void checkGiteeReleaseUpdate() {
-        if (!GoUtils.isNetworkAvailable(this)) {
+    private void checkGiteeReleaseUpdate(boolean manual) {
+        String currentVersion = GoUtils.getVersionName(this);
+        if (currentVersion == null) {
             return;
+        }
+        if (!manual) {
+            String checkedVersion = sharedPreferences.getString(PREF_LAST_AUTO_CHECK_VERSION, "");
+            if (currentVersion.equals(checkedVersion)) {
+                return;
+            }
+        }
+        if (!GoUtils.isNetworkAvailable(this)) {
+            if (manual) {
+                GoUtils.DisplayToast(this, getString(R.string.app_error_network));
+            }
+            return;
+        }
+        if (manual) {
+            GoUtils.DisplayToast(this, getString(R.string.update_checking));
         }
         ioExecutor.execute(() -> {
             try {
-                GiteeReleaseInfo releaseInfo = new GiteeReleaseChecker(okHttpClient).fetchLatestRelease();
+                GiteeReleaseChecker checker = new GiteeReleaseChecker(okHttpClient);
+                GiteeReleaseInfo releaseInfo = checker.fetchLatestRelease();
+                sharedPreferences.edit().putString(PREF_LAST_AUTO_CHECK_VERSION, currentVersion).apply();
                 if (releaseInfo == null) {
-                    return;
-                }
-
-                String currentVersion = GoUtils.getVersionName(this);
-                if (currentVersion == null) {
+                    if (manual) {
+                        runOnUiThread(() -> GoUtils.DisplayToast(this, getString(R.string.update_check_failed)));
+                    }
                     return;
                 }
 
                 String ignoredTag = sharedPreferences.getString(PREF_IGNORED_RELEASE, "");
-                boolean newer = new GiteeReleaseChecker(okHttpClient).isNewerThan(releaseInfo.getTagName(), currentVersion);
-                if (!newer || releaseInfo.getTagName().equals(ignoredTag)) {
+                boolean newer = checker.isNewerThan(releaseInfo.getTagName(), currentVersion);
+                if (!newer) {
+                    if (manual) {
+                        runOnUiThread(() -> GoUtils.DisplayToast(this, getString(R.string.update_last)));
+                    }
+                    return;
+                }
+                if (!manual && releaseInfo.getTagName().equals(ignoredTag)) {
                     return;
                 }
 
                 runOnUiThread(() -> showReleaseUpdateDialog(releaseInfo));
-            } catch (Exception ignored) {
-                // Ignore update check failures silently.
+            } catch (Exception exception) {
+                if (manual) {
+                    runOnUiThread(() -> GoUtils.DisplayToast(this, buildDetailedToast(R.string.update_check_failed, exception)));
+                }
             }
         });
     }
@@ -130,5 +156,13 @@ public class HomeActivity extends BaseActivity {
                 .setNegativeButton(R.string.update_dialog_acknowledged, (dialog, which) ->
                         sharedPreferences.edit().putString(PREF_IGNORED_RELEASE, releaseInfo.getTagName()).apply())
                 .show();
+    }
+
+    private String buildDetailedToast(int prefixResId, Exception exception) {
+        String detail = exception == null || exception.getMessage() == null ? "" : exception.getMessage().trim();
+        if (detail.isEmpty()) {
+            return getString(prefixResId);
+        }
+        return getString(prefixResId) + " " + detail;
     }
 }
