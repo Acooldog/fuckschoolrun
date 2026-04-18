@@ -126,7 +126,7 @@ public class WelcomeActivity extends AppCompatActivity {
 
     private void startMainActivity() {
         if (!checkBox.isChecked()) {
-            GoUtils.DisplayToast(this, getResources().getString(R.string.app_error_agreement));
+            showAgreementRequiredDialog();
             return;
         }
 
@@ -261,7 +261,7 @@ public class WelcomeActivity extends AppCompatActivity {
         checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 if (!mPrivacy || !mAgreement) {
-                    GoUtils.DisplayToast(this, getResources().getString(R.string.app_error_read));
+                    showAgreementRequiredDialog();
                     checkBox.setChecked(false);
                 }
             } else {
@@ -332,6 +332,14 @@ public class WelcomeActivity extends AppCompatActivity {
                     }
                 })
                 .setPositiveButton(R.string.app_entry_notice_known, null)
+                .show();
+    }
+
+    private void showAgreementRequiredDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.app_error_agreement_dialog_title)
+                .setMessage(R.string.app_error_agreement_dialog_message)
+                .setPositiveButton(R.string.app_error_agreement_dialog_button, null)
                 .show();
     }
 }

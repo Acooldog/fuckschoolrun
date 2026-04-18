@@ -173,14 +173,12 @@ public class RouteCreateActivity extends BaseActivity {
             @Override
             public void onGetPoiResult(PoiResult poiResult) {
                 if (poiResult == null || poiResult.getAllPoi() == null) {
-                    GoUtils.DisplayToast(RouteCreateActivity.this, getString(R.string.route_search_empty));
                     searchResultContainer.setVisibility(View.GONE);
                     return;
                 }
 
                 List<Map<String, Object>> data = getPoiResultList(poiResult.getAllPoi());
                 if (data.isEmpty()) {
-                    GoUtils.DisplayToast(RouteCreateActivity.this, getString(R.string.route_search_empty));
                     searchResultContainer.setVisibility(View.GONE);
                     return;
                 }
@@ -218,7 +216,6 @@ public class RouteCreateActivity extends BaseActivity {
             LatLng target = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
             baiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLngZoom(target, 18f));
             searchResultContainer.setVisibility(View.GONE);
-            GoUtils.DisplayToast(this, getString(R.string.route_search_use_result));
         });
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -255,8 +252,8 @@ public class RouteCreateActivity extends BaseActivity {
                             .cityLimit(false)
                             .isReturnAddr(true)
             );
-        } catch (Exception exception) {
-            GoUtils.DisplayToast(this, getString(R.string.app_error_search));
+        } catch (Exception ignored) {
+            searchResultContainer.setVisibility(View.GONE);
         }
     }
 

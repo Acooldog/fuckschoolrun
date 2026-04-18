@@ -15,4 +15,7 @@
     <string name="app_entry_notice_copy_group">复制群号</string>
     <string name="app_entry_notice_known">我知道了</string>
     <string name="app_entry_notice_group_copied">QQ群号已复制</string>
+    <string name="app_error_agreement_dialog_title">请先确认协议</string>
+    <string name="app_error_agreement_dialog_message">继续进入主页前，请先阅读并勾选用户协议与隐私政策。</string>
+    <string name="app_error_agreement_dialog_button">我知道了</string>
 </resources>
