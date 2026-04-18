@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.os.Process;
 import android.os.SystemClock;
 
@@ -50,6 +51,7 @@ public class ServiceGo extends Service {
     private LocationManager mLocManager;
     private HandlerThread mLocHandlerThread;
     private Handler mLocHandler;
+    private PowerManager.WakeLock mWakeLock;
 
     private final ServiceGoBinder mBinder = new ServiceGoBinder();
 
@@ -71,6 +73,7 @@ public class ServiceGo extends Service {
         addTestProviderGPS();
 
         initGoLocation();
+        initWakeLock();
         initNotification();
     }
 
@@ -81,7 +84,21 @@ public class ServiceGo extends Service {
             mCurLat = intent.getDoubleExtra(MainActivity.LAT_MSG_ID, DEFAULT_LAT);
             mCurAlt = intent.getDoubleExtra(MainActivity.ALT_MSG_ID, DEFAULT_ALT);
         }
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        Intent restartIntent = new Intent(getApplicationContext(), ServiceGo.class);
+        restartIntent.putExtra(MainActivity.LNG_MSG_ID, mCurLng);
+        restartIntent.putExtra(MainActivity.LAT_MSG_ID, mCurLat);
+        restartIntent.putExtra(MainActivity.ALT_MSG_ID, mCurAlt);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(restartIntent);
+        } else {
+            startService(restartIntent);
+        }
+        super.onTaskRemoved(rootIntent);
     }
 
     @Override
@@ -98,7 +115,32 @@ public class ServiceGo extends Service {
         removeTestProviderGPS();
 
         stopForeground(STOP_FOREGROUND_REMOVE);
+        releaseWakeLock();
         super.onDestroy();
+    }
+
+    private void initWakeLock() {
+        try {
+            PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+            if (powerManager == null) {
+                return;
+            }
+            mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getPackageName() + ":MockLocationWakeLock");
+            mWakeLock.setReferenceCounted(false);
+            mWakeLock.acquire();
+        } catch (Exception exception) {
+            XLog.e("SERVICEGO: ERROR - initWakeLock");
+        }
+    }
+
+    private void releaseWakeLock() {
+        try {
+            if (mWakeLock != null && mWakeLock.isHeld()) {
+                mWakeLock.release();
+            }
+        } catch (Exception exception) {
+            XLog.e("SERVICEGO: ERROR - releaseWakeLock");
+        }
     }
 
     private void initNotification() {
