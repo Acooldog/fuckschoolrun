@@ -5,6 +5,7 @@
 <div align="center">
 
 [![GitHub stars](https://img.shields.io/github/stars/Acooldog/fuckschoolrun?style=for-the-badge&logo=github)](https://github.com/Acooldog/fuckschoolrun/stargazers)
+[![GitHub downloads](https://img.shields.io/github/downloads/Acooldog/fuckschoolrun/total?style=for-the-badge)](https://github.com/Acooldog/fuckschoolrun/releases)
 [![GPLv3 License](https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0.html)
 
 </div>
@@ -12,7 +13,6 @@
 # 牢大肘击校园跑
 
 一个独立维护的 Android 虚拟定位、路线模拟与 NFC 工具项目，面向 Android 8.0+。
-如果不会使用，[查看教程](https://www.bilibili.com/video/BV1eqd7BjEC6)
 
 ## 当前能力
 
@@ -20,14 +20,15 @@
 - 路线模拟，支持记住上次速度、循环次数和最近路线
 - NFC 读取、模拟、共享与下载，支持记住上次 URL 与包名
 - 后端管理面板，可修改和删除用户上传的共享数据
+- 检测 Gitee 最新版本，显示更新日志和下载提示
 
 ## 操作说明
 
-1. 首页先看“操作提示”卡片，按步骤进入功能页。
-2. 绘制路线时可以先搜索地点，再点击地图绘制路线。
-3. 路线模拟默认值为 `15m/s`、循环 `100`，并会自动记住你上次配置。
-4. NFC 工具会自动记住你上次输入的 URL、包名和来源。
-5. 如果学校有步频限制，可以在设置里面调整
+1. 首页点击“操作提示”卡片，可以查看完整教程。
+2. 绘制路线时可先搜索地点，再点击地图绘制路线。
+3. 路线模拟默认值为 `15m/s`、循环 `100`，并会自动记住上次配置。
+4. NFC 工具会自动记住上次输入的 URL、包名和来源。
+5. 如果学校有步频限制，可以在设置里面调整。
 
 ## 本地配置
 
@@ -45,6 +46,10 @@ SHARE_API_BASE_URL=http://your-server-host:8080/
 ```text
 com.acooldog.toolbox
 ```
+
+## 构建文档
+
+- [docs/build-guide.md](./docs/build-guide.md)
 
 ## 免责声明
 
@@ -65,8 +70,3 @@ com.acooldog.toolbox
 本项目已作为独立项目维护，但在 README 中保留来源说明：
 
 - 使用并演化自上游开源项目：`https://github.com/ZCShou/GoGoGo`
-
-## 文档
-
-- 后端接口文档：[docs/shared-backend-api.md](./docs/shared-backend-api.md)
-- 地图配置文档：[docs/map-config.md](./docs/map-config.md)

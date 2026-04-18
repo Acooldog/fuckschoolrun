@@ -1,24 +1,22 @@
 # SchoolRun
 
-An independently maintained Android mock-location, route and NFC utility project for Android 8.0+.
+[![GitHub stars](https://img.shields.io/github/stars/Acooldog/fuckschoolrun?style=for-the-badge&logo=github)](https://github.com/Acooldog/fuckschoolrun/stargazers)
+[![GitHub downloads](https://img.shields.io/github/downloads/Acooldog/fuckschoolrun/total?style=for-the-badge)](https://github.com/Acooldog/fuckschoolrun/releases)
+[![GPLv3 License](https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0.html)
 
-## Current Repository
-
-- Repository: `https://github.com/Acooldog/fuckschoolrun`
-- Maintainer: `Acooldog`
-- Status: independently maintained
+An independently maintained Android mock-location, route simulation and NFC utility project for Android 8.0+.
 
 ## Features
 
-- Mock location and joystick movement
-- Route drawing, local save and import
-- Shared route upload and download
-- Privacy route simulation with white map masking
-- NFC read, simulate, share and download
+- Route drawing, place search, local save, share upload and download
+- Route simulation with remembered speed, loop count and recent route
+- NFC read, simulate, share and download with remembered values
+- Backend admin panel for shared content management
+- Gitee release checking with update log dialog
 
 ## Local Configuration
 
-Put local secrets in `local.properties` and do not commit real keys.
+Put local secrets in `local.properties`:
 
 ```properties
 sdk.dir=C\:\\path\\to\\Android\\Sdk
@@ -27,48 +25,30 @@ MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
 SHARE_API_BASE_URL=http://your-server-host:8080/
 ```
 
-Important:
+Current package name:
 
-- The APK `applicationId` is now `com.acooldog.toolbox`
-- If your Baidu Android AK was bound to the old package name, you need to rebind or recreate it
-- Update `MAPS_SAFE_CODE` if your signing certificate changes
-
-## Build
-
-```bash
-./gradlew :app:assembleDebug
+```text
+com.acooldog.toolbox
 ```
 
-On Windows:
+## Build Guide
 
-```powershell
-.\gradlew.bat :app:assembleDebug
-```
+- [docs/build-guide.md](./docs/build-guide.md)
 
-Output files:
+## Disclaimer
 
-- `SchoolRun_<version>_arm64-v8a_debug.apk`
-- `SchoolRun_<version>_arm64-v8a_release.apk`
+This project is provided only for lawful development, debugging, learning and research.
 
-## Backend Integration
+- Do not use it for cheating, bypassing platform rules, impersonating third-party apps or any illegal purpose.
+- Users are solely responsible for the consequences of their own usage.
+- Maintainers are not liable for direct or indirect loss caused by misuse.
 
-- [docs/shared-backend-api.md](./docs/shared-backend-api.md)
-- [docs/map-config.md](./docs/map-config.md)
-
-## Independence Notes
-
-This repository has been separated at the product and distribution level:
-
-- repo-facing docs now point to the current repository
-- APK package identity uses the current project application id
-- output artifact names use the current project name
-
-The internal Java package layout is still kept as-is for stability. That does not affect APK identity or independent distribution.
-
-## License and Upstream Origin
-
-This repository includes code evolved from an upstream open-source project and continues to comply with:
+## License
 
 - `GPL-3.0-only`
 
-If you redistribute or modify this project, keep the required license and attribution notices.
+## Upstream Notice
+
+This project is maintained independently, while still acknowledging upstream origin:
+
+- Based on and evolved from: `https://github.com/ZCShou/GoGoGo`

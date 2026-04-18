@@ -1,0 +1,8 @@
+<resources>
+    <string name="update_dialog_title">发现新版本</string>
+    <string name="update_dialog_version">最新版本：%1$s</string>
+    <string name="update_dialog_changelog">更新日志</string>
+    <string name="update_dialog_download">跳转下载</string>
+    <string name="update_dialog_acknowledged">我知道了</string>
+    <string name="update_dialog_empty_log">暂无更新日志说明。</string>
+</resources>

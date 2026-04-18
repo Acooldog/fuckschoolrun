@@ -19,6 +19,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="buttonStyle">@style/AppTheme.Button</item>
+        <item name="android:windowBackground">@color/surfaceBackground</item>
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
+    android:background="@color/surfaceBackground"
     android:orientation="vertical">
 
     <com.google.android.material.appbar.MaterialToolbar
@@ -39,6 +39,8 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
+                app:strokeColor="@color/surfaceStroke"
+                app:strokeWidth="1dp"
                 app:cardCornerRadius="18dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -84,6 +86,8 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
+                app:strokeColor="@color/surfaceStroke"
+                app:strokeWidth="1dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -134,6 +138,8 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
+                app:strokeColor="@color/surfaceStroke"
+                app:strokeWidth="1dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -184,6 +190,8 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
+                app:strokeColor="@color/surfaceStroke"
+                app:strokeWidth="1dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -234,6 +242,8 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
+                app:strokeColor="@color/surfaceStroke"
+                app:strokeWidth="1dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
@@ -284,6 +294,8 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
+                app:strokeColor="@color/surfaceStroke"
+                app:strokeWidth="1dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:cardUseCompatPadding="true">
