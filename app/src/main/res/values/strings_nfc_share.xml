@@ -4,8 +4,11 @@
     <string name="home_nfc_share_action">共享 NFC</string>
     <string name="home_nfc_download_action">下载共享 NFC</string>
     <string name="nfc_shared_hint">点击“共享 NFC”可上传当前填写或读取到的 NFC 数据；点击“下载共享 NFC”可加载其他用户分享的公开数据。</string>
+    <string name="nfc_local_hint">本地配置可保存为常用模板，后续可以直接载入或选择后共享。</string>
     <string name="nfc_share_button">共享 NFC</string>
     <string name="nfc_download_button">下载共享 NFC</string>
+    <string name="nfc_save_button">保存配置</string>
+    <string name="nfc_load_local_button">载入本地配置</string>
     <string name="nfc_share_dialog_title">共享 NFC</string>
     <string name="nfc_share_name_hint">共享 NFC 名称</string>
     <string name="nfc_share_url_hint">共享跳转 URL</string>
@@ -21,4 +24,16 @@
     <string name="nfc_download_failed">下载共享 NFC 失败：</string>
     <string name="nfc_download_pick_title">选择共享 NFC</string>
     <string name="nfc_download_loaded">共享 NFC 已加载到当前页面。</string>
+    <string name="nfc_save_dialog_title">保存 NFC 配置</string>
+    <string name="nfc_save_name_hint">本地配置名称</string>
+    <string name="nfc_save_confirm">保存配置</string>
+    <string name="nfc_save_need_name">本地配置名称不能为空。</string>
+    <string name="nfc_save_success">NFC 配置已保存到本地。</string>
+    <string name="nfc_local_empty">当前还没有本地保存的 NFC 配置。</string>
+    <string name="nfc_local_pick_title">选择本地 NFC 配置</string>
+    <string name="nfc_local_loaded">本地 NFC 配置已载入。</string>
+    <string name="nfc_share_source_title">选择共享来源</string>
+    <string name="nfc_share_manual_option">手动输入当前配置</string>
+    <string name="nfc_share_saved_option">从本地已保存配置选择</string>
+    <string name="nfc_share_local_pick_title">选择要共享的本地 NFC 配置</string>
 </resources>

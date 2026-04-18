@@ -3,6 +3,12 @@ package com.acooldog.toolbox.config;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public final class SimulationPrefsStore {
     private static final String PREFS_NAME = "simulation_prefs_store";
     private static final String KEY_ROUTE_SPEED = "route_speed";
@@ -12,6 +18,7 @@ public final class SimulationPrefsStore {
     private static final String KEY_NFC_URL = "nfc_url";
     private static final String KEY_NFC_PACKAGE = "nfc_package";
     private static final String KEY_NFC_SOURCE = "nfc_source";
+    private static final String KEY_NFC_SAVED_CONFIGS = "nfc_saved_configs";
 
     private final SharedPreferences preferences;
 
@@ -72,7 +79,78 @@ public final class SimulationPrefsStore {
                 .apply();
     }
 
+    public List<SavedNfcConfig> getSavedNfcConfigs() {
+        List<SavedNfcConfig> configs = new ArrayList<>();
+        String raw = preferences.getString(KEY_NFC_SAVED_CONFIGS, "[]");
+        try {
+            JSONArray array = new JSONArray(raw);
+            for (int index = 0; index < array.length(); index++) {
+                JSONObject item = array.optJSONObject(index);
+                if (item == null) {
+                    continue;
+                }
+                SavedNfcConfig config = new SavedNfcConfig(
+                        item.optString("name", ""),
+                        item.optString("url", ""),
+                        item.optString("packageName", ""),
+                        item.optString("source", "manual")
+                );
+                if (config.isComplete()) {
+                    configs.add(config);
+                }
+            }
+        } catch (Exception ignored) {
+            // Ignore invalid cached data and treat as empty.
+        }
+        return configs;
+    }
+
+    public void saveSavedNfcConfig(SavedNfcConfig config) {
+        if (config == null || !config.isComplete()) {
+            return;
+        }
+        List<SavedNfcConfig> configs = getSavedNfcConfigs();
+        boolean replaced = false;
+        for (int index = 0; index < configs.size(); index++) {
+            if (configs.get(index).getName().equalsIgnoreCase(config.getName())) {
+                configs.set(index, config);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            configs.add(0, config);
+        }
+        persistSavedNfcConfigs(configs);
+    }
+
+    private void persistSavedNfcConfigs(List<SavedNfcConfig> configs) {
+        JSONArray array = new JSONArray();
+        if (configs != null) {
+            for (SavedNfcConfig config : configs) {
+                if (config == null || !config.isComplete()) {
+                    continue;
+                }
+                JSONObject item = new JSONObject();
+                try {
+                    item.put("name", config.getName());
+                    item.put("url", config.getUrl());
+                    item.put("packageName", config.getPackageName());
+                    item.put("source", normalize(config.getSource(), "manual"));
+                    array.put(item);
+                } catch (Exception ignored) {
+                    // Skip malformed item.
+                }
+            }
+        }
+        preferences.edit().putString(KEY_NFC_SAVED_CONFIGS, array.toString()).apply();
+    }
+
     private String normalize(String value, String fallback) {
-        return value == null ? fallback : value.trim();
+        if (value == null) {
+            return fallback;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? fallback : trimmed;
     }
 }
