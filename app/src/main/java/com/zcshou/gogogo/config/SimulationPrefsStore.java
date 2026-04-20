@@ -10,8 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SimulationPrefsStore {
+    public static final String ROUTE_MODE_SPEED = "speed";
+    public static final String ROUTE_MODE_CADENCE = "cadence";
+
     private static final String PREFS_NAME = "simulation_prefs_store";
+    private static final String KEY_ROUTE_MODE = "route_mode";
     private static final String KEY_ROUTE_SPEED = "route_speed";
+    private static final String KEY_ROUTE_CADENCE = "route_cadence";
     private static final String KEY_ROUTE_LOOP_COUNT = "route_loop_count";
     private static final String KEY_ROUTE_SPEED_FLOAT = "route_speed_float";
     private static final String KEY_ROUTE_LAST_ID = "route_last_id";
@@ -34,12 +39,21 @@ public final class SimulationPrefsStore {
         return value;
     }
 
+    public String getRouteMode() {
+        String value = preferences.getString(KEY_ROUTE_MODE, ROUTE_MODE_SPEED);
+        return ROUTE_MODE_CADENCE.equals(value) ? ROUTE_MODE_CADENCE : ROUTE_MODE_SPEED;
+    }
+
     public String getRouteLoopCount() {
         String value = preferences.getString(KEY_ROUTE_LOOP_COUNT, "100");
         if ("10".equals(value)) {
             return "100";
         }
         return value;
+    }
+
+    public String getRouteCadence() {
+        return preferences.getString(KEY_ROUTE_CADENCE, "");
     }
 
     public boolean isRouteSpeedFloat() {
@@ -50,9 +64,11 @@ public final class SimulationPrefsStore {
         return preferences.getString(KEY_ROUTE_LAST_ID, "");
     }
 
-    public void saveRouteConfig(String speed, String loopCount, boolean speedFloat, String routeId) {
+    public void saveRouteConfig(String routeMode, String speed, String cadence, String loopCount, boolean speedFloat, String routeId) {
         preferences.edit()
+                .putString(KEY_ROUTE_MODE, normalizeRouteMode(routeMode))
                 .putString(KEY_ROUTE_SPEED, normalize(speed, "15"))
+                .putString(KEY_ROUTE_CADENCE, normalize(cadence, ""))
                 .putString(KEY_ROUTE_LOOP_COUNT, normalize(loopCount, "100"))
                 .putBoolean(KEY_ROUTE_SPEED_FLOAT, speedFloat)
                 .putString(KEY_ROUTE_LAST_ID, normalize(routeId, ""))
@@ -152,5 +168,9 @@ public final class SimulationPrefsStore {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? fallback : trimmed;
+    }
+
+    private String normalizeRouteMode(String routeMode) {
+        return ROUTE_MODE_CADENCE.equals(routeMode) ? ROUTE_MODE_CADENCE : ROUTE_MODE_SPEED;
     }
 }

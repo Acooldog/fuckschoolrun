@@ -58,11 +58,32 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="@string/route_mode_label" />
+
+            <Spinner
+                android:id="@+id/spinner_run_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="120dp"
+                android:spinnerMode="dropdown" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_run_speed_control"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="@string/route_speed_label" />
 
             <EditText
                 android:id="@+id/et_run_speed"
-                android:layout_width="40dp"
+                android:layout_width="48dp"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="numberDecimal"
@@ -72,10 +93,42 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/route_speed_unit" />
+        </LinearLayout>
 
-            <View
-                android:layout_width="10dp"
-                android:layout_height="1dp" />
+        <LinearLayout
+            android:id="@+id/layout_run_cadence_control"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/route_cadence_label" />
+
+            <EditText
+                android:id="@+id/et_run_cadence"
+                android:layout_width="56dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:hint="@string/route_cadence_hint"
+                android:inputType="numberDecimal"
+                android:text="" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/route_cadence_unit" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -91,7 +144,7 @@
                 android:text="100" />
 
             <View
-                android:layout_width="10dp"
+                android:layout_width="12dp"
                 android:layout_height="1dp" />
 
             <CheckBox

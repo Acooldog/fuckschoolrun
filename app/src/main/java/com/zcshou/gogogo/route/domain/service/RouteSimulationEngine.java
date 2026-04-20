@@ -8,8 +8,11 @@ import com.acooldog.toolbox.route.domain.model.SimulationFrame;
 import java.util.List;
 
 public final class RouteSimulationEngine {
+    private static final double ESTIMATED_STEP_LENGTH_METERS = 0.8d;
+
     private final RouteDefinition routeDefinition;
     private final RouteSimulationConfig config;
+    private final double routeDistanceMeters;
     private int currentSegmentIndex;
     private double progressInSegmentMeters;
     private int completedLoops;
@@ -21,13 +24,15 @@ public final class RouteSimulationEngine {
         }
         this.routeDefinition = routeDefinition;
         this.config = config;
+        this.routeDistanceMeters = calculateRouteDistanceMeters(routeDefinition.getPoints());
     }
 
     public SimulationFrame next(double speedMultiplier) {
         List<RoutePoint> points = routeDefinition.getPoints();
         RoutePoint currentPoint = points.get(currentSegmentIndex);
         RoutePoint nextPoint = points.get(currentSegmentIndex + 1);
-        double distanceStep = config.getSpeedMetersPerSecond() * speedMultiplier * (config.getTickMillis() / 1000.0d);
+        double resolvedSpeed = resolveSpeedMetersPerSecond(speedMultiplier);
+        double distanceStep = resolvedSpeed * (config.getTickMillis() / 1000.0d);
 
         while (distanceStep >= 0 && !finished) {
             double segmentDistance = distanceMeters(currentPoint, nextPoint);
@@ -49,7 +54,7 @@ public final class RouteSimulationEngine {
                 return new SimulationFrame(
                         interpolatedPoint,
                         bearingDegrees(currentPoint, nextPoint),
-                        (float) (config.getSpeedMetersPerSecond() * speedMultiplier),
+                        (float) resolvedSpeed,
                         false,
                         completedLoops
                 );
@@ -69,6 +74,29 @@ public final class RouteSimulationEngine {
 
     public boolean isFinished() {
         return finished;
+    }
+
+    private double resolveSpeedMetersPerSecond(double speedMultiplier) {
+        double baseSpeed = config.getMode() == RouteSimulationConfig.Mode.CADENCE
+                ? resolveCadenceSpeedMetersPerSecond()
+                : config.getSpeedMetersPerSecond();
+        return baseSpeed * speedMultiplier;
+    }
+
+    private double resolveCadenceSpeedMetersPerSecond() {
+        double totalDistanceMeters = routeDistanceMeters * config.getLoopCount();
+        if (totalDistanceMeters <= 0d) {
+            return 0d;
+        }
+
+        // Average cadence = total steps / total duration(minutes).
+        // Route simulation has no stride input, so total steps are estimated from distance and a fixed step length.
+        double totalSteps = totalDistanceMeters / ESTIMATED_STEP_LENGTH_METERS;
+        double totalDurationMinutes = totalSteps / config.getCadenceStepsPerMinute();
+        if (totalDurationMinutes <= 0d) {
+            return 0d;
+        }
+        return totalDistanceMeters / (totalDurationMinutes * 60.0d);
     }
 
     private void advanceSegment(List<RoutePoint> points) {
@@ -97,6 +125,14 @@ public final class RouteSimulationEngine {
 
     private double lerp(double start, double end, double ratio) {
         return start + ((end - start) * ratio);
+    }
+
+    private double calculateRouteDistanceMeters(List<RoutePoint> points) {
+        double totalDistance = 0d;
+        for (int index = 0; index < points.size() - 1; index++) {
+            totalDistance += distanceMeters(points.get(index), points.get(index + 1));
+        }
+        return totalDistance;
     }
 
     private double distanceMeters(RoutePoint start, RoutePoint end) {

@@ -150,8 +150,18 @@
     <string name="route_no_data_message">暂无路线文件
 请点击右下角按钮导入</string>
     <string name="route_current_none">当前路线: 未选择</string>
+    <string name="route_mode_label">模拟方式:</string>
     <string name="route_speed_label">速度:</string>
     <string name="route_speed_unit">m/s</string>
+    <string name="route_cadence_label">步频:</string>
+    <string name="route_cadence_unit">步/分</string>
+    <string name="route_cadence_hint">180</string>
+    <string name="route_mode_speed">速度</string>
+    <string name="route_mode_cadence">步频</string>
+    <string-array name="route_mode_options">
+        <item>@string/route_mode_speed</item>
+        <item>@string/route_mode_cadence</item>
+    </string-array>
     <string name="route_loop_label">循环:</string>
     <string name="route_speed_float">速度浮动</string>
     <string name="route_pick_button">选路线</string>
@@ -163,7 +173,7 @@
     <string name="home_title">牢大肘击校园跑</string>
     <string name="home_subtitle">位置模拟、路线绘制、NFC NDEF 工具集中入口</string>
     <string name="home_route_run">路线模拟</string>
-    <string name="home_route_run_summary">选择路线文件后按速度参数模拟移动。</string>
+    <string name="home_route_run_summary">选择路线文件后按所选速度或步频模拟移动。</string>
     <string name="home_route_create">绘制路线</string>
     <string name="home_route_create_summary">打开地图点选路径，并保存为可复用路线。</string>
     <string name="home_settings_summary">调整速度、随机偏移、日志和项目链接。</string>

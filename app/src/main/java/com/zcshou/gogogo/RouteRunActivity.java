@@ -7,9 +7,12 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -56,7 +59,11 @@ public class RouteRunActivity extends BaseActivity {
     private MapView mapView;
     private BaiduMap baiduMap;
     private TextView currentRouteView;
+    private Spinner simulationModeSpinner;
+    private View speedControlLayout;
+    private View cadenceControlLayout;
     private EditText speedInput;
+    private EditText cadenceInput;
     private EditText loopInput;
     private CheckBox speedFloatCheckBox;
     private Button toggleButton;
@@ -64,6 +71,7 @@ public class RouteRunActivity extends BaseActivity {
     private ServiceGo.ServiceGoBinder serviceBinder;
     private boolean bound;
     private boolean mockLocationPromptShown;
+    private boolean restoringSimulationPrefs;
     private View privacyMaskPanel;
     private TextView privacyMaskText;
     private ExecutorService ioExecutor;
@@ -96,7 +104,11 @@ public class RouteRunActivity extends BaseActivity {
         mapView = findViewById(R.id.map_run);
         baiduMap = mapView.getMap();
         currentRouteView = findViewById(R.id.tv_current_route);
+        simulationModeSpinner = findViewById(R.id.spinner_run_mode);
+        speedControlLayout = findViewById(R.id.layout_run_speed_control);
+        cadenceControlLayout = findViewById(R.id.layout_run_cadence_control);
         speedInput = findViewById(R.id.et_run_speed);
+        cadenceInput = findViewById(R.id.et_run_cadence);
         loopInput = findViewById(R.id.et_loop_count);
         speedFloatCheckBox = findViewById(R.id.cb_speed_float);
         privacyMaskPanel = findViewById(R.id.route_privacy_mask_panel);
@@ -108,6 +120,7 @@ public class RouteRunActivity extends BaseActivity {
         prefsStore = new SimulationPrefsStore(getApplicationContext());
         sendNfcPayloadUseCase = new SendNfcPayloadUseCase(new AndroidNfcPayloadDispatcher());
 
+        setupSimulationModeSpinner();
         restoreSimulationPrefs();
 
         loadButton.setOnClickListener(v -> showLoadOptions());
@@ -444,9 +457,22 @@ public class RouteRunActivity extends BaseActivity {
         }
 
         try {
-            double speed = Double.parseDouble(speedInput.getText().toString().trim());
+            RouteSimulationConfig.Mode simulationMode = getSelectedSimulationMode();
+            double speed = simulationMode == RouteSimulationConfig.Mode.SPEED
+                    ? parseSimulationValue(speedInput)
+                    : 0d;
+            double cadence = simulationMode == RouteSimulationConfig.Mode.CADENCE
+                    ? parseSimulationValue(cadenceInput)
+                    : 0d;
             int loopCount = Integer.parseInt(loopInput.getText().toString().trim());
-            RouteSimulationConfig config = new RouteSimulationConfig(speed, loopCount, speedFloatCheckBox.isChecked(), 1000L);
+            RouteSimulationConfig config = new RouteSimulationConfig(
+                    simulationMode,
+                    speed,
+                    cadence,
+                    loopCount,
+                    speedFloatCheckBox.isChecked(),
+                    1000L
+            );
             ensureServiceStarted(routeDefinition);
             viewModel.startSimulation(config, new ServiceGateway());
             GoUtils.DisplayToast(this, "路线模拟已启动");
@@ -545,20 +571,87 @@ public class RouteRunActivity extends BaseActivity {
         return getString(prefixResId) + " " + detail;
     }
 
+    private void setupSimulationModeSpinner() {
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this,
+                R.array.route_mode_options,
+                android.R.layout.simple_spinner_item
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        simulationModeSpinner.setAdapter(adapter);
+        simulationModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                updateSimulationModeViews(getSelectedSimulationMode());
+                if (!restoringSimulationPrefs) {
+                    persistSimulationPrefs();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // No-op.
+            }
+        });
+    }
+
+    private RouteSimulationConfig.Mode getSelectedSimulationMode() {
+        return simulationModeSpinner.getSelectedItemPosition() == 1
+                ? RouteSimulationConfig.Mode.CADENCE
+                : RouteSimulationConfig.Mode.SPEED;
+    }
+
+    private void updateSimulationModeViews(RouteSimulationConfig.Mode mode) {
+        boolean cadenceMode = mode == RouteSimulationConfig.Mode.CADENCE;
+        speedControlLayout.setVisibility(cadenceMode ? View.GONE : View.VISIBLE);
+        cadenceControlLayout.setVisibility(cadenceMode ? View.VISIBLE : View.GONE);
+    }
+
     private void restoreSimulationPrefs() {
+        restoringSimulationPrefs = true;
+        String routeMode = prefsStore.getRouteMode();
+        simulationModeSpinner.setSelection(
+                SimulationPrefsStore.ROUTE_MODE_CADENCE.equals(routeMode) ? 1 : 0,
+                false
+        );
         speedInput.setText(prefsStore.getRouteSpeed());
+        cadenceInput.setText(prefsStore.getRouteCadence());
         loopInput.setText(prefsStore.getRouteLoopCount());
         speedFloatCheckBox.setChecked(prefsStore.isRouteSpeedFloat());
+        updateSimulationModeViews(getSelectedSimulationMode());
+        restoringSimulationPrefs = false;
     }
 
     private void persistSimulationPrefs() {
+        if (prefsStore == null || simulationModeSpinner == null) {
+            return;
+        }
         RouteDefinition selectedRoute = viewModel.getSelectedRoute().getValue();
         prefsStore.saveRouteConfig(
+                getSelectedSimulationMode() == RouteSimulationConfig.Mode.CADENCE
+                        ? SimulationPrefsStore.ROUTE_MODE_CADENCE
+                        : SimulationPrefsStore.ROUTE_MODE_SPEED,
                 speedInput.getText() == null ? "" : speedInput.getText().toString(),
+                cadenceInput.getText() == null ? "" : cadenceInput.getText().toString(),
                 loopInput.getText() == null ? "" : loopInput.getText().toString(),
                 speedFloatCheckBox.isChecked(),
                 selectedRoute == null ? "" : selectedRoute.getId()
         );
+    }
+
+    private double parseSimulationValue(EditText input) {
+        if (input == null || input.getText() == null) {
+            throw new IllegalArgumentException("simulation value is required");
+        }
+        String raw = input.getText().toString().trim();
+        if (TextUtils.isEmpty(raw)) {
+            throw new IllegalArgumentException("simulation value is required");
+        }
+        double value = Double.parseDouble(raw);
+        if (value <= 0d) {
+            throw new IllegalArgumentException("simulation value must be positive");
+        }
+        return value;
     }
 
     private void restoreLastRouteSelection() {
