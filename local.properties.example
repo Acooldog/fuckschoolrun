@@ -1,0 +1,12 @@
+sdk.dir=C\:\\path\\to\\Android\\Sdk
+
+# Baidu Android map SDK authentication.
+# Create an Android AK in Baidu LBS console and bind it to:
+#   package: com.acooldog.toolbox
+#   SHA1: your signing certificate SHA1
+MAPS_API_KEY=
+MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
+
+# Shared route / NFC backend base URL, for example:
+# SHARE_API_BASE_URL=http://10.0.2.2:8080/
+SHARE_API_BASE_URL=

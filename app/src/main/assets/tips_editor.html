@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 12px;
+            font-family: "Microsoft YaHei", sans-serif;
+            background: #ffffff;
+            color: #111827;
+        }
+        #editor {
+            min-height: 460px;
+            outline: none;
+            line-height: 1.65;
+            font-size: 16px;
+            white-space: normal;
+            word-break: break-word;
+        }
+        #editor p,
+        #editor h1,
+        #editor h2,
+        #editor h3,
+        #editor ul,
+        #editor ol,
+        #editor table,
+        #editor blockquote {
+            margin: 0 0 12px;
+        }
+        #editor ul,
+        #editor ol {
+            padding-left: 22px;
+        }
+        #editor li {
+            margin: 6px 0;
+        }
+        .placeholder:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+        td, th {
+            border: 1px solid #d1d5db;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+<div id="editor" class="placeholder" contenteditable="true" data-placeholder="在这里编辑富文本内容…"></div>
+<script>
+    const editor = document.getElementById('editor');
+    let incomingHtmlBuffer = '';
+
+    window.EditorBridge = {
+        beginSetHtml: function () {
+            incomingHtmlBuffer = '';
+        },
+        appendHtmlChunk: function (chunk) {
+            incomingHtmlBuffer += chunk || '';
+        },
+        finishSetHtml: function () {
+            editor.innerHTML = incomingHtmlBuffer || '';
+            incomingHtmlBuffer = '';
+        },
+        exportHtml: function () {
+            if (!window.AndroidBridge) {
+                return;
+            }
+            const html = editor.innerHTML || '';
+            const chunkSize = 20000;
+            window.AndroidBridge.beginHtmlExport();
+            for (let index = 0; index < html.length; index += chunkSize) {
+                window.AndroidBridge.appendHtmlExportChunk(html.slice(index, index + chunkSize));
+            }
+            window.AndroidBridge.finishHtmlExport();
+        },
+        focusEditor: function () {
+            editor.focus();
+        },
+        command: function (name, value) {
+            document.execCommand(name, false, value || null);
+            editor.focus();
+        }
+    };
+
+    window.addEventListener('load', function () {
+        if (window.AndroidBridge) {
+            window.AndroidBridge.onEditorReady();
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+  "scenario_templates": [
+    {
+      "id": "morning_run_normal",
+      "name": "晨跑-正常模式",
+      "description": "模拟早晨操场跑步，匀速+间歇加速",
+      "category": "normal",
+      "instructions": [
+        {
+          "action": "GENERATE_GPS_TRAJECTORY",
+          "params": {
+            "type": "running_track",
+            "start_lat": 36.667662,
+            "start_lon": 117.027707,
+            "end_lat": 36.669,
+            "end_lon": 117.03,
+            "speed_mps": 4.2
+          }
+        },
+        {
+          "action": "GENERATE_STEP_FREQUENCY",
+          "params": {
+            "base_spm": 180,
+            "variation": 5,
+            "duration": 300,
+            "interval_acceleration": true
+          }
+        },
+        {
+          "action": "VALIDATE_SENSOR_CONSISTENCY",
+          "params": {
+            "target": "gps_step"
+          }
+        }
+      ]
+    },
+    {
+      "id": "anomaly_gps_jump",
+      "name": "异常-定位跳跃",
+      "description": "测试GPS突然跳跃的检测能力",
+      "category": "anomaly",
+      "instructions": [
+        {
+          "action": "GENERATE_GPS_TRAJECTORY",
+          "params": {
+            "type": "normal_walk",
+            "duration": 300,
+            "start_lat": 36.667662,
+            "start_lon": 117.027707,
+            "end_lat": 36.668,
+            "end_lon": 117.028,
+            "speed_mps": 1.4
+          }
+        },
+        {
+          "action": "WAIT_FOR_DURATION",
+          "delayAfter": 120000
+        },
+        {
+          "action": "SIMULATE_GPS_JUMP",
+          "params": {
+            "jump_distance": 1000,
+            "duration": 5
+          }
+        },
+        {
+          "action": "VALIDATE_LOCATION_DRIFT",
+          "params": {
+            "max_drift_meters": 30
+          }
+        }
+      ]
+    }
+  ]
+}

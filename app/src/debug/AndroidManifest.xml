@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name=".AlgorithmTestLabActivity"
+            android:exported="false"
+            android:label="@string/algorithm_lab_title"
+            android:process=":algorithm_sandbox" />
+        <activity
+            android:name=".TestInstructionStudioActivity"
+            android:exported="false"
+            android:label="@string/test_studio_title"
+            android:process=":instruction_sandbox" />
+    </application>
+</manifest>

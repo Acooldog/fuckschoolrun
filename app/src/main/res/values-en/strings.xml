@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="route_algorithm_lab_title">Algorithm Validation Lab</string>
+    <string name="route_algorithm_lab_summary">Step algorithm simulator, GPS trajectory generator, sensor consistency validation, and test data management. DEBUG internal builds only. Generated data is not injected into the system.</string>
+    <string name="route_algorithm_lab_button">Open Algorithm Validation Lab</string>
+    <string name="route_algorithm_lab_disabled">Algorithm validation module is not enabled in this build.</string>
+</resources>

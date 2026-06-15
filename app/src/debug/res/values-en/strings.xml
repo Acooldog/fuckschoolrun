@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="algorithm_lab_title">Algorithm Validation Lab</string>
+    <string name="algorithm_lab_notice">This feature only generates test data and never injects it into the system. Generated trajectories are for algorithm analysis only. The algorithm runner uses an isolated debug process and exports only to the app private test directory.</string>
+    <string name="algorithm_lab_feature_switch">Feature confirmation: enable algorithm validation</string>
+    <string name="algorithm_lab_session_confirm">Confirm This Test Session</string>
+    <string name="algorithm_lab_session_confirm_message">This session is for internal algorithm validation only. Generated data will not be injected into system services or modify device state. Continue?</string>
+    <string name="algorithm_lab_safety_failed">Safety check failed: DEBUG build, internal account, feature confirmation, and session confirmation are required.</string>
+    <string name="algorithm_lab_safety_status">Safety: DEBUG=%1$s, algorithm=%2$s, internal user=%3$s, feature confirmed=%4$s, session confirmed=%5$s</string>
+    <string name="algorithm_lab_not_logged_in">not logged in</string>
+    <string name="algorithm_lab_operation_confirm_title">Confirm Test Data Generation</string>
+    <string name="algorithm_lab_operation_confirm_message">Run the pure algorithm generator \"%1$s\". This operation will not inject into the system or modify device state.</string>
+    <string name="algorithm_lab_step_title">Step Cadence Simulator</string>
+    <string name="algorithm_lab_gps_title">GPS Trajectory Generator</string>
+    <string name="algorithm_lab_consistency_title">Sensor Consistency Validation</string>
+    <string name="algorithm_lab_cadence_label">Target cadence (140-220 SPM)</string>
+    <string name="algorithm_lab_duration_label">Duration (seconds)</string>
+    <string name="algorithm_lab_start_latitude">Start latitude</string>
+    <string name="algorithm_lab_start_longitude">Start longitude</string>
+    <string name="algorithm_lab_end_latitude">End latitude</string>
+    <string name="algorithm_lab_end_longitude">End longitude</string>
+    <string name="algorithm_lab_speed_label">Speed (m/s)</string>
+    <string name="algorithm_lab_generate_step">Generate Step Sensor Data</string>
+    <string name="algorithm_lab_generate_gps">Generate GPS Trajectory and NMEA</string>
+    <string name="algorithm_lab_generate_consistency">Generate Consistency Score Report</string>
+    <string name="algorithm_lab_output_empty">No test data generated yet.</string>
+    <string name="algorithm_lab_step_output">Step data generated: points=%1$d, steps=%2$d\nhash=%3$s</string>
+    <string name="algorithm_lab_gps_output">GPS trajectory generated: points=%1$d, distance=%2$.1fm\nhash=%3$s</string>
+    <string name="algorithm_lab_consistency_output">Consistency report generated: score=%1$d, stride=%2$.2fm, verdict=%3$s\nhash=%4$s</string>
+    <string name="algorithm_lab_need_step_and_gps">Generate step data and GPS trajectory first.</string>
+    <string name="algorithm_lab_no_data_to_save">No data to save.</string>
+    <string name="algorithm_lab_save_confirm_title">Confirm Test File Save</string>
+    <string name="algorithm_lab_save_confirm_message">The test file will be saved to app private storage and recorded in encrypted audit logs. Continue?</string>
+    <string name="algorithm_lab_save_success">Test file saved: %1$s</string>
+    <string name="algorithm_lab_export_title">Test Data Export</string>
+    <string name="algorithm_lab_save_step_json">Save Step JSON</string>
+    <string name="algorithm_lab_save_step_csv">Save Step CSV</string>
+    <string name="algorithm_lab_save_gps_json">Save Trajectory JSON</string>
+    <string name="algorithm_lab_save_gps_nmea">Save NMEA</string>
+    <string name="algorithm_lab_save_gps_gpx">Save GPX</string>
+    <string name="algorithm_lab_save_gps_kml">Save KML</string>
+    <string name="algorithm_lab_save_report_json">Save Report JSON</string>
+    <string name="algorithm_lab_save_report_csv">Save Report CSV</string>
+    <string name="algorithm_lab_data_management_title">Test Data Management</string>
+    <string name="algorithm_lab_file_empty">No generated test cases.</string>
+    <string name="algorithm_lab_audit_file">Audit log: %1$s</string>
+    <string name="algorithm_lab_step_chart_label">Accel-Z / Step Curve</string>
+    <string name="algorithm_lab_gps_chart_label">Latitude / Speed Curve</string>
+    <string name="algorithm_lab_consistency_chart_label">Consistency Metrics</string>
+    <string name="test_studio_title">Test Instruction Studio</string>
+    <string name="test_studio_notice">Create, validate, and replay internal algorithm test scenarios. Execution is pure algorithmic or read-only placeholder only. No system injection or device-state modification.</string>
+    <string name="test_studio_feature_switch">Feature confirmation: enable Test Instruction Studio</string>
+    <string name="test_studio_session_confirm">Confirm Instruction Session</string>
+    <string name="test_studio_session_message">This session is for controlled internal testing. Every instruction is safety-validated and all operations are written to encrypted audit logs.</string>
+    <string name="test_studio_safety_failed">Safety check failed: DEBUG build, internal account, feature confirmation, and session confirmation are required.</string>
+    <string name="test_studio_safety_status">Safety: DEBUG=%1$s, algorithm=%2$s, internal user=%3$s, feature confirmed=%4$s, session confirmed=%5$s</string>
+    <string name="test_studio_new">New Scenario</string>
+    <string name="test_studio_templates">Scenario Templates</string>
+    <string name="test_studio_save_json">Save JSON</string>
+    <string name="test_studio_save_yaml">Save YAML</string>
+    <string name="test_studio_export_dsl">Export DSL</string>
+    <string name="test_studio_validate_syntax">Validate Syntax</string>
+    <string name="test_studio_scenario_props">Scenario Properties</string>
+    <string name="test_studio_scenario_id">Scenario ID</string>
+    <string name="test_studio_scenario_name">Scenario Name</string>
+    <string name="test_studio_scenario_category">Category</string>
+    <string name="test_studio_instruction_library">Instruction Library</string>
+    <string name="test_studio_search_hint">Search instructions</string>
+    <string name="test_studio_category_generation">Data Generation</string>
+    <string name="test_studio_category_system">System Checks (read-only)</string>
+    <string name="test_studio_category_validation">Validation Assertions</string>
+    <string name="test_studio_category_control">Control Flow</string>
+    <string name="test_studio_param_hint">Parameters, one key=value per line. delayAfter=milliseconds sets post-instruction delay.</string>
+    <string name="test_studio_add_instruction">Add Instruction</string>
+    <string name="test_studio_update_instruction">Update Selected</string>
+    <string name="test_studio_move_up">Move Up</string>
+    <string name="test_studio_move_down">Move Down</string>
+    <string name="test_studio_delete_instruction">Delete Selected Instruction</string>
+    <string name="test_studio_no_instruction_selected">Select an instruction first.</string>
+    <string name="test_studio_timeline">Timeline Editor</string>
+    <string name="test_studio_syntax_ok">Syntax validation passed.</string>
+    <string name="test_studio_property_summary">Execution mode: %1$s\nInstruction count: %2$d\nSelected: %3$s\nSafety: no network access, 256MB sandbox memory limit, 5 minute max runtime.</string>
+    <string name="test_studio_safety_settings">Safety Settings and Execution</string>
+    <string name="test_studio_mode_validation">Validation Only</string>
+    <string name="test_studio_mode_simulation">Memory Simulation</string>
+    <string name="test_studio_mode_sandbox">Sandbox Replay</string>
+    <string name="test_studio_mode_recording">Record Only</string>
+    <string name="test_studio_run">Run Test Scenario</string>
+    <string name="test_studio_anticheat_report">Generate Anti-cheat Validation Report</string>
+    <string name="test_studio_output_empty">No scenario has been run yet.</string>
+    <string name="test_studio_run_confirm_title">Confirm Scenario Run</string>
+    <string name="test_studio_run_confirm_message">Run the scenario in %1$s mode. This will not inject into the system or modify device state.</string>
+    <string name="test_studio_save_confirm_title">Confirm Scenario Save</string>
+    <string name="test_studio_save_confirm_message">The scenario file will be watermarked, saved to app private storage, and recorded in encrypted audit logs.</string>
+    <string name="test_studio_save_success">Scenario saved.</string>
+</resources>
