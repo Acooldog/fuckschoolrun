@@ -22,4 +22,8 @@
     <string name="email_register_code_sent">验证码已发送，请查收邮件。</string>
     <string name="email_register_success">注册成功，已登录。</string>
     <string name="email_register_failed">注册失败：</string>
+    <string name="startup_primary_title">本软件为免费开源软件</string>
+    <string name="startup_secondary_title">请仔细阅读</string>
+    <string name="startup_secondary_message">请仔细看本软件的免费开源声明以及群号。如果你是购买的本软件，或者是从别人那买了所谓的教程才获得了本软件，或者花钱买了别人教程，请立即找他退款，并加群联系群主汇报。</string>
+    <string name="startup_dialog_confirm">知道了</string>
 </resources>

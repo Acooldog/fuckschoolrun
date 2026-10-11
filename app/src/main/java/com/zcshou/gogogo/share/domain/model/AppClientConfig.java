@@ -1,5 +1,9 @@
 package com.acooldog.toolbox.share.domain.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public final class AppClientConfig {
     private final String noticeTitle;
     private final String noticeMessage;
@@ -8,6 +12,7 @@ public final class AppClientConfig {
     private final String bilibiliUrl;
     private final boolean forceShutdown;
     private final String forceShutdownMessage;
+    private final List<StartupDialogConfig> startupDialogs;
 
     public AppClientConfig(
             String noticeTitle,
@@ -16,7 +21,8 @@ public final class AppClientConfig {
             String bilibiliText,
             String bilibiliUrl,
             boolean forceShutdown,
-            String forceShutdownMessage
+            String forceShutdownMessage,
+            List<StartupDialogConfig> startupDialogs
     ) {
         this.noticeTitle = noticeTitle == null ? "" : noticeTitle.trim();
         this.noticeMessage = noticeMessage == null ? "" : noticeMessage.trim();
@@ -25,6 +31,9 @@ public final class AppClientConfig {
         this.bilibiliUrl = bilibiliUrl == null ? "" : bilibiliUrl.trim();
         this.forceShutdown = forceShutdown;
         this.forceShutdownMessage = forceShutdownMessage == null ? "" : forceShutdownMessage.trim();
+        this.startupDialogs = startupDialogs == null
+                ? Collections.emptyList()
+                : Collections.unmodifiableList(new ArrayList<>(startupDialogs));
     }
 
     public String getNoticeTitle() {
@@ -53,5 +62,17 @@ public final class AppClientConfig {
 
     public String getForceShutdownMessage() {
         return forceShutdownMessage;
+    }
+
+    public List<StartupDialogConfig> getStartupDialogs() {
+        return startupDialogs;
+    }
+
+    public long getStartupDialogRevision() {
+        long revision = 0L;
+        for (StartupDialogConfig dialog : startupDialogs) {
+            revision = Math.max(revision, dialog.getUpdatedAt());
+        }
+        return revision > 0L ? revision : 1L;
     }
 }

@@ -1,12 +1,9 @@
 package com.acooldog.toolbox;
 
 import android.Manifest;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,17 +14,22 @@ import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.CheckBox;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
+import com.acooldog.toolbox.config.InternalAuthStore;
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
+import com.acooldog.toolbox.share.domain.model.StartupDialogConfig;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.utils.GoUtils;
 
@@ -42,10 +44,9 @@ public class WelcomeActivity extends AppCompatActivity {
     private static final String KEY_ACCEPT_AGREEMENT = "KEY_ACCEPT_AGREEMENT";
     private static final String KEY_ACCEPT_PRIVACY = "KEY_ACCEPT_PRIVACY";
     private static final String KEY_ACCEPT_DISCLAIMER = "KEY_ACCEPT_DISCLAIMER";
+    private static final String KEY_STARTUP_DIALOG_REVISION = "KEY_STARTUP_DIALOG_REVISION";
     private static final int SDK_PERMISSION_REQUEST = 127;
     private static final long SPLASH_DURATION_MILLIS = 1000L;
-    private static final long REMOTE_NOTICE_TIMEOUT_MILLIS = 1500L;
-
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private SharedPreferences preferences;
     private ExecutorService ioExecutor;
@@ -139,14 +140,20 @@ public class WelcomeActivity extends AppCompatActivity {
             return;
         }
         startupFlowStarted = true;
-        if (!agreementAccepted || !disclaimerAccepted) {
-            showLegalConsentDialog();
-            return;
-        }
-        showEntryNoticeThenContinue();
+        resolveStartupState((config, hardExit) -> {
+            if (hardExit) {
+                silentExit();
+                return;
+            }
+            if (!agreementAccepted || !disclaimerAccepted) {
+                showLegalConsentDialog(config);
+                return;
+            }
+            showStartupDisclosureThenContinue(config);
+        });
     }
 
-    private void showLegalConsentDialog() {
+    private void showLegalConsentDialog(@NonNull AppClientConfig config) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_legal_consent, null);
         TextView linksView = dialogView.findViewById(R.id.legal_consent_links);
         CheckBox consentCheckBox = dialogView.findViewById(R.id.legal_consent_checkbox);
@@ -168,7 +175,7 @@ public class WelcomeActivity extends AppCompatActivity {
             }
             saveAgreementAcceptance();
             dialog.dismiss();
-            showEntryNoticeThenContinue();
+            showStartupDisclosureThenContinue(config);
         }));
         dialog.show();
     }
@@ -232,102 +239,173 @@ public class WelcomeActivity extends AppCompatActivity {
                 .apply();
     }
 
-    private void showEntryNoticeThenContinue() {
-        resolveEntryNoticeContent(content -> {
-            if (isFinishing() || isDestroyed()) {
-                return;
-            }
-            showEntryNoticeDialog(content);
-        });
-    }
-
-    private void resolveEntryNoticeContent(@NonNull EntryNoticeCallback callback) {
-        EntryNoticeContent fallback = EntryNoticeContent.local(this);
-        if (!GoUtils.isNetworkAvailable(this)) {
-            callback.onReady(fallback);
-            return;
-        }
-
-        AtomicBoolean delivered = new AtomicBoolean(false);
-        Runnable fallbackRunnable = () -> {
-            if (delivered.compareAndSet(false, true)) {
-                callback.onReady(fallback);
-            }
-        };
-        mainHandler.postDelayed(fallbackRunnable, REMOTE_NOTICE_TIMEOUT_MILLIS);
-
+    private void resolveStartupState(@NonNull StartupStateCallback callback) {
         ioExecutor.execute(() -> {
-            EntryNoticeContent resolved = fallback;
+            AppClientConfig config = null;
+            boolean hardExit = false;
             try {
-                AppClientConfig config = ShareModule.from(getApplicationContext())
+                config = ShareModule.from(getApplicationContext())
                         .shareApiClient()
                         .getAppClientConfig();
-                resolved = EntryNoticeContent.fromRemote(config, fallback);
+                hardExit = config.isForceShutdown();
             } catch (Exception ignored) {
-                resolved = fallback;
+                // Configuration fetch failure uses the local disclosure defaults.
             }
-            EntryNoticeContent finalResolved = resolved;
-            runOnUiThread(() -> {
-                if (delivered.compareAndSet(false, true)) {
-                    mainHandler.removeCallbacks(fallbackRunnable);
-                    callback.onReady(finalResolved);
+
+            String token = new InternalAuthStore(getApplicationContext()).getToken();
+            if (!hardExit && !token.trim().isEmpty()) {
+                try {
+                    ShareModule.from(getApplicationContext())
+                            .shareApiClient()
+                            .getInternalAccountProfile(token);
+                } catch (Exception exception) {
+                    hardExit = isBanFailure(exception);
                 }
+            }
+
+            AppClientConfig finalConfig = config == null
+                    ? new AppClientConfig("", "", "", "", "", false, "", new ArrayList<>())
+                    : config;
+            boolean finalHardExit = hardExit;
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                callback.onReady(finalConfig, finalHardExit);
             });
         });
     }
 
-    private void showEntryNoticeDialog(@NonNull EntryNoticeContent content) {
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(content.title)
-                .setMessage(content.buildDialogMessage())
-                .setCancelable(false)
-                 .setPositiveButton(
-                         content.forceShutdown
-                                 ? R.string.app_exit
-                                 : R.string.app_entry_notice_known,
-                         null
-                 )
-                .create();
-        if (!content.groupNumber.isEmpty()) {
-            dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.app_entry_notice_copy_group), (d, which) -> {
-            });
+    private void showStartupDisclosureThenContinue(@NonNull AppClientConfig remoteConfig) {
+        long revision = remoteConfig.getStartupDialogRevision();
+        if (preferences.getLong(KEY_STARTUP_DIALOG_REVISION, 0L) == revision) {
+            ensurePermissionsThenEnterHome();
+            return;
         }
-        if (!content.bilibiliUrl.isEmpty()) {
-            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.app_entry_notice_open_bilibili), (d, which) -> {
-            });
-        }
-        dialog.setOnShowListener(ignored -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                dialog.dismiss();
-                if (content.forceShutdown) {
-                    finish();
-                } else {
-                    ensurePermissionsThenEnterHome();
-                }
-            });
-            if (!content.groupNumber.isEmpty()) {
-                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> copyGroupNumber(content.groupNumber));
+        showPrimaryDialog(remoteConfig, 1);
+    }
+
+    private void showPrimaryDialog(@NonNull AppClientConfig remoteConfig, int cycleIndex) {
+        StartupDialogConfig primary = findPrimary(remoteConfig, cycleIndex);
+        List<StartupDialogConfig> secondaryDialogs = findSecondary(remoteConfig, cycleIndex);
+        AlertDialog dialog = buildDialog(primary);
+        AtomicBoolean secondaryShown = new AtomicBoolean(false);
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            if (secondaryShown.compareAndSet(false, true)) {
+                shake(dialog.getWindow() == null ? null : dialog.getWindow().getDecorView());
+                showSecondaryDialog(dialog, remoteConfig, cycleIndex, secondaryDialogs, 0);
             }
-            if (!content.bilibiliUrl.isEmpty()) {
-                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> openBilibiliHomepage(content.bilibiliUrl));
-            }
-        });
+        }));
         dialog.show();
     }
 
-    private void copyGroupNumber(@NonNull String groupNumber) {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        if (clipboard != null) {
-            clipboard.setPrimaryClip(ClipData.newPlainText("qq_group", groupNumber));
-            GoUtils.DisplayToast(this, getString(R.string.app_entry_notice_group_copied));
-        }
+    private void showSecondaryDialog(
+            @NonNull AlertDialog primaryDialog,
+            @NonNull AppClientConfig remoteConfig,
+            int cycleIndex,
+            @NonNull List<StartupDialogConfig> secondaryDialogs,
+            int index
+    ) {
+        StartupDialogConfig secondary = secondaryDialogs.get(index);
+        AlertDialog dialog = buildDialog(secondary);
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            dialog.dismiss();
+            if (index + 1 < secondaryDialogs.size()) {
+                showSecondaryDialog(primaryDialog, remoteConfig, cycleIndex, secondaryDialogs, index + 1);
+                return;
+            }
+            primaryDialog.dismiss();
+            if (cycleIndex < 3) {
+                showPrimaryDialog(remoteConfig, cycleIndex + 1);
+                return;
+            }
+            preferences.edit()
+                    .putLong(KEY_STARTUP_DIALOG_REVISION, remoteConfig.getStartupDialogRevision())
+                    .apply();
+            ensurePermissionsThenEnterHome();
+        }));
+        dialog.show();
     }
 
-    private void openBilibiliHomepage(@NonNull String url) {
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (Exception exception) {
-            GoUtils.DisplayToast(this, getString(R.string.app_error_network));
+    @NonNull
+    private AlertDialog buildDialog(@NonNull StartupDialogConfig config) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setCancelable(false)
+                .setPositiveButton(config.getConfirmText(), null);
+        if (!config.getTitle().isEmpty()) {
+            builder.setTitle(config.getTitle());
+        }
+        if (!config.getMessage().isEmpty()) {
+            builder.setMessage(config.getMessage());
+        }
+        return builder.create();
+    }
+
+    @NonNull
+    private StartupDialogConfig findPrimary(@NonNull AppClientConfig remoteConfig, int cycleIndex) {
+        for (StartupDialogConfig dialog : remoteConfig.getStartupDialogs()) {
+            if (dialog.isPrimary() && dialog.getCycleIndex() == cycleIndex) {
+                return dialog;
+            }
+        }
+        return new StartupDialogConfig(
+                "local-primary-" + cycleIndex,
+                cycleIndex * 10,
+                "primary",
+                cycleIndex,
+                getString(R.string.startup_primary_title),
+                "",
+                getString(R.string.startup_dialog_confirm),
+                1L
+        );
+    }
+
+    @NonNull
+    private List<StartupDialogConfig> findSecondary(@NonNull AppClientConfig remoteConfig, int cycleIndex) {
+        List<StartupDialogConfig> result = new ArrayList<>();
+        for (StartupDialogConfig dialog : remoteConfig.getStartupDialogs()) {
+            if (dialog.isSecondary() && dialog.getCycleIndex() == cycleIndex) {
+                result.add(dialog);
+            }
+        }
+        if (result.isEmpty()) {
+            result.add(new StartupDialogConfig(
+                    "local-secondary-" + cycleIndex,
+                    cycleIndex * 10 + 1,
+                    "secondary",
+                    cycleIndex,
+                    getString(R.string.startup_secondary_title),
+                    getString(R.string.startup_secondary_message),
+                    getString(R.string.startup_dialog_confirm),
+                    1L
+            ));
+        }
+        return result;
+    }
+
+    private void shake(@Nullable View view) {
+        if (view == null) {
+            return;
+        }
+        Animation animation = new TranslateAnimation(-12f, 12f, 0f, 0f);
+        animation.setDuration(60L);
+        animation.setRepeatMode(Animation.REVERSE);
+        animation.setRepeatCount(3);
+        view.startAnimation(animation);
+    }
+
+    private boolean isBanFailure(@NonNull Exception exception) {
+        String message = exception.getMessage();
+        if (message == null) {
+            return false;
+        }
+        return message.contains("封禁") || message.toLowerCase().contains("banned");
+    }
+
+    private void silentExit() {
+        finishAffinity();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            finishAndRemoveTask();
         }
     }
 
@@ -378,82 +456,7 @@ public class WelcomeActivity extends AppCompatActivity {
         finish();
     }
 
-    private interface EntryNoticeCallback {
-        void onReady(@NonNull EntryNoticeContent content);
-    }
-
-    private static final class EntryNoticeContent {
-        private final String title;
-        private final String message;
-        private final String groupNumber;
-        private final String bilibiliText;
-        private final String bilibiliUrl;
-        private final boolean forceShutdown;
-        private final String forceShutdownMessage;
-
-        private EntryNoticeContent(
-                String title,
-                String message,
-                String groupNumber,
-                String bilibiliText,
-                String bilibiliUrl,
-                boolean forceShutdown,
-                String forceShutdownMessage
-        ) {
-            this.title = title == null ? "" : title.trim();
-            this.message = message == null ? "" : message.trim();
-            this.groupNumber = groupNumber == null ? "" : groupNumber.trim();
-            this.bilibiliText = bilibiliText == null ? "" : bilibiliText.trim();
-            this.bilibiliUrl = bilibiliUrl == null ? "" : bilibiliUrl.trim();
-            this.forceShutdown = forceShutdown;
-            this.forceShutdownMessage = forceShutdownMessage == null ? "" : forceShutdownMessage.trim();
-        }
-
-        @NonNull
-        private static EntryNoticeContent local(@NonNull WelcomeActivity activity) {
-            return new EntryNoticeContent(
-                    activity.getString(R.string.app_entry_notice_title),
-                    activity.getString(R.string.app_entry_notice_message),
-                    activity.getString(R.string.app_entry_notice_group_number),
-                    activity.getString(R.string.app_bilibili_notice_text),
-                    activity.getString(R.string.app_bilibili_url),
-                    false,
-                    ""
-            );
-        }
-
-        @NonNull
-        private static EntryNoticeContent fromRemote(@NonNull AppClientConfig remote, @NonNull EntryNoticeContent fallback) {
-            return new EntryNoticeContent(
-                    firstNonEmpty(remote.getNoticeTitle(), fallback.title),
-                    firstNonEmpty(remote.getNoticeMessage(), fallback.message),
-                    firstNonEmpty(remote.getQqGroupNumber(), fallback.groupNumber),
-                    firstNonEmpty(remote.getBilibiliText(), fallback.bilibiliText),
-                    firstNonEmpty(remote.getBilibiliUrl(), fallback.bilibiliUrl),
-                    remote.isForceShutdown(),
-                    remote.getForceShutdownMessage()
-            );
-        }
-
-        @NonNull
-        private String buildDialogMessage() {
-            if (bilibiliText.isEmpty()) {
-                return message;
-            }
-            if (forceShutdown) {
-                return forceShutdownMessage();
-            }
-            return message + "\n\n" + bilibiliText;
-        }
-
-        @NonNull
-        private String forceShutdownMessage() {
-            return forceShutdownMessage.isEmpty() ? "当前版本暂不可用，请等待管理员通知。" : forceShutdownMessage;
-        }
-
-        @NonNull
-        private static String firstNonEmpty(String preferred, String fallback) {
-            return preferred == null || preferred.trim().isEmpty() ? fallback : preferred.trim();
-        }
+    private interface StartupStateCallback {
+        void onReady(@NonNull AppClientConfig config, boolean hardExit);
     }
 }

@@ -21,6 +21,7 @@ import com.acooldog.toolbox.share.domain.model.SharedNfcEntry;
 import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
 import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
 import com.acooldog.toolbox.share.domain.model.SharedSimulationConfigEntry;
+import com.acooldog.toolbox.share.domain.model.StartupDialogConfig;
 import com.acooldog.toolbox.share.domain.model.UsageTipDetail;
 import com.acooldog.toolbox.share.domain.model.UsageTipSummary;
 import com.acooldog.toolbox.share.domain.model.WordImportResult;
@@ -145,7 +146,10 @@ public final class ShareApiClient {
     }
 
     public AppClientConfig getAppClientConfig() throws IOException {
-        Request request = clientRequestBuilder(buildUrl("api/client-config"))
+        String token = applicationContext == null
+                ? ""
+                : new InternalAuthStore(applicationContext).getToken();
+        Request request = newRequestBuilder(buildUrl("api/client-config"), token)
                 .get()
                 .build();
         return parseAppClientConfig(executeObject(request));
@@ -649,8 +653,37 @@ public final class ShareApiClient {
                 optString(jsonObject, "bilibiliText", "bilibiliLabel"),
                 optString(jsonObject, "bilibiliUrl", "bilibiliLink"),
                 optBoolean(jsonObject, "forceShutdown"),
-                optString(jsonObject, "forceShutdownMessage", "shutdownMessage")
+                optString(jsonObject, "forceShutdownMessage", "shutdownMessage"),
+                parseStartupDialogs(jsonObject)
         );
+    }
+
+    private List<StartupDialogConfig> parseStartupDialogs(JSONObject jsonObject) {
+        JSONArray items = jsonObject.optJSONArray("startupDialogs");
+        if (items == null) {
+            items = jsonObject.optJSONArray("dialogs");
+        }
+        List<StartupDialogConfig> dialogs = new ArrayList<>();
+        if (items == null) {
+            return dialogs;
+        }
+        for (int index = 0; index < items.length(); index++) {
+            JSONObject item = items.optJSONObject(index);
+            if (item == null) {
+                continue;
+            }
+            dialogs.add(new StartupDialogConfig(
+                    optString(item, "id"),
+                    optInt(item, "displayOrder", "order"),
+                    optString(item, "level", "type"),
+                    optInt(item, "cycleIndex", "cycle"),
+                    optString(item, "title"),
+                    optString(item, "message", "content"),
+                    optString(item, "confirmText", "buttonText"),
+                    optLong(item, "updatedAt", "updateTime")
+            ));
+        }
+        return dialogs;
     }
 
     private InternalAccountProfile parseInternalAccount(JSONObject jsonObject) throws IOException {
