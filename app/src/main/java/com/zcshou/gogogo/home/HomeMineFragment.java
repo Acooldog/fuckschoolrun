@@ -129,7 +129,9 @@ public class HomeMineFragment extends Fragment {
                     requireActivity().runOnUiThread(this::renderInternalLoginState);
                 }
             } catch (Exception ignored) {
-                // Keep the cached profile if the backend is temporarily unavailable.
+                if (authStore.getToken().isEmpty() && isAdded()) {
+                    requireActivity().runOnUiThread(this::renderInternalLoginState);
+                }
             }
         });
     }
