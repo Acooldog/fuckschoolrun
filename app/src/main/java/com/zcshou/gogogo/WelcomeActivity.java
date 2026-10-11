@@ -30,6 +30,7 @@ import androidx.preference.PreferenceManager;
 import com.acooldog.toolbox.config.InternalAuthStore;
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
 import com.acooldog.toolbox.share.domain.model.StartupDialogConfig;
+import com.acooldog.toolbox.share.data.ShareApiClient;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.utils.GoUtils;
 
@@ -247,7 +248,8 @@ public class WelcomeActivity extends AppCompatActivity {
                 config = ShareModule.from(getApplicationContext())
                         .shareApiClient()
                         .getAppClientConfig();
-                hardExit = config.isForceShutdown();
+                hardExit = config.isForceShutdown()
+                        || isVersionUnsupported(BuildConfig.VERSION_NAME, config.getMinSupportedVersion());
             } catch (Exception ignored) {
                 // Configuration fetch failure uses the local disclosure defaults.
             }
@@ -264,7 +266,7 @@ public class WelcomeActivity extends AppCompatActivity {
             }
 
             AppClientConfig finalConfig = config == null
-                    ? new AppClientConfig("", "", "", "", "", false, "", new ArrayList<>())
+                    ? new AppClientConfig("", "", "", "", "", false, "", "", false, new ArrayList<>())
                     : config;
             boolean finalHardExit = hardExit;
             runOnUiThread(() -> {
@@ -277,6 +279,10 @@ public class WelcomeActivity extends AppCompatActivity {
     }
 
     private void showStartupDisclosureThenContinue(@NonNull AppClientConfig remoteConfig) {
+        if (remoteConfig.isStartupDialogsConfigured() && remoteConfig.getStartupDialogs().isEmpty()) {
+            ensurePermissionsThenEnterHome();
+            return;
+        }
         long revision = remoteConfig.getStartupDialogRevision();
         if (preferences.getLong(KEY_STARTUP_DIALOG_REVISION, 0L) == revision) {
             ensurePermissionsThenEnterHome();
@@ -395,11 +401,52 @@ public class WelcomeActivity extends AppCompatActivity {
     }
 
     private boolean isBanFailure(@NonNull Exception exception) {
-        String message = exception.getMessage();
-        if (message == null) {
+        if (exception instanceof ShareApiClient.ApiRequestException) {
+            return ((ShareApiClient.ApiRequestException) exception).isBanFailure();
+        }
+        return false;
+    }
+
+    private boolean isVersionUnsupported(@NonNull String currentVersion, @NonNull String minimumVersion) {
+        int[] current = parseVersion(currentVersion);
+        int[] minimum = parseVersion(minimumVersion);
+        if (minimum == null) {
             return false;
         }
-        return message.contains("封禁") || message.toLowerCase().contains("banned");
+        if (current == null) {
+            return true;
+        }
+        for (int index = 0; index < 3; index++) {
+            if (current[index] != minimum[index]) {
+                return current[index] < minimum[index];
+            }
+        }
+        return false;
+    }
+
+    @Nullable
+    private int[] parseVersion(@NonNull String value) {
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if (normalized.startsWith("v") || normalized.startsWith("V")) {
+            normalized = normalized.substring(1);
+        }
+        String[] parts = normalized.split("\\.");
+        int[] result = new int[]{0, 0, 0};
+        for (int index = 0; index < Math.min(parts.length, 3); index++) {
+            String digits = parts[index].replaceAll("[^0-9].*$", "");
+            if (digits.isEmpty()) {
+                return null;
+            }
+            try {
+                result[index] = Integer.parseInt(digits);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return result;
     }
 
     private void silentExit() {

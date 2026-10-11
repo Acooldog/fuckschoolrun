@@ -52,6 +52,31 @@ public final class ShareApiClient {
     private final HttpUrl baseUrl;
     private final Context applicationContext;
 
+    public static final class ApiRequestException extends IOException {
+        private final int statusCode;
+        private final String errorCode;
+
+        public ApiRequestException(int statusCode, String errorCode, String message) {
+            super(message);
+            this.statusCode = statusCode;
+            this.errorCode = errorCode == null ? "" : errorCode.trim();
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public String getErrorCode() {
+            return errorCode;
+        }
+
+        public boolean isBanFailure() {
+            return "account_banned".equals(errorCode)
+                    || "device_banned".equals(errorCode)
+                    || "device_temporarily_banned".equals(errorCode);
+        }
+    }
+
     public ShareApiClient() throws IOException {
         this(null, BuildConfig.SHARE_API_BASE_URL);
     }
@@ -556,7 +581,11 @@ public final class ShareApiClient {
                         && applicationContext != null) {
                     new InternalAuthStore(applicationContext).clear();
                 }
-                throw new IOException(extractErrorMessage(response.code(), responseText));
+                throw new ApiRequestException(
+                        response.code(),
+                        extractErrorCode(responseText),
+                        extractErrorMessage(response.code(), responseText)
+                );
             }
             return responseText;
         }
@@ -567,7 +596,10 @@ public final class ShareApiClient {
         if (!normalized.isEmpty()) {
             try {
                 JSONObject jsonObject = new JSONObject(normalized);
-                String detail = jsonObject.optString("detail", "").trim();
+                JSONObject detailObject = jsonObject.optJSONObject("detail");
+                String detail = detailObject == null
+                        ? jsonObject.optString("detail", "").trim()
+                        : detailObject.optString("message", "").trim();
                 if (!TextUtils.isEmpty(detail)) {
                     return detail;
                 }
@@ -586,6 +618,24 @@ public final class ShareApiClient {
             return "HTTP " + httpCode;
         }
         return "HTTP " + httpCode + ": " + normalized;
+    }
+
+    private String extractErrorCode(String responseText) {
+        String normalized = responseText == null ? "" : responseText.trim();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        try {
+            JSONObject root = new JSONObject(normalized);
+            String code = root.optString("code", "").trim();
+            if (!code.isEmpty()) {
+                return code;
+            }
+            JSONObject detail = root.optJSONObject("detail");
+            return detail == null ? "" : detail.optString("code", "").trim();
+        } catch (JSONException ignored) {
+            return "";
+        }
     }
 
     private SharedRouteSummary parseSharedRouteSummary(JSONObject jsonObject) throws IOException {
@@ -654,6 +704,8 @@ public final class ShareApiClient {
                 optString(jsonObject, "bilibiliUrl", "bilibiliLink"),
                 optBoolean(jsonObject, "forceShutdown"),
                 optString(jsonObject, "forceShutdownMessage", "shutdownMessage"),
+                optString(jsonObject, "minSupportedVersion"),
+                jsonObject.optBoolean("startupDialogsConfigured", false),
                 parseStartupDialogs(jsonObject)
         );
     }
