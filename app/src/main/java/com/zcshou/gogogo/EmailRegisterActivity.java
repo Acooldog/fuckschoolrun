@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 
 import com.acooldog.toolbox.config.InternalAuthStore;
 import com.acooldog.toolbox.share.domain.model.EmailVerificationState;
+import com.acooldog.toolbox.share.domain.model.FsrBindingState;
 import com.acooldog.toolbox.share.domain.model.InternalLoginResult;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.utils.GoUtils;
@@ -156,6 +157,18 @@ public class EmailRegisterActivity extends BaseActivity {
                         .registerByEmail(email, code, password, resolveDeviceId(), resolveDeviceName());
                 authStore.saveSession(result.getToken(), result.getAccount());
                 runOnUiThread(() -> {
+                    FsrBindingState binding = result.getFsrBinding();
+                    if (binding != null && !TextUtils.isEmpty(binding.getCommand())) {
+                        android.content.Intent intent = new android.content.Intent(
+                                this,
+                                FsrBindingActivity.class
+                        );
+                        intent.putExtra(FsrBindingActivity.EXTRA_COMMAND, binding.getCommand());
+                        intent.putExtra(FsrBindingActivity.EXTRA_JOB_ID, binding.getJobId());
+                        startActivity(intent);
+                        finish();
+                        return;
+                    }
                     toast(R.string.email_register_success);
                     finish();
                 });

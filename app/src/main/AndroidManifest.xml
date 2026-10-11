@@ -157,6 +157,13 @@
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
+            android:name=".FsrBindingActivity"
+            android:label="@string/fsr_binding_title"
+            android:parentActivityName=".EmailRegisterActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
             android:name=".OperationTipsActivity"
             android:label="@string/home_operation_title"
             android:parentActivityName=".HomeActivity"

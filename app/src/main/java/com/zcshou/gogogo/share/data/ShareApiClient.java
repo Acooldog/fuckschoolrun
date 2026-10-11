@@ -13,6 +13,7 @@ import com.acooldog.toolbox.route.data.RoutePointJsonCodec;
 import com.acooldog.toolbox.route.domain.model.RoutePoint;
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
 import com.acooldog.toolbox.share.domain.model.EmailVerificationState;
+import com.acooldog.toolbox.share.domain.model.FsrBindingState;
 import com.acooldog.toolbox.share.domain.model.InternalAccountProfile;
 import com.acooldog.toolbox.share.domain.model.InternalLoginResult;
 import com.acooldog.toolbox.share.domain.model.MapSearchResult;
@@ -175,7 +176,8 @@ public final class ShareApiClient {
             JSONObject root = new JSONObject(responseText);
             return new InternalLoginResult(
                     root.optString("token", ""),
-                    parseInternalAccount(root.optJSONObject("account"))
+                    parseInternalAccount(root.optJSONObject("account")),
+                    parseFsrBinding(root.optJSONObject("fsrBinding"))
             );
         } catch (JSONException exception) {
             throw new IOException("Unable to parse auth login response", exception);
@@ -239,8 +241,20 @@ public final class ShareApiClient {
         JSONObject root = executeObject(request);
         return new InternalLoginResult(
                 root.optString("token", ""),
-                parseInternalAccount(root.optJSONObject("account"))
+                parseInternalAccount(root.optJSONObject("account")),
+                parseFsrBinding(root.optJSONObject("fsrBinding"))
         );
+    }
+
+    public FsrBindingState getFsrBindingStatus(String token, boolean reveal) throws IOException {
+        if (TextUtils.isEmpty(token)) {
+            throw new IOException("Missing auth token");
+        }
+        HttpUrl url = buildUrl("api/fsr/binding/status").newBuilder()
+                .addQueryParameter("reveal", reveal ? "true" : "false")
+                .build();
+        JSONObject root = executeObject(newRequestBuilder(url, token).get().build());
+        return parseFsrBinding(root);
     }
 
     public List<MapSearchResult> searchMap(String keyword, String city, String token) throws IOException {
@@ -650,6 +664,23 @@ public final class ShareApiClient {
                 optString(jsonObject, "testerType"),
                 optString(jsonObject, "testerTypeLabel"),
                 optString(jsonObject, "status")
+        );
+    }
+
+    private FsrBindingState parseFsrBinding(JSONObject jsonObject) {
+        if (jsonObject == null) {
+            return null;
+        }
+        return new FsrBindingState(
+                optString(jsonObject, "status"),
+                optString(jsonObject, "token"),
+                optString(jsonObject, "command"),
+                optString(jsonObject, "jobId"),
+                optInt(jsonObject, "queuePosition"),
+                optString(jsonObject, "message"),
+                optString(jsonObject, "qqNumber"),
+                optString(jsonObject, "qqDisplayName"),
+                optString(jsonObject, "groupId")
         );
     }
 

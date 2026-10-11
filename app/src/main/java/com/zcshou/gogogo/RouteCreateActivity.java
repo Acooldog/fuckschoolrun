@@ -126,6 +126,7 @@ public class RouteCreateActivity extends BaseActivity {
     private int selectedPointIndex = -1;
     private boolean toolboxCollapsed;
     private boolean closeRoutePromptVisible;
+    private boolean loginPromptVisible;
     private String editingRouteId;
     private String editingRouteName;
     private RouteShareInfo editingShareInfo = RouteShareInfo.NONE;
@@ -407,8 +408,8 @@ public class RouteCreateActivity extends BaseActivity {
         }
         String token = authStore == null ? "" : authStore.getToken();
         if (TextUtils.isEmpty(token)) {
-            GoUtils.DisplayToast(this, getString(R.string.route_search_need_login_backend));
             searchResultContainer.setVisibility(View.GONE);
+            showSearchLoginPrompt();
             return;
         }
         ioExecutor.execute(() -> {
@@ -441,6 +442,22 @@ public class RouteCreateActivity extends BaseActivity {
                 });
             }
         });
+    }
+
+    private void showSearchLoginPrompt() {
+        if (loginPromptVisible || isFinishing() || isDestroyed()) {
+            return;
+        }
+        loginPromptVisible = true;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.route_search_need_login_title)
+                .setMessage(R.string.route_search_need_login_backend)
+                .setNegativeButton(R.string.route_search_login_cancel, null)
+                .setPositiveButton(R.string.route_search_login_action, (dialog, which) -> {
+                    startActivity(new android.content.Intent(this, InternalLoginActivity.class));
+                })
+                .setOnDismissListener(dialog -> loginPromptVisible = false)
+                .show();
     }
 
     @NonNull

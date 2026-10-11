@@ -2,6 +2,9 @@
 <resources>
     <string name="app_exit">退出</string>
     <string name="route_search_need_login_backend">如果你需要使用搜索功能，请进行登录操作。</string>
+    <string name="route_search_need_login_title">需要登录</string>
+    <string name="route_search_login_cancel">取消</string>
+    <string name="route_search_login_action">登录</string>
     <string name="internal_login_register">注册</string>
     <string name="email_register_title">注册</string>
     <string name="email_register_email">邮箱</string>
