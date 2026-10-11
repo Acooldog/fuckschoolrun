@@ -11,15 +11,15 @@ public final class ShareModule {
 
     private final ShareApiClient shareApiClient;
 
-    private ShareModule() throws IOException {
-        shareApiClient = new ShareApiClient();
+    private ShareModule(Context context) throws IOException {
+        shareApiClient = new ShareApiClient(context.getApplicationContext());
     }
 
     public static ShareModule from(Context context) throws IOException {
         if (instance == null) {
             synchronized (ShareModule.class) {
                 if (instance == null) {
-                    instance = new ShareModule();
+                    instance = new ShareModule(context);
                 }
             }
         }

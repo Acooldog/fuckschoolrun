@@ -54,6 +54,9 @@ public class InternalLoginActivity extends BaseActivity {
 
         findViewById(R.id.internal_login_button).setOnClickListener(v -> login());
         findViewById(R.id.internal_logout_button).setOnClickListener(v -> logout());
+        findViewById(R.id.internal_register_button).setOnClickListener(
+                v -> startActivity(new android.content.Intent(this, EmailRegisterActivity.class))
+        );
 
         refreshSessionState();
     }

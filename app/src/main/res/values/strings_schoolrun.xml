@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_exit">退出</string>
+    <string name="route_search_need_login_backend">如果你需要使用搜索功能，请进行登录操作。</string>
+    <string name="internal_login_register">注册</string>
+    <string name="email_register_title">注册</string>
+    <string name="email_register_email">邮箱</string>
+    <string name="email_register_code">验证码</string>
+    <string name="email_register_password">密码（至少 8 位）</string>
+    <string name="email_register_password_confirm">确认密码</string>
+    <string name="email_register_send_code">获取验证码</string>
+    <string name="email_register_send_again">重新获取（%1$d 秒）</string>
+    <string name="email_register_code_cooldown">验证码已发送，请在 %1$d 秒后重试</string>
+    <string name="email_register_submit">注册并登录</string>
+    <string name="email_register_need_email">请输入邮箱。</string>
+    <string name="email_register_need_code">请输入验证码。</string>
+    <string name="email_register_need_password">请输入至少 8 位密码。</string>
+    <string name="email_register_password_mismatch">两次输入的密码不一致。</string>
+    <string name="email_register_code_sent">验证码已发送，请查收邮件。</string>
+    <string name="email_register_success">注册成功，已登录。</string>
+    <string name="email_register_failed">注册失败：</string>
+</resources>

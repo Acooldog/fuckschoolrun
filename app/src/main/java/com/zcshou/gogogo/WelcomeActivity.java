@@ -281,7 +281,12 @@ public class WelcomeActivity extends AppCompatActivity {
                 .setTitle(content.title)
                 .setMessage(content.buildDialogMessage())
                 .setCancelable(false)
-                .setPositiveButton(R.string.app_entry_notice_known, null)
+                 .setPositiveButton(
+                         content.forceShutdown
+                                 ? R.string.app_exit
+                                 : R.string.app_entry_notice_known,
+                         null
+                 )
                 .create();
         if (!content.groupNumber.isEmpty()) {
             dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.app_entry_notice_copy_group), (d, which) -> {
@@ -294,7 +299,11 @@ public class WelcomeActivity extends AppCompatActivity {
         dialog.setOnShowListener(ignored -> {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 dialog.dismiss();
-                ensurePermissionsThenEnterHome();
+                if (content.forceShutdown) {
+                    finish();
+                } else {
+                    ensurePermissionsThenEnterHome();
+                }
             });
             if (!content.groupNumber.isEmpty()) {
                 dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> copyGroupNumber(content.groupNumber));
@@ -379,19 +388,25 @@ public class WelcomeActivity extends AppCompatActivity {
         private final String groupNumber;
         private final String bilibiliText;
         private final String bilibiliUrl;
+        private final boolean forceShutdown;
+        private final String forceShutdownMessage;
 
         private EntryNoticeContent(
                 String title,
                 String message,
                 String groupNumber,
                 String bilibiliText,
-                String bilibiliUrl
+                String bilibiliUrl,
+                boolean forceShutdown,
+                String forceShutdownMessage
         ) {
             this.title = title == null ? "" : title.trim();
             this.message = message == null ? "" : message.trim();
             this.groupNumber = groupNumber == null ? "" : groupNumber.trim();
             this.bilibiliText = bilibiliText == null ? "" : bilibiliText.trim();
             this.bilibiliUrl = bilibiliUrl == null ? "" : bilibiliUrl.trim();
+            this.forceShutdown = forceShutdown;
+            this.forceShutdownMessage = forceShutdownMessage == null ? "" : forceShutdownMessage.trim();
         }
 
         @NonNull
@@ -401,7 +416,9 @@ public class WelcomeActivity extends AppCompatActivity {
                     activity.getString(R.string.app_entry_notice_message),
                     activity.getString(R.string.app_entry_notice_group_number),
                     activity.getString(R.string.app_bilibili_notice_text),
-                    activity.getString(R.string.app_bilibili_url)
+                    activity.getString(R.string.app_bilibili_url),
+                    false,
+                    ""
             );
         }
 
@@ -412,7 +429,9 @@ public class WelcomeActivity extends AppCompatActivity {
                     firstNonEmpty(remote.getNoticeMessage(), fallback.message),
                     firstNonEmpty(remote.getQqGroupNumber(), fallback.groupNumber),
                     firstNonEmpty(remote.getBilibiliText(), fallback.bilibiliText),
-                    firstNonEmpty(remote.getBilibiliUrl(), fallback.bilibiliUrl)
+                    firstNonEmpty(remote.getBilibiliUrl(), fallback.bilibiliUrl),
+                    remote.isForceShutdown(),
+                    remote.getForceShutdownMessage()
             );
         }
 
@@ -421,7 +440,15 @@ public class WelcomeActivity extends AppCompatActivity {
             if (bilibiliText.isEmpty()) {
                 return message;
             }
+            if (forceShutdown) {
+                return forceShutdownMessage();
+            }
             return message + "\n\n" + bilibiliText;
+        }
+
+        @NonNull
+        private String forceShutdownMessage() {
+            return forceShutdownMessage.isEmpty() ? "当前版本暂不可用，请等待管理员通知。" : forceShutdownMessage;
         }
 
         @NonNull

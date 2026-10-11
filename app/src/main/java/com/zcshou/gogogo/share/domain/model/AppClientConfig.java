@@ -6,19 +6,25 @@ public final class AppClientConfig {
     private final String qqGroupNumber;
     private final String bilibiliText;
     private final String bilibiliUrl;
+    private final boolean forceShutdown;
+    private final String forceShutdownMessage;
 
     public AppClientConfig(
             String noticeTitle,
             String noticeMessage,
             String qqGroupNumber,
             String bilibiliText,
-            String bilibiliUrl
+            String bilibiliUrl,
+            boolean forceShutdown,
+            String forceShutdownMessage
     ) {
         this.noticeTitle = noticeTitle == null ? "" : noticeTitle.trim();
         this.noticeMessage = noticeMessage == null ? "" : noticeMessage.trim();
         this.qqGroupNumber = qqGroupNumber == null ? "" : qqGroupNumber.trim();
         this.bilibiliText = bilibiliText == null ? "" : bilibiliText.trim();
         this.bilibiliUrl = bilibiliUrl == null ? "" : bilibiliUrl.trim();
+        this.forceShutdown = forceShutdown;
+        this.forceShutdownMessage = forceShutdownMessage == null ? "" : forceShutdownMessage.trim();
     }
 
     public String getNoticeTitle() {
@@ -39,5 +45,13 @@ public final class AppClientConfig {
 
     public String getBilibiliUrl() {
         return bilibiliUrl;
+    }
+
+    public boolean isForceShutdown() {
+        return forceShutdown;
+    }
+
+    public String getForceShutdownMessage() {
+        return forceShutdownMessage;
     }
 }
