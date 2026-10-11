@@ -34,6 +34,8 @@ import com.acooldog.toolbox.route.domain.model.RouteShareInfo;
 import com.acooldog.toolbox.route.domain.service.RouteEditUtils;
 import com.acooldog.toolbox.route.presentation.RouteCreateViewModel;
 import com.acooldog.toolbox.route.presentation.RouteModule;
+import com.acooldog.toolbox.config.InternalAuthStore;
+import com.acooldog.toolbox.share.domain.model.MapSearchResult;
 import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.utils.GoUtils;
@@ -52,14 +54,6 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
-import com.baidu.mapapi.search.core.PoiInfo;
-import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
-import com.baidu.mapapi.search.poi.PoiCitySearchOption;
-import com.baidu.mapapi.search.poi.PoiDetailResult;
-import com.baidu.mapapi.search.poi.PoiDetailSearchResult;
-import com.baidu.mapapi.search.poi.PoiIndoorResult;
-import com.baidu.mapapi.search.poi.PoiResult;
-import com.baidu.mapapi.search.poi.PoiSearch;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -101,7 +95,7 @@ public class RouteCreateActivity extends BaseActivity {
     private LatLng currentLocation;
     private BDLocation lastLocationFix;
     private ExecutorService ioExecutor;
-    private PoiSearch poiSearch;
+    private InternalAuthStore authStore;
     private String currentCity = "";
     private LinearLayout searchResultContainer;
     private ListView searchResultList;
@@ -132,6 +126,7 @@ public class RouteCreateActivity extends BaseActivity {
     private int selectedPointIndex = -1;
     private boolean toolboxCollapsed;
     private boolean closeRoutePromptVisible;
+    private boolean loginPromptVisible;
     private String editingRouteId;
     private String editingRouteName;
     private RouteShareInfo editingShareInfo = RouteShareInfo.NONE;
@@ -163,6 +158,7 @@ public class RouteCreateActivity extends BaseActivity {
         mapView = findViewById(R.id.map_create);
         baiduMap = mapView.getMap();
         ioExecutor = Executors.newSingleThreadExecutor();
+        authStore = new InternalAuthStore(getApplicationContext());
         recordIntervalSeconds = getSharedPreferences(PREF_ROUTE_CREATE, MODE_PRIVATE)
                 .getInt(PREF_ROUTE_RECORD_INTERVAL_SECONDS, DEFAULT_RECORD_INTERVAL_SECONDS);
 
@@ -192,9 +188,6 @@ public class RouteCreateActivity extends BaseActivity {
         stopRecordScheduler();
         if (locationClient != null) {
             locationClient.stop();
-        }
-        if (poiSearch != null) {
-            poiSearch.destroy();
         }
         if (ioExecutor != null) {
             ioExecutor.shutdownNow();
@@ -382,48 +375,6 @@ public class RouteCreateActivity extends BaseActivity {
         SearchView searchView = findViewById(R.id.route_create_search_view);
         searchResultContainer = findViewById(R.id.route_search_result_container);
         searchResultList = findViewById(R.id.route_search_result_list);
-        poiSearch = PoiSearch.newInstance();
-        poiSearch.setOnGetPoiSearchResultListener(new OnGetPoiSearchResultListener() {
-            @Override
-            public void onGetPoiResult(PoiResult poiResult) {
-                if (poiResult == null || poiResult.getAllPoi() == null) {
-                    searchResultContainer.setVisibility(View.GONE);
-                    return;
-                }
-
-                List<Map<String, Object>> data = getPoiResultList(poiResult.getAllPoi());
-                if (data.isEmpty()) {
-                    searchResultContainer.setVisibility(View.GONE);
-                    return;
-                }
-
-                SimpleAdapter adapter = new SimpleAdapter(
-                        RouteCreateActivity.this,
-                        data,
-                        R.layout.search_poi_item,
-                        new String[]{POI_NAME, POI_ADDRESS, POI_LONGITUDE, POI_LATITUDE},
-                        new int[]{R.id.poi_name, R.id.poi_address, R.id.poi_longitude, R.id.poi_latitude}
-                );
-                searchResultList.setAdapter(adapter);
-                searchResultContainer.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void onGetPoiDetailResult(PoiDetailResult poiDetailResult) {
-                // No-op.
-            }
-
-            @Override
-            public void onGetPoiDetailResult(PoiDetailSearchResult poiDetailSearchResult) {
-                // No-op.
-            }
-
-            @Override
-            public void onGetPoiIndoorResult(PoiIndoorResult poiIndoorResult) {
-                // No-op.
-            }
-        });
-
         searchResultList.setOnItemClickListener((parent, view, position, id) -> {
             String lng = ((TextView) view.findViewById(R.id.poi_longitude)).getText().toString();
             String lat = ((TextView) view.findViewById(R.id.poi_latitude)).getText().toString();
@@ -455,38 +406,73 @@ public class RouteCreateActivity extends BaseActivity {
         if (TextUtils.isEmpty(keyword)) {
             return;
         }
-        try {
-            String city = TextUtils.isEmpty(currentCity) ? "北京" : currentCity;
-            poiSearch.searchInCity(
-                    new PoiCitySearchOption()
-                            .city(city)
-                            .keyword(keyword)
-                            .pageCapacity(20)
-                            .pageNum(0)
-                            .cityLimit(false)
-                            .isReturnAddr(true)
-            );
-        } catch (Exception ignored) {
+        String token = authStore == null ? "" : authStore.getToken();
+        if (TextUtils.isEmpty(token)) {
             searchResultContainer.setVisibility(View.GONE);
+            showSearchLoginPrompt();
+            return;
         }
+        ioExecutor.execute(() -> {
+            try {
+                List<MapSearchResult> results = ShareModule.from(getApplicationContext())
+                        .shareApiClient()
+                        .searchMap(keyword, currentCity, token);
+                List<Map<String, Object>> data = getPoiResultList(results);
+                runOnUiThread(() -> {
+                    if (data.isEmpty()) {
+                        searchResultContainer.setVisibility(View.GONE);
+                        return;
+                    }
+                    SimpleAdapter adapter = new SimpleAdapter(
+                            RouteCreateActivity.this,
+                            data,
+                            R.layout.search_poi_item,
+                            new String[]{POI_NAME, POI_ADDRESS, POI_LONGITUDE, POI_LATITUDE},
+                            new int[]{R.id.poi_name, R.id.poi_address, R.id.poi_longitude, R.id.poi_latitude}
+                    );
+                    searchResultList.setAdapter(adapter);
+                    searchResultContainer.setVisibility(View.VISIBLE);
+                });
+            } catch (Exception exception) {
+                runOnUiThread(() -> {
+                    searchResultContainer.setVisibility(View.GONE);
+                    if (!TextUtils.isEmpty(exception.getMessage())) {
+                        GoUtils.DisplayToast(this, exception.getMessage());
+                    }
+                });
+            }
+        });
+    }
+
+    private void showSearchLoginPrompt() {
+        if (loginPromptVisible || isFinishing() || isDestroyed()) {
+            return;
+        }
+        loginPromptVisible = true;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.route_search_need_login_title)
+                .setMessage(R.string.route_search_need_login_backend)
+                .setNegativeButton(R.string.route_search_login_cancel, null)
+                .setPositiveButton(R.string.route_search_login_action, (dialog, which) -> {
+                    startActivity(new android.content.Intent(this, InternalLoginActivity.class));
+                })
+                .setOnDismissListener(dialog -> loginPromptVisible = false)
+                .show();
     }
 
     @NonNull
-    private List<Map<String, Object>> getPoiResultList(List<PoiInfo> poiInfos) {
+    private List<Map<String, Object>> getPoiResultList(List<MapSearchResult> results) {
         List<Map<String, Object>> data = new ArrayList<>();
-        for (PoiInfo info : poiInfos) {
-            if (info == null || info.location == null) {
+        for (MapSearchResult result : results) {
+            if (result == null) {
                 continue;
             }
 
             Map<String, Object> poiItem = new HashMap<>();
-            poiItem.put(POI_NAME, info.name == null ? "" : info.name);
-            String city = info.city == null ? "" : info.city;
-            String area = info.area == null ? "" : info.area;
-            String address = info.address == null ? "" : info.address;
-            poiItem.put(POI_ADDRESS, (city + " " + area + " " + address).trim());
-            poiItem.put(POI_LONGITUDE, String.valueOf(info.location.longitude));
-            poiItem.put(POI_LATITUDE, String.valueOf(info.location.latitude));
+            poiItem.put(POI_NAME, result.getName());
+            poiItem.put(POI_ADDRESS, result.getAddress());
+            poiItem.put(POI_LONGITUDE, String.valueOf(result.getLongitude()));
+            poiItem.put(POI_LATITUDE, String.valueOf(result.getLatitude()));
             data.add(poiItem);
         }
         return data;

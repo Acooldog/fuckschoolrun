@@ -7,6 +7,10 @@ sdk.dir=C\:\\path\\to\\Android\\Sdk
 MAPS_API_KEY=
 MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
 
-# Shared route / NFC backend base URL, for example:
-# SHARE_API_BASE_URL=http://10.0.2.2:8080/
+# Keep the real backend URL in ignored local.private.properties.
 SHARE_API_BASE_URL=
+
+# Optional local signing configuration. Keep actual values in ignored local.private.properties.
+KEYSTORE_STORE_PASSWORD=
+KEYSTORE_KEY_ALIAS=
+KEYSTORE_KEY_PASSWORD=

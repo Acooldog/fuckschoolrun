@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fsr_binding_title">FSR 账号绑定</string>
+    <string name="fsr_binding_instruction">请在你加入的校园跑群内发送以下指令</string>
+    <string name="fsr_binding_copy">复制绑定命令</string>
+    <string name="fsr_binding_waiting">请稍后，正在等待机器人处理</string>
+    <string name="fsr_binding_processing">请稍后，正在处理</string>
+    <string name="fsr_binding_queue_position">请稍后，你的排队位数是 %1$d，正在处理</string>
+    <string name="fsr_binding_success">绑定成功，可以返回使用</string>
+    <string name="fsr_binding_copied">绑定命令已复制</string>
+    <string name="fsr_binding_loading">正在获取绑定命令</string>
+    <string name="fsr_binding_session_expired">登录状态已失效，请重新登录</string>
+    <string name="fsr_binding_failed">绑定处理失败：%1$s</string>
+</resources>

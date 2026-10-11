@@ -1,17 +1,22 @@
 package com.acooldog.toolbox.share.data;
 
+import android.content.Context;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
 import com.acooldog.toolbox.BuildConfig;
+import com.acooldog.toolbox.config.InternalAuthStore;
 import com.acooldog.toolbox.nfc.domain.NfcPayload;
 import com.acooldog.toolbox.route.domain.model.RouteSimulationConfig;
 import com.acooldog.toolbox.route.data.RoutePointJsonCodec;
 import com.acooldog.toolbox.route.domain.model.RoutePoint;
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
+import com.acooldog.toolbox.share.domain.model.EmailVerificationState;
+import com.acooldog.toolbox.share.domain.model.FsrBindingState;
 import com.acooldog.toolbox.share.domain.model.InternalAccountProfile;
 import com.acooldog.toolbox.share.domain.model.InternalLoginResult;
+import com.acooldog.toolbox.share.domain.model.MapSearchResult;
 import com.acooldog.toolbox.share.domain.model.SharedNfcEntry;
 import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
 import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
@@ -40,16 +45,26 @@ import okhttp3.ResponseBody;
 
 public final class ShareApiClient {
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
-    private static final String CLIENT_VARIANT = "schoolrun_toolbox";
+    private static final String CLIENT_VARIANT = "fuckschoolrun";
 
     private final OkHttpClient okHttpClient;
     private final HttpUrl baseUrl;
+    private final Context applicationContext;
 
     public ShareApiClient() throws IOException {
-        this(BuildConfig.SHARE_API_BASE_URL);
+        this(null, BuildConfig.SHARE_API_BASE_URL);
+    }
+
+    public ShareApiClient(Context context) throws IOException {
+        this(context, BuildConfig.SHARE_API_BASE_URL);
     }
 
     ShareApiClient(String configuredBaseUrl) throws IOException {
+        this(null, configuredBaseUrl);
+    }
+
+    ShareApiClient(Context context, String configuredBaseUrl) throws IOException {
+        applicationContext = context == null ? null : context.getApplicationContext();
         okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(15L, TimeUnit.SECONDS)
                 .readTimeout(20L, TimeUnit.SECONDS)
@@ -72,16 +87,14 @@ public final class ShareApiClient {
             throw new IOException("Unable to encode shared route request", exception);
         }
 
-        Request request = new Request.Builder()
-                .url(buildUrl("api/shared/routes"))
+        Request request = clientRequestBuilder(buildUrl("api/shared/routes"))
                 .post(RequestBody.create(bodyJson.toString(), JSON_MEDIA_TYPE))
                 .build();
         return parseSharedRoute(executeObject(request));
     }
 
     public List<SharedRouteSummary> getSharedRoutes() throws IOException {
-        Request request = new Request.Builder()
-                .url(buildUrl("api/shared/routes"))
+        Request request = clientRequestBuilder(buildUrl("api/shared/routes"))
                 .get()
                 .build();
         JSONArray items = executeArray(request);
@@ -96,8 +109,7 @@ public final class ShareApiClient {
         if (TextUtils.isEmpty(shareId)) {
             throw new IOException("Missing shared route id");
         }
-        Request request = new Request.Builder()
-                .url(buildUrl("api/shared/routes/" + shareId))
+        Request request = clientRequestBuilder(buildUrl("api/shared/routes/" + shareId))
                 .get()
                 .build();
         return parseSharedRoute(executeObject(request));
@@ -114,16 +126,14 @@ public final class ShareApiClient {
             throw new IOException("Unable to encode shared NFC request", exception);
         }
 
-        Request request = new Request.Builder()
-                .url(buildUrl("api/shared/nfc"))
+        Request request = clientRequestBuilder(buildUrl("api/shared/nfc"))
                 .post(RequestBody.create(bodyJson.toString(), JSON_MEDIA_TYPE))
                 .build();
         return parseSharedNfc(executeObject(request));
     }
 
     public List<SharedNfcEntry> getSharedNfcEntries() throws IOException {
-        Request request = new Request.Builder()
-                .url(buildUrl("api/shared/nfc"))
+        Request request = clientRequestBuilder(buildUrl("api/shared/nfc"))
                 .get()
                 .build();
         JSONArray items = executeArray(request);
@@ -135,8 +145,7 @@ public final class ShareApiClient {
     }
 
     public AppClientConfig getAppClientConfig() throws IOException {
-        Request request = new Request.Builder()
-                .url(buildUrl("api/client-config"))
+        Request request = clientRequestBuilder(buildUrl("api/client-config"))
                 .get()
                 .build();
         return parseAppClientConfig(executeObject(request));
@@ -159,8 +168,7 @@ public final class ShareApiClient {
             throw new IOException("Unable to encode auth login request", exception);
         }
 
-        Request request = new Request.Builder()
-                .url(buildUrl("api/auth/login"))
+        Request request = clientRequestBuilder(buildUrl("api/auth/login"))
                 .post(RequestBody.create(bodyJson.toString(), JSON_MEDIA_TYPE))
                 .build();
         String responseText = executeRequest(request);
@@ -168,11 +176,109 @@ public final class ShareApiClient {
             JSONObject root = new JSONObject(responseText);
             return new InternalLoginResult(
                     root.optString("token", ""),
-                    parseInternalAccount(root.optJSONObject("account"))
+                    parseInternalAccount(root.optJSONObject("account")),
+                    parseFsrBinding(root.optJSONObject("fsrBinding"))
             );
         } catch (JSONException exception) {
             throw new IOException("Unable to parse auth login response", exception);
         }
+    }
+
+    public EmailVerificationState getEmailRegistrationStatus(String email) throws IOException {
+        HttpUrl url = buildUrl("api/auth/email/register/status").newBuilder()
+                .addQueryParameter("email", email == null ? "" : email.trim())
+                .build();
+        JSONObject root = executeObject(clientRequestBuilder(url).get().build());
+        return new EmailVerificationState(
+                false,
+                root.optBoolean("canSend", true),
+                root.optInt("cooldownSeconds", 0),
+                root.optLong("expiresAt", 0L)
+        );
+    }
+
+    public EmailVerificationState sendEmailRegistrationCode(String email) throws IOException {
+        JSONObject bodyJson = new JSONObject();
+        try {
+            bodyJson.put("email", email == null ? "" : email.trim());
+            bodyJson.put("appVariant", CLIENT_VARIANT);
+        } catch (JSONException exception) {
+            throw new IOException("Unable to encode email verification request", exception);
+        }
+        Request request = clientRequestBuilder(buildUrl("api/auth/email/register/send-code"))
+                .post(RequestBody.create(bodyJson.toString(), JSON_MEDIA_TYPE))
+                .build();
+        JSONObject root = executeObject(request);
+        return new EmailVerificationState(
+                root.optBoolean("accepted", false),
+                root.optBoolean("accepted", false),
+                root.optInt("cooldownSeconds", 0),
+                root.optLong("expiresAt", 0L)
+        );
+    }
+
+    public InternalLoginResult registerByEmail(
+            String email,
+            String code,
+            String password,
+            String deviceId,
+            String deviceName
+    ) throws IOException {
+        JSONObject bodyJson = new JSONObject();
+        try {
+            bodyJson.put("email", email == null ? "" : email.trim());
+            bodyJson.put("code", code == null ? "" : code.trim());
+            bodyJson.put("password", password == null ? "" : password);
+            bodyJson.put("deviceId", deviceId == null ? "" : deviceId);
+            bodyJson.put("deviceName", deviceName == null ? "" : deviceName);
+            bodyJson.put("appVariant", CLIENT_VARIANT);
+        } catch (JSONException exception) {
+            throw new IOException("Unable to encode email registration request", exception);
+        }
+        Request request = clientRequestBuilder(buildUrl("api/auth/email/register"))
+                .post(RequestBody.create(bodyJson.toString(), JSON_MEDIA_TYPE))
+                .build();
+        JSONObject root = executeObject(request);
+        return new InternalLoginResult(
+                root.optString("token", ""),
+                parseInternalAccount(root.optJSONObject("account")),
+                parseFsrBinding(root.optJSONObject("fsrBinding"))
+        );
+    }
+
+    public FsrBindingState getFsrBindingStatus(String token, boolean reveal) throws IOException {
+        if (TextUtils.isEmpty(token)) {
+            throw new IOException("Missing auth token");
+        }
+        HttpUrl url = buildUrl("api/fsr/binding/status").newBuilder()
+                .addQueryParameter("reveal", reveal ? "true" : "false")
+                .build();
+        JSONObject root = executeObject(newRequestBuilder(url, token).get().build());
+        return parseFsrBinding(root);
+    }
+
+    public List<MapSearchResult> searchMap(String keyword, String city, String token) throws IOException {
+        HttpUrl url = buildUrl("api/map/search").newBuilder()
+                .addQueryParameter("provider", "baidu")
+                .addQueryParameter("keyword", keyword == null ? "" : keyword.trim())
+                .addQueryParameter("city", city == null ? "" : city.trim())
+                .addQueryParameter("limit", "20")
+                .build();
+        JSONArray items = executeArray(newRequestBuilder(url, token).get().build());
+        List<MapSearchResult> results = new ArrayList<>();
+        for (int index = 0; index < items.length(); index++) {
+            JSONObject item = items.optJSONObject(index);
+            if (item == null) {
+                continue;
+            }
+            results.add(new MapSearchResult(
+                    optString(item, "name"),
+                    optString(item, "address"),
+                    item.optDouble("latitude", 0d),
+                    item.optDouble("longitude", 0d)
+            ));
+        }
+        return results;
     }
 
     public InternalAccountProfile getInternalAccountProfile(String token) throws IOException {
@@ -269,10 +375,7 @@ public final class ShareApiClient {
         HttpUrl url = buildUrl("api/shared/simulation-configs").newBuilder()
                 .addQueryParameter("q", query == null ? "" : query)
                 .build();
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
+        Request request = clientRequestBuilder(url).get().build();
         JSONArray items = executeArray(request);
         List<SharedSimulationConfigEntry> results = new ArrayList<>();
         for (int index = 0; index < items.length(); index++) {
@@ -285,8 +388,7 @@ public final class ShareApiClient {
         if (TextUtils.isEmpty(configId)) {
             throw new IOException("Missing simulation config id");
         }
-        Request request = new Request.Builder()
-                .url(buildUrl("api/shared/simulation-configs/" + configId))
+        Request request = clientRequestBuilder(buildUrl("api/shared/simulation-configs/" + configId))
                 .get()
                 .build();
         return parseSharedSimulationConfig(executeObject(request));
@@ -352,12 +454,18 @@ public final class ShareApiClient {
     }
 
     private Request.Builder newRequestBuilder(HttpUrl url, String token) {
-        Request.Builder builder = new Request.Builder().url(url);
+        Request.Builder builder = clientRequestBuilder(url);
         if (!TextUtils.isEmpty(token)) {
             builder.header("Authorization", "Bearer " + token.trim());
         }
-        builder.header("X-Client-Variant", TextUtils.isEmpty(token) ? "public" : CLIENT_VARIANT);
         return builder;
+    }
+
+    private Request.Builder clientRequestBuilder(HttpUrl url) {
+        return new Request.Builder()
+                .url(url)
+                .header("X-Client-Variant", CLIENT_VARIANT)
+                .header("X-App-Version", BuildConfig.VERSION_NAME);
     }
 
     private JSONArray executeArray(Request request) throws IOException {
@@ -418,6 +526,7 @@ public final class ShareApiClient {
                 if (data.has("id") || data.has("name") || data.has("points")) {
                     return data;
                 }
+                return data;
             }
             JSONObject route = root.optJSONObject("route");
             if (route != null) {
@@ -438,6 +547,11 @@ public final class ShareApiClient {
             ResponseBody responseBody = response.body();
             String responseText = responseBody == null ? "" : responseBody.string();
             if (!response.isSuccessful()) {
+                if ((response.code() == 401 || response.code() == 403)
+                        && request.header("Authorization") != null
+                        && applicationContext != null) {
+                    new InternalAuthStore(applicationContext).clear();
+                }
                 throw new IOException(extractErrorMessage(response.code(), responseText));
             }
             return responseText;
@@ -533,7 +647,9 @@ public final class ShareApiClient {
                 optString(jsonObject, "noticeMessage", "message"),
                 optString(jsonObject, "qqGroupNumber", "groupNumber", "qqGroup"),
                 optString(jsonObject, "bilibiliText", "bilibiliLabel"),
-                optString(jsonObject, "bilibiliUrl", "bilibiliLink")
+                optString(jsonObject, "bilibiliUrl", "bilibiliLink"),
+                optBoolean(jsonObject, "forceShutdown"),
+                optString(jsonObject, "forceShutdownMessage", "shutdownMessage")
         );
     }
 
@@ -548,6 +664,23 @@ public final class ShareApiClient {
                 optString(jsonObject, "testerType"),
                 optString(jsonObject, "testerTypeLabel"),
                 optString(jsonObject, "status")
+        );
+    }
+
+    private FsrBindingState parseFsrBinding(JSONObject jsonObject) {
+        if (jsonObject == null) {
+            return null;
+        }
+        return new FsrBindingState(
+                optString(jsonObject, "status"),
+                optString(jsonObject, "token"),
+                optString(jsonObject, "command"),
+                optString(jsonObject, "jobId"),
+                optInt(jsonObject, "queuePosition"),
+                optString(jsonObject, "message"),
+                optString(jsonObject, "qqNumber"),
+                optString(jsonObject, "qqDisplayName"),
+                optString(jsonObject, "groupId")
         );
     }
 

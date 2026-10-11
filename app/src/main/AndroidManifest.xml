@@ -36,22 +36,10 @@
     <uses-feature
         android:name="android.hardware.nfc"
         android:required="false" />
-    <!-- 允许挂载和反挂载文件系统可移动存储 -->
-    <uses-permission
-        android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"
-        tools:ignore="ProtectedPermissions" />
-    <!-- 允许程序读取底层系统日志文件 -->
-    <uses-permission
-        android:name="android.permission.READ_LOGS"
-        tools:ignore="ProtectedPermissions" />
     <!-- 允许访问振动设备 -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- 允许使用PowerManager的 WakeLocks保持进程在休眠时从屏幕消失 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- 允许程序读取或写入系统设置 -->
-    <uses-permission
-        android:name="android.permission.WRITE_SETTINGS"
-        tools:ignore="ProtectedPermissions" />
     <!-- 允许程序创建模拟位置提供用于测试 -->
     <uses-permission
         android:name="android.permission.ACCESS_MOCK_LOCATION"
@@ -158,6 +146,20 @@
             android:name=".InternalLoginActivity"
             android:label="@string/internal_login_title"
             android:parentActivityName=".HomeActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name=".EmailRegisterActivity"
+            android:label="@string/email_register_title"
+            android:parentActivityName=".InternalLoginActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name=".FsrBindingActivity"
+            android:label="@string/fsr_binding_title"
+            android:parentActivityName=".EmailRegisterActivity"
             android:exported="false"
             android:theme="@style/AppTheme.NoActionBar" />
 

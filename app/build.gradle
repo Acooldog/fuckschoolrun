@@ -7,9 +7,19 @@ if (localPropertiesFile.exists()) {
         localProperties.load(stream)
     }
 }
+def privateLocalProperties = new Properties()
+def privateLocalPropertiesFile = rootProject.file('local.private.properties')
+if (privateLocalPropertiesFile.exists()) {
+    privateLocalPropertiesFile.withInputStream { stream ->
+        privateLocalProperties.load(stream)
+    }
+}
 
 def readLocalConfig = { name, defaultValue = "" ->
-    def value = localProperties.getProperty(name)
+    def value = privateLocalProperties.getProperty(name)
+    if (value == null || value.toString().trim().isEmpty()) {
+        value = localProperties.getProperty(name)
+    }
     if (value == null || value.toString().trim().isEmpty()) {
         value = project.findProperty(name)
     }
@@ -30,17 +40,24 @@ def baiduManifestApiKey = mapsApiKey.trim().isEmpty() ? "NO_BAIDU_MAPS_API_KEY_C
 def preferredKeystore = file('..\\keystore\\SchoolRun.jks')
 def legacyKeystore = file('..\\keystore\\GoGoGo.jks')
 def projectKeystore = preferredKeystore.exists() ? preferredKeystore : legacyKeystore
+def keystoreStorePassword = readLocalConfig("KEYSTORE_STORE_PASSWORD")
+def keystoreKeyAlias = readLocalConfig("KEYSTORE_KEY_ALIAS")
+def keystoreKeyPassword = readLocalConfig("KEYSTORE_KEY_PASSWORD")
+def hasLocalSigningConfig = projectKeystore.exists() &&
+        !keystoreStorePassword.trim().isEmpty() &&
+        !keystoreKeyAlias.trim().isEmpty() &&
+        !keystoreKeyPassword.trim().isEmpty()
 def algorithmTestModulesAvailable = rootProject.findProject(':algorithm-test-kit') != null &&
         rootProject.findProject(':sensor-test-engine') != null
 
 android {
     signingConfigs {
         local {
-            if (projectKeystore.exists()) {
+            if (hasLocalSigningConfig) {
                 storeFile projectKeystore
-                storePassword 'GoGoGo'
-                keyAlias 'GoGoKey'
-                keyPassword 'GoGoGo'
+                storePassword keystoreStorePassword
+                keyAlias keystoreKeyAlias
+                keyPassword keystoreKeyPassword
             }
         }
     }
@@ -59,7 +76,7 @@ android {
             //noinspection ChromeOsAbiSupport
             abiFilters "arm64-v8a"
         }
-        if (projectKeystore.exists()) {
+        if (hasLocalSigningConfig) {
             signingConfig signingConfigs.local
         }
         manifestPlaceholders = [
@@ -84,14 +101,14 @@ android {
             // R8 configuration files.
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 
-            if (projectKeystore.exists()) {
+            if (hasLocalSigningConfig) {
                 signingConfig signingConfigs.local
             }
             multiDexEnabled true
             buildConfigField "boolean", "ENABLE_ALGORITHM_TEST", "false"
         }
         debug {
-            if (projectKeystore.exists()) {
+            if (hasLocalSigningConfig) {
                 signingConfig signingConfigs.local
             }
             buildConfigField "boolean", "ENABLE_ALGORITHM_TEST", algorithmTestModulesAvailable ? "true" : "false"

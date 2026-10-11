@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import com.acooldog.toolbox.config.InternalAuthStore;
 import com.acooldog.toolbox.share.domain.model.InternalAccountProfile;
 import com.acooldog.toolbox.share.domain.model.InternalLoginResult;
+import com.acooldog.toolbox.share.domain.model.FsrBindingState;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -54,6 +55,9 @@ public class InternalLoginActivity extends BaseActivity {
 
         findViewById(R.id.internal_login_button).setOnClickListener(v -> login());
         findViewById(R.id.internal_logout_button).setOnClickListener(v -> logout());
+        findViewById(R.id.internal_register_button).setOnClickListener(
+                v -> startActivity(new android.content.Intent(this, EmailRegisterActivity.class))
+        );
 
         refreshSessionState();
     }
@@ -108,6 +112,18 @@ public class InternalLoginActivity extends BaseActivity {
                 runOnUiThread(() -> {
                     if (passwordInput != null) {
                         passwordInput.setText("");
+                    }
+                    FsrBindingState binding = result.getFsrBinding();
+                    if (binding != null && !TextUtils.isEmpty(binding.getCommand())) {
+                        android.content.Intent intent = new android.content.Intent(
+                                this,
+                                FsrBindingActivity.class
+                        );
+                        intent.putExtra(FsrBindingActivity.EXTRA_COMMAND, binding.getCommand());
+                        intent.putExtra(FsrBindingActivity.EXTRA_JOB_ID, binding.getJobId());
+                        startActivity(intent);
+                        finish();
+                        return;
                     }
                     refreshSessionState();
                     GoUtils.DisplayToast(this, getString(R.string.internal_login_success));
