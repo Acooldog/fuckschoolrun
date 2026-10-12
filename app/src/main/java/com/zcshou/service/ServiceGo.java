@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.app.NotificationCompat;
 
 import com.elvishew.xlog.XLog;
+import com.acooldog.toolbox.HomeActivity;
 import com.acooldog.toolbox.MainActivity;
 import com.acooldog.toolbox.R;
 import com.acooldog.toolbox.config.SimulationPrefsStore;
@@ -192,7 +193,7 @@ public class ServiceGo extends Service {
             notificationManager.createNotificationChannel(channel);
         }
 
-        Intent clickIntent = new Intent(this, MainActivity.class);
+        Intent clickIntent = new Intent(this, HomeActivity.class);
         PendingIntent clickPI = PendingIntent.getActivity(this, 1, clickIntent, PendingIntent.FLAG_IMMUTABLE);
 
         Notification notification = new NotificationCompat.Builder(this, SERVICE_GO_NOTE_CHANNEL_ID)

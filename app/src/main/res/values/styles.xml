@@ -7,7 +7,9 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="buttonStyle">@style/AppTheme.Button</item>
+        <item name="alertDialogTheme">@style/CupertinoAlertDialogTheme</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
     <!-- 无ActionBar -->
@@ -19,12 +21,23 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="buttonStyle">@style/AppTheme.Button</item>
+        <item name="alertDialogTheme">@style/CupertinoAlertDialogTheme</item>
         <item name="android:windowBackground">@color/surfaceBackground</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="CupertinoAlertDialogTheme" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="android:colorAccent">@color/colorPrimary</item>
+        <item name="colorAccent">@color/colorPrimary</item>
+        <item name="android:textColorPrimary">@color/textPrimary</item>
+        <item name="android:textColorSecondary">@color/textSecondary</item>
+        <item name="android:windowBackground">@drawable/cupertino_sheet</item>
+    </style>
 
     <!-- 参考 https://blog.csdn.net/qq_37299249/article/details/78536772 -->
     <style name="RippleWhite"  parent="Theme.AppCompat.Light.DarkActionBar">
@@ -43,7 +56,14 @@
     <!-- https://stackoverflow.com/questions/26346727/android-material-design-button-styles-->
     <!-- Button -->
     <style name="AppTheme.Button" parent="Widget.MaterialComponents.Button">
-        <item name="colorButtonNormal">@color/colorAccent</item>
+        <item name="android:background">@drawable/cupertino_control</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
     </style>
 
 </resources>

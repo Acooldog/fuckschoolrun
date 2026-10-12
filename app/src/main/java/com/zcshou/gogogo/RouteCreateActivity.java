@@ -1,5 +1,6 @@
 package com.acooldog.toolbox;
 
+import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -7,9 +8,9 @@ import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.InputType;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -24,7 +25,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -40,6 +40,8 @@ import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.acooldog.toolbox.utils.MapUtils;
+import com.acooldog.toolbox.ui.CupertinoDialogs;
+import com.acooldog.toolbox.ui.CupertinoRouteCreateOverlayView;
 import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
 import com.baidu.location.LocationClient;
@@ -116,7 +118,13 @@ public class RouteCreateActivity extends BaseActivity {
     private Button keepToolButton;
     private Button deleteToolButton;
     private ImageButton toggleToolButton;
+    private View toolboxContainer;
     private LinearLayout toolboxPanel;
+    private View toolboxScrollView;
+    private View routeSearchContainer;
+    private SearchView routeSearchView;
+    private CupertinoRouteCreateOverlayView createOverlayView;
+    private boolean satelliteMapSelected;
     private SwitchCompat recordModeSwitch;
     private boolean updatingRecordModeSwitch;
     private boolean isRecording;
@@ -148,11 +156,14 @@ public class RouteCreateActivity extends BaseActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_route_create);
+        installCreateOverlay();
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.hide();
         }
+        CupertinoDockInstaller.reserveBottomSpace(findViewById(R.id.layout_bottom_control));
+        CupertinoDockInstaller.install(this, CupertinoDockInstaller.TAB_DRAW);
 
         viewModel = new ViewModelProvider(this).get(RouteCreateViewModel.class);
         mapView = findViewById(R.id.map_create);
@@ -169,6 +180,152 @@ public class RouteCreateActivity extends BaseActivity {
         observeRoutePoints();
         loadEditingRouteIfNeeded();
         updateCreateModeUi();
+    }
+
+    private void installCreateOverlay() {
+        createOverlayView = new CupertinoRouteCreateOverlayView(this);
+        createOverlayView.setActions(new CupertinoRouteCreateOverlayView.Actions() {
+            @Override
+            public void onSearchChanged(String query) {
+                if (!TextUtils.isEmpty(query)) {
+                    requestPoiSearch(query);
+                }
+            }
+
+            @Override
+            public void onSearchSubmit(String query) {
+                requestPoiSearch(query);
+            }
+
+            @Override
+            public void onSelectMapType(boolean satellite) {
+                satelliteMapSelected = satellite;
+                baiduMap.setMapType(satellite
+                        ? BaiduMap.MAP_TYPE_SATELLITE
+                        : BaiduMap.MAP_TYPE_NORMAL);
+                renderCreateOverlay();
+            }
+
+            @Override
+            public void onSave() {
+                showSaveDialog();
+            }
+
+            @Override
+            public void onClear() {
+                if (!isRecording) {
+                    selectedPointIndex = -1;
+                    closeRoutePromptVisible = false;
+                    viewModel.clear();
+                    updateCreateModeUi();
+                }
+            }
+
+            @Override
+            public void onShare() {
+                showShareDialog();
+            }
+
+            @Override
+            public void onRecord() {
+                toggleRecording();
+            }
+
+            @Override
+            public void onRecordSettings() {
+                showRecordSettingsDialog();
+            }
+
+            @Override
+            public void onLocation() {
+                moveToCurrentLocation();
+            }
+
+            @Override
+            public void onCloseRoute() {
+                closeCurrentRoute();
+            }
+
+            @Override
+            public void onToggleToolbox() {
+                toolboxCollapsed = !toolboxCollapsed;
+                updateCreateModeUi();
+            }
+
+            @Override
+            public void onDrawTool() {
+                switchToolMode(TOOL_MODE_DRAW);
+            }
+
+            @Override
+            public void onEditTool() {
+                switchToolMode(TOOL_MODE_EDIT);
+            }
+
+            @Override
+            public void onAutoAdd() {
+                showAutoAddPointsDialog();
+            }
+
+            @Override
+            public void onAutoReduce() {
+                showAutoReducePointsDialog();
+            }
+
+            @Override
+            public void onSmoothCorner() {
+                showSmoothCornersDialog();
+            }
+
+            @Override
+            public void onUndo() {
+                selectedPointIndex = -1;
+                closeRoutePromptVisible = false;
+                viewModel.undo();
+            }
+
+            @Override
+            public void onRedo() {
+                selectedPointIndex = -1;
+                closeRoutePromptVisible = false;
+                viewModel.redo();
+            }
+
+            @Override
+            public void onKeep() {
+                clearSelectedPoint();
+            }
+
+            @Override
+            public void onDelete() {
+                deleteSelectedPoint();
+            }
+
+            @Override
+            public void onRecordModeChanged(boolean enabled) {
+                if (isRecording && !enabled) {
+                    GoUtils.DisplayToast(RouteCreateActivity.this,
+                            getString(R.string.route_record_exit_while_recording));
+                    return;
+                }
+                updatingRecordModeSwitch = true;
+                recordModeSwitch.setChecked(enabled);
+                updatingRecordModeSwitch = false;
+                if (enabled) {
+                    switchToolMode(TOOL_MODE_DRAW);
+                } else {
+                    updateCreateModeUi();
+                }
+            }
+        });
+        ViewGroup content = findViewById(android.R.id.content);
+        content.addView(
+                createOverlayView,
+                new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                )
+        );
     }
 
     @Override
@@ -303,10 +460,13 @@ public class RouteCreateActivity extends BaseActivity {
         keepToolButton = findViewById(R.id.btn_create_tool_keep);
         deleteToolButton = findViewById(R.id.btn_create_tool_delete);
         toggleToolButton = findViewById(R.id.btn_create_tool_toggle);
+        toolboxContainer = findViewById(R.id.route_create_toolbox_container);
         toolboxPanel = findViewById(R.id.route_create_toolbox_panel);
+        toolboxScrollView = findViewById(R.id.route_create_toolbox_scroll);
         ImageButton recordSettingsButton = findViewById(R.id.btn_create_record_settings);
         ImageButton locationButton = findViewById(R.id.btn_create_location);
         RadioGroup mapTypeGroup = findViewById(R.id.route_create_map_type_group);
+        hideLegacyCreateControls();
 
         mapTypeGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.route_create_map_normal) {
@@ -350,6 +510,7 @@ public class RouteCreateActivity extends BaseActivity {
         deleteToolButton.setOnClickListener(v -> deleteSelectedPoint());
         toggleToolButton.setOnClickListener(v -> {
             toolboxCollapsed = !toolboxCollapsed;
+            animateToolbox(toolboxCollapsed);
             updateCreateModeUi();
         });
         recordModeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -372,9 +533,27 @@ public class RouteCreateActivity extends BaseActivity {
     }
 
     private void initSearch() {
-        SearchView searchView = findViewById(R.id.route_create_search_view);
+        routeSearchContainer = findViewById(R.id.route_search_container);
+        routeSearchView = findViewById(R.id.route_create_search_view);
+        SearchView searchView = routeSearchView;
         searchResultContainer = findViewById(R.id.route_search_result_container);
         searchResultList = findViewById(R.id.route_search_result_list);
+        searchView.clearFocus();
+        searchView.setQueryHint("");
+        searchView.setOnSearchClickListener(v -> animateSearchContainer(true));
+        searchView.setOnCloseListener(() -> {
+            animateSearchContainer(false);
+            return false;
+        });
+        searchView.setOnQueryTextFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                animateSearchContainer(true);
+            } else if (TextUtils.isEmpty(searchView.getQuery())) {
+                animateSearchContainer(false);
+            } else {
+                animateSearchContainer(false);
+            }
+        });
         searchResultList.setOnItemClickListener((parent, view, position, id) -> {
             String lng = ((TextView) view.findViewById(R.id.poi_longitude)).getText().toString();
             String lat = ((TextView) view.findViewById(R.id.poi_latitude)).getText().toString();
@@ -400,6 +579,56 @@ public class RouteCreateActivity extends BaseActivity {
                 return true;
             }
         });
+    }
+
+    private void hideLegacyCreateControls() {
+        int[] legacyIds = new int[]{
+                R.id.route_search_container,
+                R.id.route_create_map_type_group,
+                R.id.route_create_hint,
+                R.id.route_create_toolbox_container,
+                R.id.route_create_selected_point,
+                R.id.btn_create_close_route,
+                R.id.btn_create_location,
+                R.id.layout_bottom_control
+        };
+        for (int id : legacyIds) {
+            View legacyView = findViewById(id);
+            if (legacyView != null) {
+                legacyView.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void animateSearchContainer(boolean expanded) {
+        if (routeSearchContainer == null || routeSearchView == null) {
+            return;
+        }
+        View parent = (View) routeSearchContainer.getParent();
+        if (parent == null || parent.getWidth() == 0) {
+            return;
+        }
+        int startWidth = routeSearchContainer.getWidth();
+        int targetWidth = expanded
+                ? Math.max(Math.round(dp(52f)), parent.getWidth() - Math.round(dp(24f)))
+                : Math.round(dp(52f));
+        if (startWidth == 0) {
+            startWidth = expanded ? Math.round(dp(52f)) : targetWidth;
+        }
+        if (expanded) {
+            routeSearchView.setIconified(false);
+        } else {
+            searchResultContainer.setVisibility(View.GONE);
+            routeSearchView.clearFocus();
+        }
+        ValueAnimator animator = ValueAnimator.ofInt(startWidth, targetWidth);
+        animator.setDuration(260L);
+        animator.addUpdateListener(valueAnimator -> {
+            ViewGroup.LayoutParams params = routeSearchContainer.getLayoutParams();
+            params.width = (Integer) valueAnimator.getAnimatedValue();
+            routeSearchContainer.setLayoutParams(params);
+        });
+        animator.start();
     }
 
     private void requestPoiSearch(String keyword) {
@@ -449,15 +678,18 @@ public class RouteCreateActivity extends BaseActivity {
             return;
         }
         loginPromptVisible = true;
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_search_need_login_title)
-                .setMessage(R.string.route_search_need_login_backend)
-                .setNegativeButton(R.string.route_search_login_cancel, null)
-                .setPositiveButton(R.string.route_search_login_action, (dialog, which) -> {
+        CupertinoDialogs.showConfirm(
+                this,
+                getString(R.string.route_search_need_login_title),
+                getString(R.string.route_search_need_login_backend),
+                getString(R.string.route_search_login_cancel),
+                getString(R.string.route_search_login_action),
+                () -> loginPromptVisible = false,
+                () -> {
                     startActivity(new android.content.Intent(this, InternalLoginActivity.class));
-                })
-                .setOnDismissListener(dialog -> loginPromptVisible = false)
-                .show();
+                    loginPromptVisible = false;
+                }
+        );
     }
 
     @NonNull
@@ -663,16 +895,26 @@ public class RouteCreateActivity extends BaseActivity {
     }
 
     private void showRecordingStopDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_record_stop_dialog_title)
-                .setMessage(R.string.route_record_stop_dialog_message)
-                .setPositiveButton(R.string.route_record_stop_save_option, (dialog, which) -> showSaveDialog())
-                .setNeutralButton(
-                        R.string.route_record_stop_share_option,
-                        (dialog, which) -> showShareDetailDialog(getCurrentRouteName(), new ArrayList<>(viewModel.getCurrentPoints()))
-                )
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .show();
+        CupertinoDialogs.showChoices(
+                this,
+                getString(R.string.route_record_stop_dialog_title),
+                getString(R.string.route_record_stop_dialog_message),
+                new String[]{
+                        getString(R.string.route_record_stop_save_option),
+                        getString(R.string.route_record_stop_share_option)
+                },
+                getString(R.string.route_share_cancel),
+                which -> {
+                    if (which == 0) {
+                        showSaveDialog();
+                    } else {
+                        showShareDetailDialog(
+                                getCurrentRouteName(),
+                                new ArrayList<>(viewModel.getCurrentPoints())
+                        );
+                    }
+                }
+        );
     }
 
     private boolean appendRecordedLocation(@Nullable BDLocation bdLocation) {
@@ -698,17 +940,16 @@ public class RouteCreateActivity extends BaseActivity {
             GoUtils.DisplayToast(this, getString(R.string.route_record_setting_stop_first));
             return;
         }
-        EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setText(String.valueOf(recordIntervalSeconds));
-        input.setHint(String.valueOf(DEFAULT_RECORD_INTERVAL_SECONDS));
-
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_record_setting_title)
-                .setMessage(R.string.route_record_setting_message)
-                .setView(input)
-                .setPositiveButton(R.string.route_record_setting_confirm, (dialog, which) -> {
-                    String rawValue = input.getText() == null ? "" : input.getText().toString().trim();
+        CupertinoDialogs.showInput(
+                this,
+                getString(R.string.route_record_setting_title),
+                getString(R.string.route_record_setting_message),
+                String.valueOf(recordIntervalSeconds),
+                String.valueOf(DEFAULT_RECORD_INTERVAL_SECONDS),
+                getString(R.string.route_share_cancel),
+                getString(R.string.route_record_setting_confirm),
+                rawInput -> {
+                    String rawValue = rawInput == null ? "" : rawInput.trim();
                     if (TextUtils.isEmpty(rawValue)) {
                         GoUtils.DisplayToast(this, getString(R.string.route_record_setting_invalid));
                         return;
@@ -728,9 +969,8 @@ public class RouteCreateActivity extends BaseActivity {
                     } catch (Exception exception) {
                         GoUtils.DisplayToast(this, getString(R.string.route_record_setting_invalid));
                     }
-                })
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .show();
+                }
+        );
     }
 
     private void switchToolMode(int newMode) {
@@ -754,16 +994,16 @@ public class RouteCreateActivity extends BaseActivity {
             GoUtils.DisplayToast(this, getString(R.string.route_auto_add_need_points));
             return;
         }
-        EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setText("10");
-        input.setHint(getString(R.string.route_auto_add_hint));
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_auto_add_title)
-                .setMessage(R.string.route_auto_add_message)
-                .setView(input)
-                .setPositiveButton(R.string.route_auto_add_confirm, (dialog, which) -> {
-                    String rawValue = input.getText() == null ? "" : input.getText().toString().trim();
+        CupertinoDialogs.showInput(
+                this,
+                getString(R.string.route_auto_add_title),
+                getString(R.string.route_auto_add_message),
+                "10",
+                getString(R.string.route_auto_add_hint),
+                getString(R.string.route_share_cancel),
+                getString(R.string.route_auto_add_confirm),
+                rawInput -> {
+                    String rawValue = rawInput == null ? "" : rawInput.trim();
                     if (TextUtils.isEmpty(rawValue)) {
                         GoUtils.DisplayToast(this, getString(R.string.route_auto_add_invalid));
                         return;
@@ -780,9 +1020,8 @@ public class RouteCreateActivity extends BaseActivity {
                     } catch (Exception exception) {
                         GoUtils.DisplayToast(this, getString(R.string.route_auto_add_invalid));
                     }
-                })
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .show();
+                }
+        );
     }
 
     private void showAutoReducePointsDialog() {
@@ -800,21 +1039,21 @@ public class RouteCreateActivity extends BaseActivity {
             GoUtils.DisplayToast(this, getString(R.string.route_auto_reduce_nothing));
             return;
         }
-        EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setText(String.valueOf(Math.min(10, maxRemoveCount)));
-        input.setHint(getString(R.string.route_auto_reduce_hint));
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_auto_reduce_title)
-                .setMessage(getString(
+        CupertinoDialogs.showInput(
+                this,
+                getString(R.string.route_auto_reduce_title),
+                getString(
                         R.string.route_auto_reduce_message,
                         currentPoints.size(),
                         keyPointCount,
                         maxRemoveCount
-                ))
-                .setView(input)
-                .setPositiveButton(R.string.route_auto_reduce_confirm, (dialog, which) -> {
-                    String rawValue = input.getText() == null ? "" : input.getText().toString().trim();
+                ),
+                String.valueOf(Math.min(10, maxRemoveCount)),
+                getString(R.string.route_auto_reduce_hint),
+                getString(R.string.route_share_cancel),
+                getString(R.string.route_auto_reduce_confirm),
+                rawInput -> {
+                    String rawValue = rawInput == null ? "" : rawInput.trim();
                     if (TextUtils.isEmpty(rawValue)) {
                         GoUtils.DisplayToast(this, getString(R.string.route_auto_reduce_invalid, maxRemoveCount));
                         return;
@@ -831,9 +1070,8 @@ public class RouteCreateActivity extends BaseActivity {
                     } catch (Exception exception) {
                         GoUtils.DisplayToast(this, getString(R.string.route_auto_reduce_invalid, maxRemoveCount));
                     }
-                })
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .show();
+                }
+        );
     }
 
     private void showSmoothCornersDialog() {
@@ -844,16 +1082,16 @@ public class RouteCreateActivity extends BaseActivity {
             GoUtils.DisplayToast(this, getString(R.string.route_smooth_corner_need_points));
             return;
         }
-        EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        input.setText("3.0");
-        input.setHint(getString(R.string.route_smooth_corner_hint));
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_smooth_corner_title)
-                .setMessage(R.string.route_smooth_corner_message)
-                .setView(input)
-                .setPositiveButton(R.string.route_smooth_corner_confirm, (dialog, which) -> {
-                    String rawValue = input.getText() == null ? "" : input.getText().toString().trim();
+        CupertinoDialogs.showInput(
+                this,
+                getString(R.string.route_smooth_corner_title),
+                getString(R.string.route_smooth_corner_message),
+                "3.0",
+                getString(R.string.route_smooth_corner_hint),
+                getString(R.string.route_share_cancel),
+                getString(R.string.route_smooth_corner_confirm),
+                rawInput -> {
+                    String rawValue = rawInput == null ? "" : rawInput.trim();
                     if (TextUtils.isEmpty(rawValue)) {
                         GoUtils.DisplayToast(this, getString(R.string.route_smooth_corner_invalid));
                         return;
@@ -880,9 +1118,8 @@ public class RouteCreateActivity extends BaseActivity {
                     } catch (Exception exception) {
                         GoUtils.DisplayToast(this, getString(R.string.route_smooth_corner_invalid));
                     }
-                })
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .show();
+                }
+        );
     }
 
     private void clearSelectedPoint() {
@@ -1051,6 +1288,7 @@ public class RouteCreateActivity extends BaseActivity {
         }
 
         if (routeHintView == null) {
+            renderCreateOverlay();
             return;
         }
         if (isRecording) {
@@ -1068,6 +1306,56 @@ public class RouteCreateActivity extends BaseActivity {
         } else {
             routeHintView.setText(R.string.route_draw_hint);
         }
+        renderCreateOverlay();
+    }
+
+    private void renderCreateOverlay() {
+        if (createOverlayView == null || viewModel == null) {
+            return;
+        }
+        boolean recordModeEnabled = isRecordModeEnabled();
+        List<RoutePoint> points = viewModel.getCurrentPoints();
+        createOverlayView.render(
+                recordModeEnabled,
+                isRecording,
+                toolboxCollapsed,
+                toolMode,
+                selectedPointIndex,
+                !isRecording && !points.isEmpty(),
+                !isRecording && points.size() >= 2,
+                !isRecording
+                        && points.size() >= 3
+                        && RouteEditUtils.countRemovableRoutePoints(points) > 0,
+                !isRecording && points.size() >= 3,
+                !isRecording && viewModel.canUndo(),
+                !isRecording && viewModel.canRedo(),
+                !isRecording
+                        && !recordModeEnabled
+                        && toolMode == TOOL_MODE_DRAW
+                        && closeRoutePromptVisible
+                        && canCloseCurrentRoute(),
+                routeHintView == null ? "" : routeHintView.getText().toString(),
+                satelliteMapSelected
+        );
+    }
+
+    private void animateToolbox(boolean collapsed) {
+        if (toolboxContainer == null) {
+            return;
+        }
+        int startWidth = toolboxContainer.getWidth();
+        int targetWidth = Math.round(dp(collapsed ? 56f : 224f));
+        if (startWidth <= 0) {
+            startWidth = Math.round(dp(collapsed ? 224f : 56f));
+        }
+        ValueAnimator animator = ValueAnimator.ofInt(startWidth, targetWidth);
+        animator.setDuration(240L);
+        animator.addUpdateListener(valueAnimator -> {
+            ViewGroup.LayoutParams params = toolboxContainer.getLayoutParams();
+            params.width = (Integer) valueAnimator.getAnimatedValue();
+            toolboxContainer.setLayoutParams(params);
+        });
+        animator.start();
     }
 
     private boolean isRecordModeEnabled() {
@@ -1083,15 +1371,16 @@ public class RouteCreateActivity extends BaseActivity {
             return;
         }
 
-        EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setText(getCurrentRouteName());
-
-        new AlertDialog.Builder(this)
-                .setTitle(TextUtils.isEmpty(editingRouteId) ? "保存路线" : getString(R.string.route_edit_title))
-                .setView(input)
-                .setPositiveButton("保存", (dialog, which) -> {
-                    String routeName = input.getText() == null ? "" : input.getText().toString().trim();
+        CupertinoDialogs.showInput(
+                this,
+                TextUtils.isEmpty(editingRouteId) ? "保存路线" : getString(R.string.route_edit_title),
+                null,
+                getCurrentRouteName(),
+                getCurrentRouteName(),
+                "取消",
+                "保存",
+                rawInput -> {
+                    String routeName = rawInput == null ? "" : rawInput.trim();
                     if (routeName.isEmpty()) {
                         GoUtils.DisplayToast(this, "路线名称不能为空");
                         return;
@@ -1115,9 +1404,8 @@ public class RouteCreateActivity extends BaseActivity {
                     } catch (Exception exception) {
                         GoUtils.DisplayToast(this, "保存路线失败");
                     }
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                }
+        );
     }
 
     private void showShareDialog() {
@@ -1137,16 +1425,20 @@ public class RouteCreateActivity extends BaseActivity {
                     getString(R.string.route_share_current_option),
                     getString(R.string.route_share_local_option)
             };
-            new AlertDialog.Builder(this)
-                    .setTitle(R.string.route_share_dialog_title)
-                    .setItems(options, (dialog, which) -> {
+            CupertinoDialogs.showChoices(
+                    this,
+                    getString(R.string.route_share_dialog_title),
+                    null,
+                    options,
+                    getString(R.string.route_share_cancel),
+                    which -> {
                         if (which == 0) {
                             showShareDetailDialog(getCurrentRouteName(), new ArrayList<>(viewModel.getCurrentPoints()));
                         } else {
                             showLocalRouteSelector(localRoutes);
                         }
-                    })
-                    .show();
+                    }
+            );
             return;
         }
 
@@ -1159,18 +1451,22 @@ public class RouteCreateActivity extends BaseActivity {
     }
 
     private void showLocalRouteSelector(List<RouteDefinition> routes) {
-        CharSequence[] routeNames = new CharSequence[routes.size()];
+        String[] routeNames = new String[routes.size()];
         for (int index = 0; index < routes.size(); index++) {
             routeNames[index] = routes.get(index).getName();
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_share_select_local_title)
-                .setItems(routeNames, (dialog, which) -> {
+        CupertinoDialogs.showChoices(
+                this,
+                getString(R.string.route_share_select_local_title),
+                null,
+                routeNames,
+                getString(R.string.route_share_cancel),
+                which -> {
                     RouteDefinition selected = routes.get(which);
                     showShareDetailDialog(selected.getName(), new ArrayList<>(selected.getPoints()));
-                })
-                .show();
+                }
+        );
     }
 
     private void showShareDetailDialog(String defaultName, List<RoutePoint> points) {
@@ -1179,22 +1475,23 @@ public class RouteCreateActivity extends BaseActivity {
         CheckBox privacyCheckBox = dialogView.findViewById(R.id.route_share_privacy_checkbox);
         nameInput.setText(defaultName);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_share_dialog_title)
-                .setView(dialogView)
-                .setPositiveButton(R.string.route_share_confirm, null)
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        CupertinoDialogs.showCustom(
+                this,
+                getString(R.string.route_share_dialog_title),
+                dialogView,
+                getString(R.string.route_share_cancel),
+                getString(R.string.route_share_confirm),
+                () -> {
             String routeName = nameInput.getText() == null ? "" : nameInput.getText().toString().trim();
             if (TextUtils.isEmpty(routeName)) {
                 GoUtils.DisplayToast(this, getString(R.string.route_share_name_empty));
-                return;
+                return false;
             }
-            dialog.dismiss();
             uploadSharedRoute(routeName, privacyCheckBox.isChecked(), points);
-        }));
-        dialog.show();
+            return true;
+                },
+                null
+        );
     }
 
     private void uploadSharedRoute(String routeName, boolean privacyMode, List<RoutePoint> points) {
@@ -1302,5 +1599,9 @@ public class RouteCreateActivity extends BaseActivity {
             routeVertexSelectedDescriptor.recycle();
             routeVertexSelectedDescriptor = null;
         }
+    }
+
+    private float dp(float value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 }

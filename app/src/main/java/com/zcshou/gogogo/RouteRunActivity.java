@@ -57,7 +57,6 @@ import androidx.annotation.Nullable;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
@@ -95,6 +94,10 @@ import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
 import com.acooldog.toolbox.share.domain.model.SharedSimulationConfigEntry;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.service.ServiceGo;
+import com.acooldog.toolbox.ui.CupertinoDialogs;
+import com.acooldog.toolbox.ui.CupertinoRingtoneOptionsView;
+import com.acooldog.toolbox.ui.CupertinoRouteRunOverlayView;
+import com.acooldog.toolbox.ui.CupertinoSimulationSettingsView;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.acooldog.toolbox.utils.MapUtils;
 import com.acooldog.toolbox.utils.SearchSortUtils;
@@ -173,7 +176,7 @@ public class RouteRunActivity extends BaseActivity {
     private long lastHandledCompletionToken = -1L;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Ringtone activeReminderRingtone;
-    private AlertDialog simulationSettingsDialog;
+    private CupertinoDialogs.DialogHandle simulationSettingsDialog;
     private TextView settingsReminderToneView;
     private EditText settingsLinkRatioLeftInput;
     private EditText settingsLinkRatioRightInput;
@@ -221,6 +224,8 @@ public class RouteRunActivity extends BaseActivity {
     private String selectedRouteIdForEditState;
     private RouteDefinition originalEditableRouteDefinition;
     private View completionOverlay;
+    private CupertinoRouteRunOverlayView runOverlayView;
+    private CupertinoSimulationSettingsView simulationSettingsComposeView;
     private WindowManager floatingWindowManager;
     private FrameLayout floatingWindowRoot;
     private MapView floatingWindowMapView;
@@ -297,10 +302,11 @@ public class RouteRunActivity extends BaseActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_route_run);
+        installRunOverlay();
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.hide();
         }
 
         viewModel = new ViewModelProvider(this).get(RouteRunViewModel.class);
@@ -337,6 +343,7 @@ public class RouteRunActivity extends BaseActivity {
         routeEditTapSlopPx = ViewConfiguration.get(this).getScaledTouchSlop();
         routeEditRouteHitSlopPx = Math.round(dp(ROUTE_INSERT_SCREEN_HIT_SLOP_DP));
         completionOverlay = findViewById(R.id.route_completion_overlay);
+        hideLegacyRunControls();
 
         setupSimulationModeSpinner();
         setupRouteEditingInteractions();
@@ -374,6 +381,53 @@ public class RouteRunActivity extends BaseActivity {
             loadSharedRouteForSimulation(preselectedSharedRouteId, getIntent().getStringExtra(EXTRA_SHARED_ROUTE_NAME));
         } else {
             restoreLastRouteSelection();
+        }
+    }
+
+    private void installRunOverlay() {
+        runOverlayView = new CupertinoRouteRunOverlayView(this);
+        runOverlayView.setActions(new CupertinoRouteRunOverlayView.Actions() {
+            @Override
+            public void onStartSimulation() {
+                toggleSimulation();
+            }
+
+            @Override
+            public void onSelectRoute() {
+                showLoadOptions();
+            }
+
+            @Override
+            public void onStartRealRun() {
+                toggleRealRunLink();
+            }
+
+            @Override
+            public void onNfcEntry() {
+                simulateCampusRunEntry();
+            }
+        });
+        ViewGroup content = findViewById(android.R.id.content);
+        int overlayIndex = Math.min(2, content.getChildCount());
+        content.addView(
+                runOverlayView,
+                overlayIndex,
+                new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                )
+        );
+    }
+
+    private void hideLegacyRunControls() {
+        int[] legacyIds = new int[]{
+                R.id.layout_run_bottom_control
+        };
+        for (int id : legacyIds) {
+            View legacyView = findViewById(id);
+            if (legacyView != null) {
+                legacyView.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -524,16 +578,20 @@ public class RouteRunActivity extends BaseActivity {
                 getString(R.string.route_pick_local_option),
                 getString(R.string.route_pick_shared_option)
         };
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_pick_source_title)
-                .setItems(options, (dialog, which) -> {
+        CupertinoDialogs.showChoices(
+                this,
+                getString(R.string.route_pick_source_title),
+                null,
+                options,
+                getString(R.string.route_share_cancel),
+                which -> {
                     if (which == 0) {
                         showRoutePicker();
                     } else {
                         loadSharedRoutes();
                     }
-                })
-                .show();
+                }
+        );
     }
 
     private void showRoutePicker() {
@@ -543,15 +601,19 @@ public class RouteRunActivity extends BaseActivity {
             return;
         }
 
-        CharSequence[] routeNames = new CharSequence[routes.size()];
+        String[] routeNames = new String[routes.size()];
         for (int i = 0; i < routes.size(); i++) {
             routeNames[i] = buildRouteLabel(routes.get(i));
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle("选择路线")
-                .setItems(routeNames, (dialog, which) -> viewModel.selectRoute(routes.get(which)))
-                .show();
+        CupertinoDialogs.showChoices(
+                this,
+                "选择路线",
+                null,
+                routeNames,
+                getString(R.string.route_share_cancel),
+                which -> viewModel.selectRoute(routes.get(which))
+        );
     }
 
     private void loadSharedRoutes() {
@@ -588,17 +650,18 @@ public class RouteRunActivity extends BaseActivity {
         listView.setAdapter(adapter);
         updatePickerLetterRail(letterRail, listView, filteredItems);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_shared_pick_title)
-                .setView(dialogView)
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> resizeDialogWindow(dialog, 0.82f, 0.70f));
+        CupertinoDialogs.DialogHandle[] dialogHandle = new CupertinoDialogs.DialogHandle[1];
+        dialogHandle[0] = CupertinoDialogs.showContent(
+                this,
+                getString(R.string.route_shared_pick_title),
+                dialogView,
+                getString(R.string.route_share_cancel)
+        );
         listView.setOnItemClickListener((parent, view, position, id) -> {
             if (filteredItems.isEmpty()) {
                 return;
             }
-            dialog.dismiss();
+            dialogHandle[0].dismiss();
             SharedRouteSummary summary = filteredItems.get(position).summary;
             if (summary.isPrivacyMode()) {
                 loadSharedRouteForSimulation(summary.getId(), summary.getName());
@@ -613,7 +676,6 @@ public class RouteRunActivity extends BaseActivity {
                 updatePickerLetterRail(letterRail, listView, filteredItems);
             }
         });
-        dialog.show();
     }
 
     private void downloadSharedRoute(SharedRouteSummary summary) {
@@ -717,18 +779,20 @@ public class RouteRunActivity extends BaseActivity {
                 getString(R.string.route_nfc_download_option),
                 getString(R.string.route_nfc_manual_option)
         };
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_nfc_setup_title)
-                .setMessage(R.string.route_nfc_setup_message)
-                .setItems(options, (dialog, which) -> {
+        CupertinoDialogs.showChoices(
+                this,
+                getString(R.string.route_nfc_setup_title),
+                getString(R.string.route_nfc_setup_message),
+                options,
+                getString(R.string.nfc_share_cancel),
+                which -> {
                     if (which == 0) {
                         loadSharedNfcEntriesForSimulation();
                     } else {
                         showManualNfcInputDialog();
                     }
-                })
-                .setNegativeButton(R.string.nfc_share_cancel, null)
-                .show();
+                }
+        );
     }
 
     private void loadSharedNfcEntriesForSimulation() {
@@ -765,17 +829,18 @@ public class RouteRunActivity extends BaseActivity {
         listView.setAdapter(adapter);
         updatePickerLetterRail(letterRail, listView, filteredItems);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.nfc_download_pick_title)
-                .setView(dialogView)
-                .setNegativeButton(R.string.nfc_share_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> resizeDialogWindow(dialog, 0.82f, 0.70f));
+        CupertinoDialogs.DialogHandle[] dialogHandle = new CupertinoDialogs.DialogHandle[1];
+        dialogHandle[0] = CupertinoDialogs.showContent(
+                this,
+                getString(R.string.nfc_download_pick_title),
+                dialogView,
+                getString(R.string.nfc_share_cancel)
+        );
         listView.setOnItemClickListener((parent, view, position, id) -> {
             if (filteredItems.isEmpty()) {
                 return;
             }
-            dialog.dismiss();
+            dialogHandle[0].dismiss();
             applyNfcConfigAndQueue(filteredItems.get(position).entry);
         });
         searchInput.addTextChangedListener(new SimpleTextWatcher() {
@@ -785,7 +850,6 @@ public class RouteRunActivity extends BaseActivity {
                 updatePickerLetterRail(letterRail, listView, filteredItems);
             }
         });
-        dialog.show();
     }
 
     private void showManualNfcInputDialog() {
@@ -795,27 +859,28 @@ public class RouteRunActivity extends BaseActivity {
         urlEdit.setText(prefsStore.getNfcUrl());
         packageEdit.setText(prefsStore.getNfcPackageName());
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_nfc_manual_title)
-                .setView(dialogView)
-                .setPositiveButton(R.string.route_nfc_manual_confirm, null)
-                .setNegativeButton(R.string.nfc_share_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String url = urlEdit.getText() == null ? "" : urlEdit.getText().toString().trim();
-            String packageName = packageEdit.getText() == null ? "" : packageEdit.getText().toString().trim();
-            if (TextUtils.isEmpty(url)) {
-                GoUtils.DisplayToast(this, getString(R.string.nfc_mock_need_url));
-                return;
-            }
-            if (TextUtils.isEmpty(packageName)) {
-                GoUtils.DisplayToast(this, getString(R.string.nfc_mock_need_package));
-                return;
-            }
-            dialog.dismiss();
-            applyNfcConfigAndQueue(new SharedNfcEntry("", "", url, packageName, "manual", System.currentTimeMillis()));
-        }));
-        dialog.show();
+        CupertinoDialogs.showCustom(
+                this,
+                getString(R.string.route_nfc_manual_title),
+                dialogView,
+                getString(R.string.nfc_share_cancel),
+                getString(R.string.route_nfc_manual_confirm),
+                () -> {
+                    String url = urlEdit.getText() == null ? "" : urlEdit.getText().toString().trim();
+                    String packageName = packageEdit.getText() == null ? "" : packageEdit.getText().toString().trim();
+                    if (TextUtils.isEmpty(url)) {
+                        GoUtils.DisplayToast(this, getString(R.string.nfc_mock_need_url));
+                        return false;
+                    }
+                    if (TextUtils.isEmpty(packageName)) {
+                        GoUtils.DisplayToast(this, getString(R.string.nfc_mock_need_package));
+                        return false;
+                    }
+                    applyNfcConfigAndQueue(new SharedNfcEntry("", "", url, packageName, "manual", System.currentTimeMillis()));
+                    return true;
+                },
+                null
+        );
     }
 
     private void applyNfcConfigAndQueue(SharedNfcEntry entry) {
@@ -935,11 +1000,11 @@ public class RouteRunActivity extends BaseActivity {
             return false;
         }
         if (!GoUtils.isGpsOpened(this)) {
-            GoUtils.showEnableGpsDialog(this);
+            showEnableGpsDialog();
             return false;
         }
         if (!GoUtils.isAllowMockLocation(this)) {
-            GoUtils.showEnableMockLocationDialog(this);
+            showEnableMockLocationDialog();
             return false;
         }
         return true;
@@ -952,9 +1017,72 @@ public class RouteRunActivity extends BaseActivity {
             }
             if (!GoUtils.isAllowMockLocation(this)) {
                 mockLocationPromptShown = true;
-                GoUtils.showEnableMockLocationDialog(this);
+                showEnableMockLocationDialog();
             }
         });
+    }
+
+    private void showEnableMockLocationDialog() {
+        CupertinoDialogs.showConfirm(
+                this,
+                "启用位置模拟",
+                "请在“开发者选项 → 选择模拟位置信息应用”中进行设置。",
+                "取消",
+                "设置",
+                null,
+                () -> {
+                    try {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                        startActivity(intent);
+                    } catch (Exception ignored) {
+                    }
+                }
+        );
+    }
+
+    private void showEnableGpsDialog() {
+        CupertinoDialogs.showConfirm(
+                this,
+                "启用定位服务",
+                "模拟路线需要使用系统定位服务，是否现在打开 GPS 设置？",
+                "取消",
+                "打开设置",
+                null,
+                () -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    } catch (Exception ignored) {
+                    }
+                }
+        );
+    }
+
+    private void showEnableFloatWindowDialog() {
+        CupertinoDialogs.showConfirm(
+                this,
+                "启用悬浮窗",
+                "为了模拟定位的稳定性，建议开启“显示悬浮窗”选项。",
+                "取消",
+                "打开设置",
+                null,
+                () -> {
+                    try {
+                        Intent intent = new Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:" + getPackageName())
+                        );
+                        startActivity(intent);
+                    } catch (Exception exception) {
+                        try {
+                            startActivity(new Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:" + getPackageName())
+                            ));
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+        );
     }
 
     private void ensureServiceStarted(RouteDefinition routeDefinition, @Nullable RoutePoint seedPoint) {
@@ -1022,6 +1150,7 @@ public class RouteRunActivity extends BaseActivity {
             clearLiveRouteEditState(true);
             viewModel.replaceSelectedRoute(routeToRestore);
             updateLiveRouteEditHint();
+            renderRunOverlay();
             return;
         }
         liveRouteEditEnabled = enabled;
@@ -1036,6 +1165,7 @@ public class RouteRunActivity extends BaseActivity {
             }
         }
         updateLiveRouteEditHint();
+        renderRunOverlay();
     }
 
     private void setLiveRouteEditSwitchChecked(boolean checked) {
@@ -1653,6 +1783,7 @@ public class RouteRunActivity extends BaseActivity {
             viewModel.pauseSimulation();
             renderToggleButtonState();
         }
+        renderRunOverlay();
     }
 
     private void bindSimulationConfigInputs() {
@@ -1706,6 +1837,22 @@ public class RouteRunActivity extends BaseActivity {
         } else {
             toggleButton.setText(R.string.route_start_button);
         }
+        renderRunOverlay();
+    }
+
+    private void renderRunOverlay() {
+        if (runOverlayView == null || viewModel == null || speedInput == null || cadenceInput == null) {
+            return;
+        }
+        runOverlayView.render(
+                Boolean.TRUE.equals(viewModel.isRunning().getValue()),
+                realRunLinkRunning,
+                panelCollapsed,
+                liveRouteEditEnabled,
+                getSelectedSimulationMode() == RouteSimulationConfig.Mode.CADENCE,
+                speedInput.getText() == null ? "" : speedInput.getText().toString(),
+                cadenceInput.getText() == null ? "" : cadenceInput.getText().toString()
+        );
     }
 
     private void restoreSimulationPrefs() {
@@ -1760,7 +1907,11 @@ public class RouteRunActivity extends BaseActivity {
         if (input == null || input.getText() == null) {
             throw new IllegalArgumentException("loop count is required");
         }
-        String raw = input.getText().toString().trim();
+        return parseLoopCount(input.getText().toString());
+    }
+
+    private int parseLoopCount(String rawValue) {
+        String raw = rawValue == null ? "" : rawValue.trim();
         if (TextUtils.isEmpty(raw)) {
             throw new IllegalArgumentException("loop count is required");
         }
@@ -2041,7 +2192,30 @@ public class RouteRunActivity extends BaseActivity {
         return TextUtils.isEmpty(savedTitle) ? getString(R.string.route_link_ringtone_default) : savedTitle;
     }
 
+    public void openSimulationSettingsFromDock() {
+        showSimulationSettingsDialog();
+    }
+
     private void showSimulationSettingsDialog() {
+        if (simulationSettingsDialog != null) {
+            return;
+        }
+        simulationSettingsComposeView = buildSimulationSettingsComposeViewDirect();
+        simulationSettingsDialog = CupertinoDialogs.showCustom(
+                this,
+                getString(R.string.route_link_settings_title),
+                simulationSettingsComposeView,
+                getString(R.string.route_link_settings_cancel),
+                getString(R.string.route_link_settings_confirm),
+                () -> saveSimulationSettingsFromCompose(),
+                () -> {
+                    stopReminderFeedback();
+                    clearSimulationSettingsReferences();
+                }
+        );
+        return;
+
+        /*
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_route_simulation_settings, null);
         settingsLinkRatioLeftInput = dialogView.findViewById(R.id.et_dialog_link_ratio_left);
         settingsLinkRatioRightInput = dialogView.findViewById(R.id.et_dialog_link_ratio_right);
@@ -2246,58 +2420,456 @@ public class RouteRunActivity extends BaseActivity {
         updateSettingsContentState(pathVariationContent, settingsPathVariationSwitch.isChecked());
         updateSettingsContentState(altitudeVariationContent, settingsAltitudeVariationSwitch.isChecked());
         updateSettingsContentState(floatingWindowContent, settingsFloatingWindowSwitch.isChecked());
-
-        simulationSettingsDialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_link_settings_title)
-                .setView(dialogView)
-                .setPositiveButton(R.string.route_link_settings_confirm, null)
-                .setNegativeButton(R.string.route_link_settings_cancel, (dialog, which) -> stopReminderFeedback())
-                .create();
-        simulationSettingsDialog.setOnShowListener(ignored -> {
-            simulationSettingsDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setOnClickListener(v -> saveSimulationSettings());
-            resizeDialogWindow(simulationSettingsDialog, 0.86f, 0.78f);
-            setupSimulationSettingsNavigator(dialogView);
-        });
-        simulationSettingsDialog.setOnDismissListener(dialog -> {
-            stopReminderFeedback();
-            simulationSettingsDialog = null;
-            settingsLinkRatioLeftInput = null;
-            settingsLinkRatioRightInput = null;
-            settingsStepsPerMeterInput = null;
-            settingsLoopInput = null;
-            settingsSatelliteSeekBar = null;
-            settingsSatelliteValueView = null;
-            settingsSignalQualityGroup = null;
-            settingsHdopSeekBar = null;
-            settingsHdopValueView = null;
-            settingsUpdateIntervalSeekBar = null;
-            settingsUpdateIntervalValueView = null;
-            settingsNetworkSimulationSwitch = null;
-            settingsDynamicIntensitySwitch = null;
-            settingsIntensityRangeInput = null;
-            settingsIntensityFrequencySeekBar = null;
-            settingsIntensityFrequencyValueView = null;
-            settingsPathVariationSwitch = null;
-            settingsPathVariationInput = null;
-            settingsAltitudeVariationSwitch = null;
-            settingsAltitudeBaseInput = null;
-            settingsAltitudeVariationRangeInput = null;
-            settingsAltitudeHeightInput = null;
-            settingsAltitudeProbabilitySeekBar = null;
-            settingsAltitudeProbabilityValueView = null;
-            settingsFloatingWindowSwitch = null;
-            settingsFloatingWindowScaleSeekBar = null;
-            settingsFloatingWindowButtonSizeSeekBar = null;
-            settingsFloatingWindowScaleView = null;
-            settingsFloatingWindowButtonSizeView = null;
-            settingsFloatingWindowPreview = null;
-            settingsReminderToneView = null;
-        });
-        simulationSettingsDialog.show();
+        simulationSettingsComposeView = buildSimulationSettingsComposeView();
+        simulationSettingsDialog = CupertinoDialogs.showCustom(
+                this,
+                getString(R.string.route_link_settings_title),
+                simulationSettingsComposeView,
+                getString(R.string.route_link_settings_cancel),
+                getString(R.string.route_link_settings_confirm),
+                () -> saveSimulationSettings(),
+                () -> {
+                    stopReminderFeedback();
+                    clearSimulationSettingsReferences();
+                }
+        );
+        */
     }
 
-    private void saveSimulationSettings() {
+    private void clearSimulationSettingsReferences() {
+        stopReminderFeedback();
+        simulationSettingsDialog = null;
+        settingsLinkRatioLeftInput = null;
+        settingsLinkRatioRightInput = null;
+        settingsStepsPerMeterInput = null;
+        settingsLoopInput = null;
+        settingsSatelliteSeekBar = null;
+        settingsSatelliteValueView = null;
+        settingsSignalQualityGroup = null;
+        settingsHdopSeekBar = null;
+        settingsHdopValueView = null;
+        settingsUpdateIntervalSeekBar = null;
+        settingsUpdateIntervalValueView = null;
+        settingsNetworkSimulationSwitch = null;
+        settingsDynamicIntensitySwitch = null;
+        settingsIntensityRangeInput = null;
+        settingsIntensityFrequencySeekBar = null;
+        settingsIntensityFrequencyValueView = null;
+        settingsPathVariationSwitch = null;
+        settingsPathVariationInput = null;
+        settingsAltitudeVariationSwitch = null;
+        settingsAltitudeBaseInput = null;
+        settingsAltitudeVariationRangeInput = null;
+        settingsAltitudeHeightInput = null;
+        settingsAltitudeProbabilitySeekBar = null;
+        settingsAltitudeProbabilityValueView = null;
+        settingsFloatingWindowSwitch = null;
+        settingsFloatingWindowScaleSeekBar = null;
+        settingsFloatingWindowButtonSizeSeekBar = null;
+        settingsFloatingWindowScaleView = null;
+        settingsFloatingWindowButtonSizeView = null;
+        settingsFloatingWindowPreview = null;
+        settingsReminderToneView = null;
+        simulationSettingsComposeView = null;
+    }
+
+    private CupertinoSimulationSettingsView buildSimulationSettingsComposeViewDirect() {
+        CupertinoSimulationSettingsView view = new CupertinoSimulationSettingsView(this);
+        view.setActions(new CupertinoSimulationSettingsView.Actions() {
+            @Override
+            public void onModeChanged(boolean cadence) {
+                simulationModeSpinner.setSelection(cadence ? 1 : 0);
+                updateSimulationModeViews(getSelectedSimulationMode());
+            }
+
+            @Override
+            public void onSpeedChanged(String value) {
+                speedInput.setText(value);
+            }
+
+            @Override
+            public void onCadenceChanged(String value) {
+                cadenceInput.setText(value);
+            }
+
+            @Override
+            public void onLiveRouteEditChanged(boolean enabled) {
+                setLiveRouteEditSwitchChecked(enabled);
+                handleLiveRouteEditToggle(enabled);
+            }
+
+            @Override public void onRatioChanged(String value) {}
+            @Override public void onStepsPerMeterChanged(String value) {}
+            @Override public void onLoopChanged(String value) {}
+            @Override public void onNetworkSimulationChanged(boolean enabled) {}
+            @Override public void onSatelliteChanged(int value) {}
+            @Override public void onSignalQualityChanged(int value) {}
+            @Override public void onHdopChanged(float value) {}
+            @Override public void onUpdateIntervalChanged(int value) {}
+            @Override public void onDynamicIntensityChanged(boolean enabled) {}
+            @Override public void onIntensityRangeChanged(String value) {}
+            @Override public void onIntensityFrequencyChanged(float value) {}
+            @Override public void onPathVariationChanged(boolean enabled) {}
+            @Override public void onPathAmplitudeChanged(String value) {}
+            @Override public void onAltitudeVariationChanged(boolean enabled) {}
+            @Override public void onAltitudeBaseChanged(String value) {}
+            @Override public void onAltitudeRangeChanged(String value) {}
+            @Override public void onAltitudeHeightChanged(String value) {}
+            @Override public void onAltitudeProbabilityChanged(float value) {}
+            @Override public void onFloatingWindowChanged(boolean enabled) {}
+            @Override public void onFloatingScaleChanged(float value) {}
+            @Override public void onFloatingButtonSizeChanged(float value) {}
+
+            @Override
+            public void onPickRingtone() {
+                showReminderTonePickerDialog();
+            }
+
+            @Override
+            public void onUpload() {
+                promptUploadSimulationSettings();
+            }
+
+            @Override
+            public void onDownload() {
+                loadSharedSimulationSettings();
+            }
+        });
+        view.render(
+                currentRouteView == null
+                        ? getString(R.string.route_current_none)
+                        : currentRouteView.getText().toString(),
+                getSelectedSimulationMode() == RouteSimulationConfig.Mode.CADENCE,
+                speedInput.getText() == null ? "" : speedInput.getText().toString(),
+                cadenceInput.getText() == null ? "" : cadenceInput.getText().toString(),
+                liveRouteEditEnabled,
+                prefsStore.getRouteLinkRatioNumerator(),
+                prefsStore.getRouteStepsPerMeter(),
+                loopInput.getText() == null ? "" : loopInput.getText().toString(),
+                prefsStore.isNetworkSimulationEnabled(),
+                prefsStore.getNmeaSatelliteCount(),
+                prefsStore.getNmeaSignalQuality(),
+                prefsStore.getNmeaHdop(),
+                updateIntervalToProgress(prefsStore.getLocationUpdateIntervalMillis()),
+                speedFloatCheckBox.isChecked(),
+                prefsStore.getRouteIntensityVariationRange(),
+                prefsStore.getRouteIntensityVariationFrequency(),
+                prefsStore.isRouteNaturalPathVariationEnabled(),
+                prefsStore.getRoutePathVariationAmplitude(),
+                prefsStore.isRouteNaturalAltitudeVariationEnabled(),
+                prefsStore.getRouteAltitudeBaseMeters(),
+                prefsStore.getRouteAltitudeVariationRange(),
+                prefsStore.getRouteAltitudeVariationHeightCm(),
+                prefsStore.getRouteAltitudeVariationProbability(),
+                prefsStore.isRouteFloatingWindowEnabled(),
+                prefsStore.getRouteFloatingWindowScale(),
+                prefsStore.getRouteFloatingWindowButtonSizeDp(),
+                resolveReminderToneTitle()
+        );
+        return view;
+    }
+
+    private boolean saveSimulationSettingsFromCompose() {
+        if (simulationSettingsComposeView == null) {
+            return false;
+        }
+        CupertinoSimulationSettingsView.State state = simulationSettingsComposeView.getCurrentState();
+        try {
+            String ratioNumerator = requireNonEmpty(
+                    state.getRatio(),
+                    getString(R.string.route_link_invalid_ratio)
+            );
+            String stepsPerMeter = requireNonEmpty(
+                    state.getStepsPerMeter(),
+                    getString(R.string.route_link_steps_per_meter_invalid)
+            );
+            parsePositiveDouble(ratioNumerator, getString(R.string.route_link_invalid_ratio));
+            parsePositiveDouble(stepsPerMeter, getString(R.string.route_link_steps_per_meter_invalid));
+            int loopCount = parseLoopCount(state.getLoopCount());
+            String intensityRange = resolveNumericSetting(
+                    state.getIntensityRange(),
+                    prefsStore.getRouteIntensityVariationRange(),
+                    getString(R.string.route_dynamic_intensity_range_invalid)
+            );
+            String pathVariationAmplitude = resolveNumericSetting(
+                    state.getPathAmplitude(),
+                    prefsStore.getRoutePathVariationAmplitude(),
+                    getString(R.string.route_path_variation_invalid)
+            );
+            String altitudeBase = resolveNonNegativeSetting(
+                    state.getAltitudeBase(),
+                    prefsStore.getRouteAltitudeBaseMeters(),
+                    getString(R.string.route_altitude_base_invalid)
+            );
+            String altitudeVariationRange = resolveNonNegativeSetting(
+                    state.getAltitudeRange(),
+                    prefsStore.getRouteAltitudeVariationRange(),
+                    getString(R.string.route_altitude_variation_range_invalid)
+            );
+            String altitudeHeight = resolveNonNegativeSetting(
+                    state.getAltitudeHeight(),
+                    prefsStore.getRouteAltitudeVariationHeightCm(),
+                    getString(R.string.route_altitude_variation_height_invalid)
+            );
+            if (state.getFloatingWindow() && !Settings.canDrawOverlays(getApplicationContext())) {
+                showEnableFloatWindowDialog();
+                throw new IllegalArgumentException(
+                        getString(R.string.route_floating_window_permission_required)
+                );
+            }
+
+            simulationModeSpinner.setSelection(state.getCadenceMode() ? 1 : 0);
+            speedInput.setText(state.getSpeed());
+            cadenceInput.setText(state.getCadence());
+            loopInput.setText(String.valueOf(loopCount));
+            speedFloatCheckBox.setChecked(state.getDynamicIntensity());
+            updateSimulationModeViews(getSelectedSimulationMode());
+
+            prefsStore.saveRouteStepsPerMeter(stepsPerMeter);
+            prefsStore.saveRouteIntensityVariationSettings(
+                    intensityRange,
+                    state.getIntensityFrequency()
+            );
+            prefsStore.saveRoutePathVariationSettings(
+                    state.getPathVariation(),
+                    pathVariationAmplitude
+            );
+            prefsStore.saveRouteAltitudeVariationSettings(
+                    state.getAltitudeVariation(),
+                    altitudeBase,
+                    altitudeVariationRange,
+                    altitudeHeight,
+                    state.getAltitudeProbability()
+            );
+            prefsStore.saveRouteFloatingWindowSettings(
+                    state.getFloatingWindow(),
+                    state.getFloatingScale(),
+                    state.getFloatingButtonSize()
+            );
+            prefsStore.saveNmeaSettings(
+                    state.getSatellites(),
+                    state.getSignalQuality(),
+                    state.getHdop(),
+                    updateIntervalProgressToValue(state.getUpdateInterval()),
+                    state.getNetworkSimulation()
+            );
+            persistSimulationPrefsWithRatio(ratioNumerator);
+            applySimulationConfigHotIfPossible();
+            if (serviceBinder != null) {
+                serviceBinder.reloadSimulationSettings();
+            }
+            refreshFloatingWindowSizeFromPrefs();
+            if (!state.getFloatingWindow()) {
+                hideFloatingWindow();
+            }
+            renderToggleButtonState();
+            if (simulationSettingsDialog != null) {
+                simulationSettingsDialog.dismiss();
+            }
+            clearSimulationSettingsReferences();
+            return true;
+        } catch (IllegalArgumentException exception) {
+            GoUtils.DisplayToast(this, exception.getMessage());
+            return false;
+        }
+    }
+
+    private CupertinoSimulationSettingsView buildSimulationSettingsComposeView() {
+        CupertinoSimulationSettingsView view = new CupertinoSimulationSettingsView(this);
+        view.setActions(new CupertinoSimulationSettingsView.Actions() {
+            @Override
+            public void onModeChanged(boolean cadence) {
+                simulationModeSpinner.setSelection(cadence ? 1 : 0);
+                updateSimulationModeViews(getSelectedSimulationMode());
+            }
+
+            @Override
+            public void onSpeedChanged(String value) {
+                speedInput.setText(value);
+            }
+
+            @Override
+            public void onCadenceChanged(String value) {
+                cadenceInput.setText(value);
+            }
+
+            @Override
+            public void onLiveRouteEditChanged(boolean enabled) {
+                setLiveRouteEditSwitchChecked(enabled);
+                handleLiveRouteEditToggle(enabled);
+            }
+
+            @Override
+            public void onRatioChanged(String value) {
+                settingsLinkRatioLeftInput.setText(value);
+            }
+
+            @Override
+            public void onStepsPerMeterChanged(String value) {
+                settingsStepsPerMeterInput.setText(value);
+            }
+
+            @Override
+            public void onLoopChanged(String value) {
+                settingsLoopInput.setText(value);
+            }
+
+            @Override
+            public void onNetworkSimulationChanged(boolean enabled) {
+                settingsNetworkSimulationSwitch.setChecked(enabled);
+            }
+
+            @Override
+            public void onSatelliteChanged(int value) {
+                settingsSatelliteSeekBar.setProgress(value - 1);
+                updateSatelliteValue(value - 1);
+            }
+
+            @Override
+            public void onSignalQualityChanged(int value) {
+                settingsSignalQualityGroup.check(
+                        value == 1
+                                ? R.id.rb_dialog_signal_medium
+                                : value == 2
+                                ? R.id.rb_dialog_signal_weak
+                                : R.id.rb_dialog_signal_strong
+                );
+            }
+
+            @Override
+            public void onHdopChanged(float value) {
+                int progress = Math.round(value * 10f);
+                settingsHdopSeekBar.setProgress(progress);
+                updateHdopValue(progress);
+            }
+
+            @Override
+            public void onUpdateIntervalChanged(int value) {
+                settingsUpdateIntervalSeekBar.setProgress(value);
+                updateUpdateIntervalValue(value);
+            }
+
+            @Override
+            public void onDynamicIntensityChanged(boolean enabled) {
+                settingsDynamicIntensitySwitch.setChecked(enabled);
+            }
+
+            @Override
+            public void onIntensityRangeChanged(String value) {
+                settingsIntensityRangeInput.setText(value);
+            }
+
+            @Override
+            public void onIntensityFrequencyChanged(float value) {
+                int progress = Math.round(value * 100f);
+                settingsIntensityFrequencySeekBar.setProgress(progress);
+                updateIntensityFrequencyValue(progress);
+            }
+
+            @Override
+            public void onPathVariationChanged(boolean enabled) {
+                settingsPathVariationSwitch.setChecked(enabled);
+            }
+
+            @Override
+            public void onPathAmplitudeChanged(String value) {
+                settingsPathVariationInput.setText(value);
+            }
+
+            @Override
+            public void onAltitudeVariationChanged(boolean enabled) {
+                settingsAltitudeVariationSwitch.setChecked(enabled);
+            }
+
+            @Override
+            public void onAltitudeBaseChanged(String value) {
+                settingsAltitudeBaseInput.setText(value);
+            }
+
+            @Override
+            public void onAltitudeRangeChanged(String value) {
+                settingsAltitudeVariationRangeInput.setText(value);
+            }
+
+            @Override
+            public void onAltitudeHeightChanged(String value) {
+                settingsAltitudeHeightInput.setText(value);
+            }
+
+            @Override
+            public void onAltitudeProbabilityChanged(float value) {
+                int progress = Math.round(value * 100f);
+                settingsAltitudeProbabilitySeekBar.setProgress(progress);
+                updateAltitudeProbabilityValue(progress);
+            }
+
+            @Override
+            public void onFloatingWindowChanged(boolean enabled) {
+                settingsFloatingWindowSwitch.setChecked(enabled);
+            }
+
+            @Override
+            public void onFloatingScaleChanged(float value) {
+                int progress = Math.round(value * 100f);
+                settingsFloatingWindowScaleSeekBar.setProgress(progress);
+                updateFloatingWindowPreview();
+            }
+
+            @Override
+            public void onFloatingButtonSizeChanged(float value) {
+                int progress = Math.round(value);
+                settingsFloatingWindowButtonSizeSeekBar.setProgress(progress);
+                updateFloatingWindowPreview();
+            }
+
+            @Override
+            public void onPickRingtone() {
+                showReminderTonePickerDialog();
+            }
+
+            @Override
+            public void onUpload() {
+                promptUploadSimulationSettings();
+            }
+
+            @Override
+            public void onDownload() {
+                loadSharedSimulationSettings();
+            }
+        });
+        view.render(
+                currentRouteView == null ? getString(R.string.route_current_none) : currentRouteView.getText().toString(),
+                getSelectedSimulationMode() == RouteSimulationConfig.Mode.CADENCE,
+                speedInput.getText() == null ? "" : speedInput.getText().toString(),
+                cadenceInput.getText() == null ? "" : cadenceInput.getText().toString(),
+                liveRouteEditEnabled,
+                settingsLinkRatioLeftInput.getText().toString(),
+                settingsStepsPerMeterInput.getText().toString(),
+                settingsLoopInput.getText().toString(),
+                settingsNetworkSimulationSwitch.isChecked(),
+                settingsSatelliteSeekBar.getProgress() + 1,
+                selectedSignalQuality(),
+                settingsHdopSeekBar.getProgress() / 10f,
+                settingsUpdateIntervalSeekBar.getProgress(),
+                settingsDynamicIntensitySwitch.isChecked(),
+                settingsIntensityRangeInput.getText().toString(),
+                settingsIntensityFrequencySeekBar.getProgress() / 100f,
+                settingsPathVariationSwitch.isChecked(),
+                settingsPathVariationInput.getText().toString(),
+                settingsAltitudeVariationSwitch.isChecked(),
+                settingsAltitudeBaseInput.getText().toString(),
+                settingsAltitudeVariationRangeInput.getText().toString(),
+                settingsAltitudeHeightInput.getText().toString(),
+                settingsAltitudeProbabilitySeekBar.getProgress() / 100f,
+                settingsFloatingWindowSwitch.isChecked(),
+                settingsFloatingWindowScaleSeekBar.getProgress() / 100f,
+                settingsFloatingWindowButtonSizeSeekBar.getProgress(),
+                settingsReminderToneView.getText().toString()
+        );
+        return view;
+    }
+
+    private boolean saveSimulationSettings() {
         try {
             String ratioNumerator = requireNonEmpty(settingsLinkRatioLeftInput, getString(R.string.route_link_invalid_ratio));
             String stepsPerMeter = requireNonEmpty(settingsStepsPerMeterInput, getString(R.string.route_link_steps_per_meter_invalid));
@@ -2362,7 +2934,7 @@ public class RouteRunActivity extends BaseActivity {
                     ? prefsStore.isNetworkSimulationEnabled()
                     : settingsNetworkSimulationSwitch.isChecked();
             if (floatingWindowEnabled && !Settings.canDrawOverlays(getApplicationContext())) {
-                GoUtils.showEnableFloatWindowDialog(this);
+                showEnableFloatWindowDialog();
                 throw new IllegalArgumentException(getString(R.string.route_floating_window_permission_required));
             }
 
@@ -2399,30 +2971,32 @@ public class RouteRunActivity extends BaseActivity {
             if (simulationSettingsDialog != null) {
                 simulationSettingsDialog.dismiss();
             }
+            clearSimulationSettingsReferences();
+            return true;
         } catch (IllegalArgumentException exception) {
             GoUtils.DisplayToast(this, exception.getMessage());
+            return false;
         }
     }
 
     private void promptUploadSimulationSettings() {
-        EditText nameInput = new EditText(this);
-        nameInput.setHint(R.string.route_settings_upload_hint);
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_settings_upload_title)
-                .setView(nameInput)
-                .setPositiveButton(R.string.route_settings_upload_button, null)
-                .setNegativeButton(R.string.route_link_settings_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String name = nameInput.getText() == null ? "" : nameInput.getText().toString().trim();
-            if (TextUtils.isEmpty(name)) {
-                GoUtils.DisplayToast(this, getString(R.string.route_settings_upload_hint));
-                return;
-            }
-            dialog.dismiss();
-            uploadSimulationSettings(name);
-        }));
-        dialog.show();
+        CupertinoDialogs.showInput(
+                this,
+                getString(R.string.route_settings_upload_title),
+                null,
+                "",
+                getString(R.string.route_settings_upload_hint),
+                getString(R.string.route_link_settings_cancel),
+                getString(R.string.route_settings_upload_button),
+                value -> {
+                    String name = value == null ? "" : value.trim();
+                    if (TextUtils.isEmpty(name)) {
+                        GoUtils.DisplayToast(this, getString(R.string.route_settings_upload_hint));
+                        return;
+                    }
+                    uploadSimulationSettings(name);
+                }
+        );
     }
 
     private void uploadSimulationSettings(String name) {
@@ -2452,6 +3026,11 @@ public class RouteRunActivity extends BaseActivity {
     }
 
     private RouteSimulationConfig buildSimulationConfigForDialogInputs() {
+        if (simulationSettingsComposeView != null) {
+            return buildSimulationConfigForComposeState(
+                    simulationSettingsComposeView.getCurrentState()
+            );
+        }
         RouteSimulationConfig.Mode simulationMode = getSelectedSimulationMode();
         double speed = simulationMode == RouteSimulationConfig.Mode.SPEED
                 ? parseSimulationValue(speedInput)
@@ -2518,6 +3097,92 @@ public class RouteRunActivity extends BaseActivity {
         );
     }
 
+    private RouteSimulationConfig buildSimulationConfigForComposeState(
+            CupertinoSimulationSettingsView.State state
+    ) {
+        RouteSimulationConfig.Mode simulationMode = state.getCadenceMode()
+                ? RouteSimulationConfig.Mode.CADENCE
+                : RouteSimulationConfig.Mode.SPEED;
+        double speed = simulationMode == RouteSimulationConfig.Mode.SPEED
+                ? parsePositiveDouble(
+                        state.getSpeed(),
+                        getString(R.string.route_link_invalid_ratio)
+                )
+                : 0d;
+        double cadence = simulationMode == RouteSimulationConfig.Mode.CADENCE
+                ? parsePositiveDouble(
+                        state.getCadence(),
+                        getString(R.string.route_link_invalid_ratio)
+                )
+                : 0d;
+        int loopCount = parseLoopCount(state.getLoopCount());
+        String intensityRange = resolveNumericSetting(
+                state.getIntensityRange(),
+                prefsStore.getRouteIntensityVariationRange(),
+                getString(R.string.route_dynamic_intensity_range_invalid)
+        );
+        String pathVariationAmplitude = resolveNumericSetting(
+                state.getPathAmplitude(),
+                prefsStore.getRoutePathVariationAmplitude(),
+                getString(R.string.route_path_variation_invalid)
+        );
+        String altitudeBase = resolveNonNegativeSetting(
+                state.getAltitudeBase(),
+                prefsStore.getRouteAltitudeBaseMeters(),
+                getString(R.string.route_altitude_base_invalid)
+        );
+        String altitudeVariationRange = resolveNonNegativeSetting(
+                state.getAltitudeRange(),
+                prefsStore.getRouteAltitudeVariationRange(),
+                getString(R.string.route_altitude_variation_range_invalid)
+        );
+        String altitudeHeight = resolveNonNegativeSetting(
+                state.getAltitudeHeight(),
+                prefsStore.getRouteAltitudeVariationHeightCm(),
+                getString(R.string.route_altitude_variation_height_invalid)
+        );
+        return new RouteSimulationConfig(
+                simulationMode,
+                speed,
+                cadence,
+                loopCount,
+                state.getDynamicIntensity(),
+                parsePositiveDouble(
+                        intensityRange,
+                        getString(R.string.route_dynamic_intensity_range_invalid)
+                ),
+                state.getIntensityFrequency(),
+                state.getPathVariation(),
+                parsePositiveDouble(
+                        pathVariationAmplitude,
+                        getString(R.string.route_path_variation_invalid)
+                ),
+                state.getAltitudeVariation(),
+                parseNonNegativeDouble(
+                        altitudeBase,
+                        getString(R.string.route_altitude_base_invalid)
+                ),
+                parseNonNegativeDouble(
+                        altitudeVariationRange,
+                        getString(R.string.route_altitude_variation_range_invalid)
+                ),
+                parseNonNegativeDouble(
+                        altitudeHeight,
+                        getString(R.string.route_altitude_variation_height_invalid)
+                ),
+                state.getAltitudeProbability(),
+                parsePositiveDouble(
+                        state.getRatio(),
+                        getString(R.string.route_link_invalid_ratio)
+                ),
+                parsePositiveDouble(
+                        state.getStepsPerMeter(),
+                        getString(R.string.route_link_steps_per_meter_invalid)
+                ),
+                1000L
+        );
+    }
+
     private void loadSharedSimulationSettings() {
         if (!GoUtils.isNetworkAvailable(this)) {
             GoUtils.DisplayToast(this, getString(R.string.app_error_network));
@@ -2555,17 +3220,18 @@ public class RouteRunActivity extends BaseActivity {
         listView.setAdapter(adapter);
         updatePickerLetterRail(letterRail, listView, filteredItems);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_settings_download_title)
-                .setView(dialogView)
-                .setNegativeButton(R.string.route_link_settings_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> resizeDialogWindow(dialog, 0.82f, 0.70f));
+        CupertinoDialogs.DialogHandle[] dialogHandle = new CupertinoDialogs.DialogHandle[1];
+        dialogHandle[0] = CupertinoDialogs.showContent(
+                this,
+                getString(R.string.route_settings_download_title),
+                dialogView,
+                getString(R.string.route_link_settings_cancel)
+        );
         listView.setOnItemClickListener((parent, view, position, id) -> {
             if (filteredItems.isEmpty()) {
                 return;
             }
-            dialog.dismiss();
+            dialogHandle[0].dismiss();
             applySharedSimulationConfig(filteredItems.get(position).entry);
         });
         searchInput.addTextChangedListener(new SimpleTextWatcher() {
@@ -2575,7 +3241,6 @@ public class RouteRunActivity extends BaseActivity {
                 updatePickerLetterRail(letterRail, listView, filteredItems);
             }
         });
-        dialog.show();
     }
 
     private void applySharedSimulationConfig(SharedSimulationConfigEntry entry) {
@@ -2673,7 +3338,11 @@ public class RouteRunActivity extends BaseActivity {
         if (input == null || input.getText() == null) {
             throw new IllegalArgumentException(errorMessage);
         }
-        String raw = input.getText().toString().trim();
+        return requireNonEmpty(input.getText().toString(), errorMessage);
+    }
+
+    private String requireNonEmpty(@Nullable String value, String errorMessage) {
+        String raw = value == null ? "" : value.trim();
         if (TextUtils.isEmpty(raw)) {
             throw new IllegalArgumentException(errorMessage);
         }
@@ -2708,7 +3377,11 @@ public class RouteRunActivity extends BaseActivity {
         if (input == null || input.getText() == null) {
             return fallback;
         }
-        String raw = input.getText().toString().trim();
+        return resolveNumericSetting(input.getText().toString(), fallback, errorMessage);
+    }
+
+    private String resolveNumericSetting(@Nullable String value, String fallback, String errorMessage) {
+        String raw = value == null ? "" : value.trim();
         String resolved = TextUtils.isEmpty(raw) ? fallback : raw;
         parsePositiveDouble(resolved, errorMessage);
         return resolved;
@@ -2718,7 +3391,11 @@ public class RouteRunActivity extends BaseActivity {
         if (input == null || input.getText() == null) {
             return fallback;
         }
-        String raw = input.getText().toString().trim();
+        return resolveNonNegativeSetting(input.getText().toString(), fallback, errorMessage);
+    }
+
+    private String resolveNonNegativeSetting(@Nullable String value, String fallback, String errorMessage) {
+        String raw = value == null ? "" : value.trim();
         String resolved = TextUtils.isEmpty(raw) ? fallback : raw;
         parseNonNegativeDouble(resolved, errorMessage);
         return resolved;
@@ -2856,15 +3533,6 @@ public class RouteRunActivity extends BaseActivity {
             params.height = Math.round(dp(Math.max(24, Math.round(buttonSizeDp * 0.56f))));
             button.setLayoutParams(params);
         }
-    }
-
-    private void resizeDialogWindow(@Nullable AlertDialog dialog, float widthRatio, float heightRatio) {
-        if (dialog == null || dialog.getWindow() == null) {
-            return;
-        }
-        int width = Math.round(getResources().getDisplayMetrics().widthPixels * widthRatio);
-        int height = Math.round(getResources().getDisplayMetrics().heightPixels * heightRatio);
-        dialog.getWindow().setLayout(width, height);
     }
 
     private void setupSimulationSettingsNavigator(@NonNull View dialogView) {
@@ -3051,51 +3719,46 @@ public class RouteRunActivity extends BaseActivity {
     }
 
     private void showReminderTonePickerDialog() {
-        AlertDialog progressDialog = buildRingtoneProgressDialog();
-        progressDialog.show();
+        LinearLayout progressContent = new LinearLayout(this);
+        progressContent.setOrientation(LinearLayout.VERTICAL);
+        int contentPadding = Math.round(getResources().getDisplayMetrics().density * 20f);
+        progressContent.setPadding(contentPadding, contentPadding, contentPadding, contentPadding);
+        TextView progressText = new TextView(this);
+        progressText.setText(R.string.route_link_loading_ringtones);
+        android.widget.ProgressBar progressBar = new android.widget.ProgressBar(this);
+        progressBar.setIndeterminate(true);
+        progressContent.addView(progressText);
+        progressContent.addView(progressBar);
+
+        boolean[] loadingCancelled = {false};
+        CupertinoDialogs.DialogHandle[] progressHandle = new CupertinoDialogs.DialogHandle[1];
+        progressHandle[0] = CupertinoDialogs.showContent(
+                this,
+                getString(R.string.route_link_ringtone_title),
+                progressContent,
+                getString(R.string.route_link_settings_cancel),
+                () -> {
+                    loadingCancelled[0] = true;
+                    stopReminderFeedback();
+                }
+        );
         ioExecutor.execute(() -> {
-            List<RingtoneOption> options = loadRingtoneOptions(progressDialog);
+            List<RingtoneOption> options = loadRingtoneOptions();
             runOnUiThread(() -> {
-                progressDialog.dismiss();
-                if (isFinishing() || isDestroyed()) {
+                if (progressHandle[0] != null) {
+                    progressHandle[0].dismiss();
+                }
+                if (loadingCancelled[0] || isFinishing() || isDestroyed()) {
                     stopReminderFeedback();
                     return;
                 }
+                stopReminderFeedback();
                 showRingtoneOptionsDialog(options);
             });
         });
     }
 
-    private AlertDialog buildRingtoneProgressDialog() {
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        int padding = Math.round(getResources().getDisplayMetrics().density * 20f);
-        content.setPadding(padding, padding, padding, padding);
-        TextView progressText = new TextView(this);
-        progressText.setId(View.generateViewId());
-        progressText.setText(getString(R.string.route_link_loading_ringtones));
-        android.widget.ProgressBar progressBar = new android.widget.ProgressBar(
-                this,
-                null,
-                android.R.attr.progressBarStyleHorizontal
-        );
-        progressBar.setIndeterminate(false);
-        progressBar.setMax(1);
-        content.addView(progressText);
-        content.addView(progressBar);
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_link_ringtone_title)
-                .setView(content)
-                .setCancelable(false)
-                .create();
-        dialog.setOnShowListener(ignored -> {
-            content.setTag(progressText);
-            progressBar.setTag("progress_bar");
-        });
-        return dialog;
-    }
-
-    private List<RingtoneOption> loadRingtoneOptions(AlertDialog progressDialog) {
+    private List<RingtoneOption> loadRingtoneOptions() {
         List<RingtoneOption> options = new ArrayList<>();
         options.add(new RingtoneOption(
                 getString(R.string.route_link_ringtone_default),
@@ -3104,8 +3767,6 @@ public class RouteRunActivity extends BaseActivity {
         RingtoneManager ringtoneManager = new RingtoneManager(this);
         ringtoneManager.setType(RingtoneManager.TYPE_RINGTONE);
         android.database.Cursor cursor = ringtoneManager.getCursor();
-        int total = cursor == null ? 0 : cursor.getCount();
-        int processed = 0;
         while (cursor != null && cursor.moveToNext()) {
             int position = cursor.getPosition();
             Uri uri = ringtoneManager.getRingtoneUri(position);
@@ -3114,9 +3775,6 @@ public class RouteRunActivity extends BaseActivity {
                 String title = ringtone == null ? uri.toString() : ringtone.getTitle(this);
                 options.add(new RingtoneOption(title, uri));
             }
-            processed++;
-            int current = processed;
-            runOnUiThread(() -> updateRingtoneProgressDialog(progressDialog, current, total));
         }
         if (cursor != null) {
             cursor.close();
@@ -3124,48 +3782,44 @@ public class RouteRunActivity extends BaseActivity {
         return options;
     }
 
-    private void updateRingtoneProgressDialog(AlertDialog dialog, int current, int total) {
-        if (dialog == null || !dialog.isShowing()) {
-            return;
-        }
-        View content = dialog.findViewById(android.R.id.content);
-        if (!(content instanceof ViewGroup)) {
-            return;
-        }
-        ViewGroup group = (ViewGroup) content;
-        TextView progressText = findFirstViewOfType(group, TextView.class);
-        android.widget.ProgressBar progressBar = findFirstViewOfType(group, android.widget.ProgressBar.class);
-        if (progressText != null) {
-            progressText.setText(getString(
-                    R.string.route_link_loading_ringtones_progress,
-                    Math.max(0, current),
-                    Math.max(1, total)
-            ));
-        }
-        if (progressBar != null) {
-            progressBar.setMax(Math.max(1, total));
-            progressBar.setProgress(Math.min(Math.max(0, current), Math.max(1, total)));
-        }
-    }
-
     private void showRingtoneOptionsDialog(List<RingtoneOption> options) {
-        ScrollView scrollView = new ScrollView(this);
-        LinearLayout container = new LinearLayout(this);
-        container.setOrientation(LinearLayout.VERTICAL);
-        int padding = Math.round(getResources().getDisplayMetrics().density * 16f);
-        container.setPadding(padding, padding, padding, padding);
-        scrollView.addView(container);
+        CupertinoRingtoneOptionsView content = new CupertinoRingtoneOptionsView(this);
+        content.setOptions(options.stream().map(option -> option.title).toArray(String[]::new));
+        CupertinoDialogs.DialogHandle[] dialogHandle = new CupertinoDialogs.DialogHandle[1];
+        content.setListener(new CupertinoRingtoneOptionsView.Listener() {
+            @Override
+            public void onPreview(int index) {
+                if (index >= 0 && index < options.size()) {
+                    previewReminderTone(options.get(index).uri);
+                }
+            }
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.route_link_ringtone_title)
-                .setView(scrollView)
-                .setNegativeButton(R.string.route_link_settings_cancel, (d, which) -> stopReminderFeedback())
-                .create();
-        for (RingtoneOption option : options) {
-            container.addView(createRingtoneOptionView(option, dialog));
-        }
-        dialog.setOnDismissListener(d -> stopReminderFeedback());
-        dialog.show();
+            @Override
+            public void onSelect(int index) {
+                if (index < 0 || index >= options.size()) {
+                    return;
+                }
+                RingtoneOption option = options.get(index);
+                prefsStore.saveRouteReminderTone(option.uri == null ? "" : option.uri.toString(), option.title);
+                if (settingsReminderToneView != null) {
+                    settingsReminderToneView.setText(option.title);
+                }
+                if (simulationSettingsComposeView != null) {
+                    simulationSettingsComposeView.setRingtone(option.title);
+                }
+                stopReminderFeedback();
+                if (dialogHandle[0] != null) {
+                    dialogHandle[0].dismiss();
+                }
+            }
+        });
+        dialogHandle[0] = CupertinoDialogs.showContent(
+                this,
+                getString(R.string.route_link_ringtone_title),
+                content,
+                getString(R.string.route_link_settings_cancel),
+                this::stopReminderFeedback
+        );
     }
 
     private void showSimulationMarkerAt(RoutePoint point) {
@@ -3197,37 +3851,6 @@ public class RouteRunActivity extends BaseActivity {
                 motion.bearing
         );
         XLog.d("RouteRunActivity: flushed pending motion to ServiceGo");
-    }
-
-    private View createRingtoneOptionView(RingtoneOption option, AlertDialog dialog) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        row.setPadding(0, 0, 0, Math.round(getResources().getDisplayMetrics().density * 12f));
-
-        TextView title = new TextView(this);
-        title.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        title.setText(option.title);
-
-        Button playButton = new Button(this);
-        playButton.setText(R.string.route_link_ringtone_play);
-        playButton.setOnClickListener(v -> previewReminderTone(option.uri));
-
-        Button confirmButton = new Button(this);
-        confirmButton.setText(R.string.route_link_ringtone_confirm);
-        confirmButton.setOnClickListener(v -> {
-            prefsStore.saveRouteReminderTone(option.uri == null ? "" : option.uri.toString(), option.title);
-            if (settingsReminderToneView != null) {
-                settingsReminderToneView.setText(option.title);
-            }
-            stopReminderFeedback();
-            dialog.dismiss();
-        });
-
-        row.addView(title);
-        row.addView(playButton);
-        row.addView(confirmButton);
-        return row;
     }
 
     private void previewReminderTone(@Nullable Uri uri) {
@@ -3300,7 +3923,7 @@ public class RouteRunActivity extends BaseActivity {
         if (Settings.canDrawOverlays(getApplicationContext())) {
             return;
         }
-        GoUtils.showEnableFloatWindowDialog(this);
+        showEnableFloatWindowDialog();
     }
 
     private void maybeShowFloatingWindow() {
@@ -3845,23 +4468,7 @@ public class RouteRunActivity extends BaseActivity {
                     panelCollapsed ? android.R.drawable.arrow_up_float : android.R.drawable.arrow_down_float
             );
         }
-    }
-
-    @Nullable
-    private <T extends View> T findFirstViewOfType(ViewGroup parent, Class<T> type) {
-        for (int index = 0; index < parent.getChildCount(); index++) {
-            View child = parent.getChildAt(index);
-            if (type.isInstance(child)) {
-                return type.cast(child);
-            }
-            if (child instanceof ViewGroup) {
-                T nested = findFirstViewOfType((ViewGroup) child, type);
-                if (nested != null) {
-                    return nested;
-                }
-            }
-        }
-        return null;
+        renderRunOverlay();
     }
 
     private void restoreLastRouteSelection() {

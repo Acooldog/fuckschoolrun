@@ -12,30 +12,22 @@
 
     <LinearLayout
         android:id="@+id/route_search_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
         android:layout_marginStart="12dp"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="12dp"
-        android:background="#F8FFFFFF"
+        android:background="@drawable/cupertino_surface"
         android:elevation="6dp"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="4dp">
 
         <SearchView
             android:id="@+id/route_create_search_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:iconifiedByDefault="false"
-            android:queryHint="@string/route_search_placeholder" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/route_search_hint"
-            android:textColor="#555555"
-            android:textSize="12sp" />
+            android:background="@android:color/transparent"
+            android:iconifiedByDefault="true" />
 
         <LinearLayout
             android:id="@+id/route_search_result_container"
@@ -62,7 +54,7 @@
         android:layout_alignParentEnd="true"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="12dp"
-        android:background="#E6FFFFFF"
+        android:background="@drawable/cupertino_surface"
         android:elevation="4dp"
         android:orientation="vertical"
         android:padding="4dp">
@@ -74,7 +66,8 @@
             android:checked="true"
             android:minHeight="40dp"
             android:text="@string/map_pic_normal"
-            android:textColor="#00796B" />
+            android:textColor="@color/textPrimary"
+            android:buttonTint="@color/colorPrimary" />
 
         <RadioButton
             android:id="@+id/route_create_map_satellite"
@@ -82,7 +75,8 @@
             android:layout_height="wrap_content"
             android:minHeight="40dp"
             android:text="@string/map_pic_sate"
-            android:textColor="#00796B" />
+            android:textColor="@color/textPrimary"
+            android:buttonTint="@color/colorPrimary" />
     </RadioGroup>
 
     <TextView
@@ -92,15 +86,15 @@
         android:layout_below="@id/route_create_map_type_group"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="10dp"
-        android:background="#80000000"
-        android:padding="5dp"
+        android:background="@drawable/cupertino_hint"
+        android:padding="8dp"
         android:text="@string/route_draw_hint"
         android:textColor="#ffffff" />
 
     <LinearLayout
         android:id="@+id/route_create_toolbox_container"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="224dp"
+        android:layout_height="480dp"
         android:layout_below="@id/route_search_container"
         android:layout_alignParentStart="true"
         android:layout_marginStart="12dp"
@@ -108,25 +102,56 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <LinearLayout
+        <ScrollView
+            android:id="@+id/route_create_toolbox_scroll"
+            android:layout_width="176dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/cupertino_surface"
+            android:fillViewport="true"
+            android:padding="6dp">
+
+            <LinearLayout
             android:id="@+id/route_create_toolbox_panel"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#E6FFFFFF"
+            android:background="@android:color/transparent"
             android:elevation="4dp"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:padding="2dp">
+
+            <Button
+                android:id="@+id/btn_create_save"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/cupertino_primary_button"
+                android:text="@string/route_save_button"
+                android:textColor="#ffffff" />
+
+            <Button
+                android:id="@+id/btn_create_clear"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/route_clear_button" />
+
+            <Button
+                android:id="@+id/btn_create_share"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/route_share_button" />
 
             <Button
                 android:id="@+id/btn_create_tool_draw"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:minHeight="36dp"
                 android:text="@string/route_tool_draw" />
 
             <Button
                 android:id="@+id/btn_create_tool_edit"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
@@ -134,7 +159,7 @@
 
             <Button
                 android:id="@+id/btn_create_tool_auto_add"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
@@ -142,7 +167,7 @@
 
             <Button
                 android:id="@+id/btn_create_tool_auto_reduce"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
@@ -150,7 +175,7 @@
 
             <Button
                 android:id="@+id/btn_create_tool_smooth_corner"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
@@ -158,7 +183,7 @@
 
             <Button
                 android:id="@+id/btn_create_tool_undo"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
@@ -166,7 +191,7 @@
 
             <Button
                 android:id="@+id/btn_create_tool_redo"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
@@ -174,7 +199,7 @@
 
             <Button
                 android:id="@+id/btn_create_tool_keep"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
@@ -183,13 +208,14 @@
 
             <Button
                 android:id="@+id/btn_create_tool_delete"
-                android:layout_width="72dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minHeight="36dp"
                 android:text="@string/route_tool_delete"
                 android:visibility="gone" />
-        </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
 
         <ImageButton
             android:id="@+id/btn_create_tool_toggle"
@@ -247,9 +273,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="#ffffffff"
+        android:layout_marginStart="28dp"
+        android:layout_marginEnd="28dp"
+        android:background="@drawable/cupertino_sheet"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="14dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -285,36 +313,5 @@
                 android:text="@string/route_record_start_button" />
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btn_create_clear"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="1"
-                android:text="@string/route_clear_button" />
-
-            <Button
-                android:id="@+id/btn_create_share"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_weight="1"
-                android:text="@string/route_share_button" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/btn_create_save"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="@color/colorPrimary"
-            android:text="@string/route_save_button"
-            android:textColor="#ffffff" />
     </LinearLayout>
 </RelativeLayout>

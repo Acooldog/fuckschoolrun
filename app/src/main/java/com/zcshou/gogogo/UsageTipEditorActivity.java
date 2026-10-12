@@ -17,13 +17,13 @@ import android.widget.Switch;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 
 import com.acooldog.toolbox.config.InternalAuthStore;
 import com.acooldog.toolbox.config.TipsCacheStore;
 import com.acooldog.toolbox.share.domain.model.UsageTipDetail;
 import com.acooldog.toolbox.share.domain.model.WordImportResult;
 import com.acooldog.toolbox.share.presentation.ShareModule;
+import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
@@ -218,12 +218,15 @@ public class UsageTipEditorActivity extends BaseActivity {
         if (TextUtils.isEmpty(tipId)) {
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.tips_delete_confirm_title)
-                .setMessage(R.string.tips_delete_confirm_message)
-                .setPositiveButton(R.string.tips_delete_button, (dialog, which) -> deleteTip())
-                .setNegativeButton(R.string.route_link_settings_cancel, null)
-                .show();
+        CupertinoDialogs.showConfirm(
+                this,
+                getString(R.string.tips_delete_confirm_title),
+                getString(R.string.tips_delete_confirm_message),
+                getString(R.string.route_link_settings_cancel),
+                getString(R.string.tips_delete_button),
+                null,
+                this::deleteTip
+        );
     }
 
     private void deleteTip() {

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -12,7 +13,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -23,6 +23,7 @@ import com.acooldog.toolbox.route.presentation.RouteModule;
 import com.acooldog.toolbox.route.presentation.SharedRouteActionAdapter;
 import com.acooldog.toolbox.share.domain.model.SharedRoutePayload;
 import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
+import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.acooldog.toolbox.utils.SearchSortUtils;
@@ -51,6 +52,10 @@ public class RouteActivity extends BaseActivity {
     private List<SharedRouteSummary> sharedRoutes = new ArrayList<>();
     private String currentQuery = "";
 
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
     private final ActivityResultLauncher<String[]> importLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), this::handleImportedRoute);
 
@@ -61,8 +66,9 @@ public class RouteActivity extends BaseActivity {
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.hide();
         }
+        CupertinoDockInstaller.install(this, CupertinoDockInstaller.TAB_ROUTES);
 
         viewModel = new ViewModelProvider(this).get(RouteListViewModel.class);
         ioExecutor = Executors.newSingleThreadExecutor();
@@ -72,6 +78,16 @@ public class RouteActivity extends BaseActivity {
         emptyView = findViewById(R.id.route_no_data);
         routeListView = findViewById(R.id.route_list_view);
         importButton = findViewById(R.id.fab_import);
+        routeListView.setPadding(
+                routeListView.getPaddingLeft(),
+                routeListView.getPaddingTop(),
+                routeListView.getPaddingRight(),
+                dp(112)
+        );
+        ViewGroup.MarginLayoutParams importParams =
+                (ViewGroup.MarginLayoutParams) importButton.getLayoutParams();
+        importParams.bottomMargin = dp(104);
+        importButton.setLayoutParams(importParams);
         importButton.setOnClickListener(v -> importLauncher.launch(new String[]{"application/json", "*/*"}));
         SearchView searchView = findViewById(R.id.route_search_view);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -276,19 +292,22 @@ public class RouteActivity extends BaseActivity {
     }
 
     private void confirmDelete(RouteDefinition routeDefinition) {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.route_delete_title)
-                .setMessage(R.string.route_delete_message)
-                .setPositiveButton(R.string.route_item_delete, (dialog, which) -> {
+        CupertinoDialogs.showConfirm(
+                this,
+                getString(R.string.route_delete_title),
+                getString(R.string.route_delete_message),
+                getString(R.string.route_share_cancel),
+                getString(R.string.route_item_delete),
+                null,
+                () -> {
                     try {
                         viewModel.deleteRoute(routeDefinition);
                         GoUtils.DisplayToast(this, getString(R.string.route_delete_success));
                     } catch (Exception exception) {
                         GoUtils.DisplayToast(this, getString(R.string.route_delete_failed));
                     }
-                })
-                .setNegativeButton(R.string.route_share_cancel, null)
-                .show();
+                }
+        );
     }
 
     private String buildDetailedToast(int prefixResId, Exception exception) {

@@ -6,10 +6,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.preference.PreferenceManager;
 
-import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -20,7 +18,6 @@ import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
-import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.view.Gravity;
 
@@ -34,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.acooldog.toolbox.database.DataBaseHistoryLocation;
+import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.utils.GoUtils;
 
 public class HistoryActivity extends BaseActivity {
@@ -59,8 +57,6 @@ public class HistoryActivity extends BaseActivity {
          * 1. 除了 WelcomeActivity 之外的所有 Activity 均继承 BaseActivity
          * 2. WelcomeActivity 单独处理，其他 Activity 手动填充 StatusBar
          * */
-        getWindow().setStatusBarColor(getResources().getColor(R.color.colorPrimary, this.getTheme()));
-
         setContentView(R.layout.activity_history);
 
         ActionBar actionBar = getSupportActionBar();
@@ -98,20 +94,20 @@ public class HistoryActivity extends BaseActivity {
             this.finish(); // back button
             return true;
         } else if (id ==  R.id.action_delete) {
-            new AlertDialog.Builder(HistoryActivity.this)
-                    .setTitle("警告")//这里是表头的内容
-                    .setMessage("确定要删除全部历史记录吗?")//这里是中间显示的具体信息
-                    .setPositiveButton("确定",
-                            (dialog, which) -> {
-                                if (deleteRecord(-1)) {
-                                    GoUtils.DisplayToast(this, getResources().getString(R.string.history_delete_ok));
-                                    updateRecordList();
-                                }
-                            })
-                    .setNegativeButton("取消",
-                            (dialog, which) -> {
-                            })
-                    .show();
+            CupertinoDialogs.showConfirm(
+                    this,
+                    "警告",
+                    "确定要删除全部历史记录吗?",
+                    "取消",
+                    "确定",
+                    null,
+                    () -> {
+                        if (deleteRecord(-1)) {
+                            GoUtils.DisplayToast(this, getResources().getString(R.string.history_delete_ok));
+                            updateRecordList();
+                        }
+                    }
+            );
             return true;
         }
 
@@ -262,37 +258,42 @@ public class HistoryActivity extends BaseActivity {
     }
 
     private void showDeleteDialog(String locID) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("警告");
-        builder.setMessage("确定要删除该项历史记录吗?");
-        builder.setPositiveButton("确定", (dialog, whichButton) -> {
-            boolean deleteRet = deleteRecord(Integer.parseInt(locID));
-            if (deleteRet) {
-                GoUtils.DisplayToast(HistoryActivity.this, getResources().getString(R.string.history_delete_ok));
-                updateRecordList();
-            }
-        });
-        builder.setNegativeButton("取消", null);
-
-        builder.show();
+        CupertinoDialogs.showConfirm(
+                this,
+                "警告",
+                "确定要删除该项历史记录吗?",
+                "取消",
+                "确定",
+                null,
+                () -> {
+                    boolean deleteRet = deleteRecord(Integer.parseInt(locID));
+                    if (deleteRet) {
+                        GoUtils.DisplayToast(HistoryActivity.this, getResources().getString(R.string.history_delete_ok));
+                        updateRecordList();
+                    }
+                }
+        );
     }
 
     private void showInputDialog(String locID, String name) {
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setText(name);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("名称");
-        builder.setView(input);
-        builder.setPositiveButton("确认", (dialog, whichButton) -> {
-            String userInput = input.getText().toString();
-            DataBaseHistoryLocation.updateHistoryLocation(mHistoryLocationDB, locID, userInput);
-            updateRecordList();
-        });
-        builder.setNegativeButton("取消", null);
-
-        builder.show();
+        CupertinoDialogs.showInput(
+                this,
+                "名称",
+                null,
+                name,
+                "请输入名称",
+                "取消",
+                "确认",
+                value -> {
+                    String userInput = value == null ? "" : value.trim();
+                    if (TextUtils.isEmpty(userInput)) {
+                        GoUtils.DisplayToast(this, getString(R.string.app_error_input_null));
+                        return;
+                    }
+                    DataBaseHistoryLocation.updateHistoryLocation(mHistoryLocationDB, locID, userInput);
+                    updateRecordList();
+                }
+        );
     }
 
     private String[] randomOffset(String longitude, String latitude) {

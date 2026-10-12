@@ -4,16 +4,14 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
 import androidx.annotation.StringRes;
-import androidx.appcompat.app.AlertDialog;
 import androidx.preference.EditTextPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreferenceCompat;
 
+import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.elvishew.xlog.XLog;
 
@@ -64,19 +62,12 @@ public class FragmentSettings extends PreferenceFragmentCompat {
         if (getContext() == null) {
             return;
         }
-        ScrollView scrollView = new ScrollView(getContext());
-        int padding = Math.round(getResources().getDisplayMetrics().density * 20f);
-        TextView contentView = new TextView(getContext());
-        contentView.setPadding(padding, padding, padding, padding);
-        contentView.setLineSpacing(0f, 1.25f);
-        contentView.setText(getString(contentResId));
-        scrollView.addView(contentView);
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle(titleResId)
-                .setView(scrollView)
-                .setPositiveButton(R.string.legal_document_close, null)
-                .show();
+        CupertinoDialogs.showDocument(
+                requireActivity(),
+                getString(titleResId),
+                getString(contentResId),
+                getString(R.string.legal_document_close)
+        );
     }
 
     @Override

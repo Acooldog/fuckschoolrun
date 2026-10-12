@@ -20,7 +20,7 @@
             app:tabIndicatorFullWidth="false"
             app:tabMode="fixed"
             app:tabSelectedTextColor="@color/colorPrimary"
-            app:tabTextColor="#7C7164" />
+            app:tabTextColor="@color/textSecondary" />
 
         <androidx.appcompat.widget.SearchView
             android:id="@+id/route_search_view"

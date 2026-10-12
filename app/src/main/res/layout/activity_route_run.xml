@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/layout_run_bottom_control"
-        android:background="#ffffff"
+        android:background="@color/surfaceCard"
         android:clickable="true"
         android:gravity="center"
         android:orientation="vertical"
@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="24dp"
-            android:background="#ffffff"
+            android:background="@drawable/cupertino_sheet"
             android:elevation="8dp"
             android:orientation="vertical"
             android:padding="24dp">
@@ -74,7 +74,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:backgroundTint="@color/colorPrimary"
+                android:background="@drawable/cupertino_primary_button"
                 android:text="@string/route_link_completed_acknowledge"
                 android:textColor="#ffffff" />
         </LinearLayout>
@@ -85,7 +85,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="#ffffff"
+        android:background="@drawable/cupertino_sheet"
         android:orientation="vertical"
         android:padding="10dp">
 
@@ -123,7 +123,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/route_current_none" />
+                android:text="@string/route_current_none"
+                android:textColor="@color/textPrimary"
+                android:textSize="16sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -146,7 +148,7 @@
             android:layout_marginTop="4dp"
             android:layout_marginBottom="6dp"
             android:text="@string/route_live_edit_hint_disabled"
-            android:textColor="#54657E"
+            android:textColor="@color/textSecondary"
             android:textSize="12sp" />
 
         <LinearLayout

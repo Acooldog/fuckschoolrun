@@ -46,6 +46,8 @@ import okhttp3.ResponseBody;
 public final class ShareApiClient {
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
     private static final String CLIENT_VARIANT = "fuckschoolrun";
+    private static final String PUBLIC_API_HOST = "www.daoges.cn";
+    private static final String PUBLIC_API_PATH = "/schoolrun-api";
 
     private final OkHttpClient okHttpClient;
     private final HttpUrl baseUrl;
@@ -436,7 +438,15 @@ public final class ShareApiClient {
             normalized = normalized + "/";
         }
         try {
-            return HttpUrl.get(normalized);
+            HttpUrl parsed = HttpUrl.get(normalized);
+            if (!BuildConfig.DEBUG
+                    && (!"https".equalsIgnoreCase(parsed.scheme())
+                    || !PUBLIC_API_HOST.equalsIgnoreCase(parsed.host())
+                    || !(PUBLIC_API_PATH.equals(parsed.encodedPath())
+                    || (PUBLIC_API_PATH + "/").equals(parsed.encodedPath())))) {
+                throw new IOException("Release builds must use https://www.daoges.cn/schoolrun-api/");
+            }
+            return parsed;
         } catch (IllegalArgumentException exception) {
             throw new IOException("Invalid SHARE_API_BASE_URL", exception);
         }

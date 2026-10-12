@@ -186,9 +186,16 @@
             android:label="路线管理" />
 
         <activity
+            android:name=".MineActivity"
+            android:exported="false"
+            android:label="我的"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
             android:name=".SettingsActivity"
             android:label="@string/app_settings"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".HistoryActivity"

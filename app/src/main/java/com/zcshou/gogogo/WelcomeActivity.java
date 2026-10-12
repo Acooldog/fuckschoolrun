@@ -17,18 +17,17 @@ import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.view.View;
-import android.widget.CheckBox;
-import android.widget.ScrollView;
-import android.widget.TextView;
-
-import androidx.annotation.NonNull;
+import android.graphics.Color;
+import android.view.Window;
 import androidx.annotation.StringRes;
-import androidx.appcompat.app.AlertDialog;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
 import com.acooldog.toolbox.share.presentation.ShareModule;
+import com.acooldog.toolbox.ui.CupertinoDialogs;
+import com.acooldog.toolbox.ui.WelcomeComposeView;
 import com.acooldog.toolbox.utils.GoUtils;
 
 import java.util.ArrayList;
@@ -37,7 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class WelcomeActivity extends AppCompatActivity {
+public class WelcomeActivity extends AppCompatActivity implements CupertinoDialogs.Listener {
     private static final String LEGAL_PREFS_NAME = "KEY_ACCEPT_AGREEMENT";
     private static final String KEY_ACCEPT_AGREEMENT = "KEY_ACCEPT_AGREEMENT";
     private static final String KEY_ACCEPT_PRIVACY = "KEY_ACCEPT_PRIVACY";
@@ -52,14 +51,20 @@ public class WelcomeActivity extends AppCompatActivity {
     private boolean agreementAccepted;
     private boolean disclaimerAccepted;
     private boolean startupFlowStarted;
-    private View logoView;
-    private View titleView;
-    private View subtitleView;
+    private EntryNoticeContent activeEntryNotice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_welcome);
+        Window window = getWindow();
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+        window.getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                        | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        );
+        setContentView(new WelcomeComposeView(this));
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences_main, false);
 
@@ -71,11 +76,6 @@ public class WelcomeActivity extends AppCompatActivity {
                 preferences.getBoolean(KEY_ACCEPT_PRIVACY, false)
         );
 
-        logoView = findViewById(R.id.welcome_logo);
-        titleView = findViewById(R.id.welcome_title);
-        subtitleView = findViewById(R.id.welcome_subtitle);
-
-        startSplashAnimation();
         mainHandler.postDelayed(this::beginStartupFlow, SPLASH_DURATION_MILLIS);
     }
 
@@ -101,39 +101,6 @@ public class WelcomeActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
-    private void startSplashAnimation() {
-        if (logoView != null) {
-            logoView.setAlpha(0f);
-            logoView.setScaleX(0.82f);
-            logoView.setScaleY(0.82f);
-            logoView.animate()
-                    .alpha(1f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(SPLASH_DURATION_MILLIS)
-                    .start();
-        }
-        if (titleView != null) {
-            titleView.setAlpha(0f);
-            titleView.setTranslationY(36f);
-            titleView.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .setDuration(SPLASH_DURATION_MILLIS)
-                    .start();
-        }
-        if (subtitleView != null) {
-            subtitleView.setAlpha(0f);
-            subtitleView.setTranslationY(48f);
-            subtitleView.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .setStartDelay(150L)
-                    .setDuration(SPLASH_DURATION_MILLIS - 150L)
-                    .start();
-        }
-    }
-
     private void beginStartupFlow() {
         if (startupFlowStarted || isFinishing() || isDestroyed()) {
             return;
@@ -147,30 +114,19 @@ public class WelcomeActivity extends AppCompatActivity {
     }
 
     private void showLegalConsentDialog() {
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_legal_consent, null);
-        TextView linksView = dialogView.findViewById(R.id.legal_consent_links);
-        CheckBox consentCheckBox = dialogView.findViewById(R.id.legal_consent_checkbox);
-
-        linksView.setMovementMethod(LinkMovementMethod.getInstance());
-        linksView.setText(buildLegalLinkText(), TextView.BufferType.SPANNABLE);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.app_error_agreement_dialog_title)
-                .setView(dialogView)
-                .setCancelable(false)
-                .setPositiveButton(R.string.legal_consent_confirm, null)
-                .setNegativeButton(R.string.legal_consent_cancel, (ignored, which) -> finish())
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            if (!consentCheckBox.isChecked()) {
-                GoUtils.DisplayToast(this, getString(R.string.app_error_agreement));
-                return;
-            }
-            saveAgreementAcceptance();
-            dialog.dismiss();
-            showEntryNoticeThenContinue();
-        }));
-        dialog.show();
+        CupertinoDialogs.showLegalConsent(
+                this,
+                getString(R.string.app_error_agreement_dialog_title),
+                getString(R.string.legal_consent_message),
+                getString(R.string.app_agreement),
+                getString(R.string.app_agreement_content),
+                getString(R.string.app_privacy),
+                getString(R.string.app_privacy_content),
+                getString(R.string.legal_consent_checkbox),
+                getString(R.string.legal_consent_cancel),
+                getString(R.string.legal_consent_confirm),
+                this
+        );
     }
 
     private SpannableStringBuilder buildLegalLinkText() {
@@ -207,19 +163,21 @@ public class WelcomeActivity extends AppCompatActivity {
     }
 
     private void showDocumentDialog(@StringRes int titleResId, @StringRes int contentResId) {
-        ScrollView scrollView = new ScrollView(this);
-        int padding = Math.round(getResources().getDisplayMetrics().density * 20f);
-        TextView contentView = new TextView(this);
-        contentView.setPadding(padding, padding, padding, padding);
-        contentView.setLineSpacing(0f, 1.25f);
-        contentView.setText(getString(contentResId));
-        scrollView.addView(contentView);
+        CupertinoDialogs.showDocument(
+                this,
+                getString(titleResId),
+                getString(contentResId),
+                getString(R.string.legal_document_close)
+        );
+    }
 
-        new AlertDialog.Builder(this)
-                .setTitle(titleResId)
-                .setView(scrollView)
-                .setPositiveButton(R.string.legal_document_close, null)
-                .show();
+    private void showDocumentDialog(@NonNull String title, @NonNull String content) {
+        CupertinoDialogs.showDocument(
+                this,
+                title,
+                content,
+                getString(R.string.legal_document_close)
+        );
     }
 
     private void saveAgreementAcceptance() {
@@ -277,42 +235,22 @@ public class WelcomeActivity extends AppCompatActivity {
     }
 
     private void showEntryNoticeDialog(@NonNull EntryNoticeContent content) {
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(content.title)
-                .setMessage(content.buildDialogMessage())
-                .setCancelable(false)
-                 .setPositiveButton(
-                         content.forceShutdown
-                                 ? R.string.app_exit
-                                 : R.string.app_entry_notice_known,
-                         null
-                 )
-                .create();
-        if (!content.groupNumber.isEmpty()) {
-            dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.app_entry_notice_copy_group), (d, which) -> {
-            });
-        }
-        if (!content.bilibiliUrl.isEmpty()) {
-            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.app_entry_notice_open_bilibili), (d, which) -> {
-            });
-        }
-        dialog.setOnShowListener(ignored -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                dialog.dismiss();
-                if (content.forceShutdown) {
-                    finish();
-                } else {
-                    ensurePermissionsThenEnterHome();
-                }
-            });
-            if (!content.groupNumber.isEmpty()) {
-                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> copyGroupNumber(content.groupNumber));
-            }
-            if (!content.bilibiliUrl.isEmpty()) {
-                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> openBilibiliHomepage(content.bilibiliUrl));
-            }
-        });
-        dialog.show();
+        activeEntryNotice = content;
+        CupertinoDialogs.showEntryNotice(
+                this,
+                content.title,
+                content.buildDialogMessage(),
+                content.forceShutdown
+                        ? getString(R.string.app_exit)
+                        : getString(R.string.app_entry_notice_known),
+                content.groupNumber.isEmpty()
+                        ? ""
+                        : getString(R.string.app_entry_notice_copy_group),
+                content.bilibiliUrl.isEmpty()
+                        ? ""
+                        : getString(R.string.app_entry_notice_open_bilibili),
+                this
+        );
     }
 
     private void copyGroupNumber(@NonNull String groupNumber) {
@@ -328,6 +266,50 @@ public class WelcomeActivity extends AppCompatActivity {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception exception) {
             GoUtils.DisplayToast(this, getString(R.string.app_error_network));
+        }
+    }
+
+    @Override
+    public void onLegalConfirmed() {
+        saveAgreementAcceptance();
+        showEntryNoticeThenContinue();
+    }
+
+    @Override
+    public void onLegalRejected() {
+        GoUtils.DisplayToast(this, getString(R.string.app_error_agreement));
+    }
+
+    @Override
+    public void onLegalCancelled() {
+        finish();
+    }
+
+    @Override
+    public void onOpenDocument(@NonNull String title, @NonNull String content) {
+        showDocumentDialog(title, content);
+    }
+
+    @Override
+    public void onEntryPrimary() {
+        if (activeEntryNotice != null && activeEntryNotice.forceShutdown) {
+            finish();
+        } else {
+            ensurePermissionsThenEnterHome();
+        }
+    }
+
+    @Override
+    public void onCopyGroup() {
+        if (activeEntryNotice != null) {
+            copyGroupNumber(activeEntryNotice.groupNumber);
+        }
+    }
+
+    @Override
+    public void onOpenBilibili() {
+        if (activeEntryNotice != null) {
+            openBilibiliHomepage(activeEntryNotice.bilibiliUrl);
         }
     }
 

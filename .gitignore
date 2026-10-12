@@ -17,8 +17,16 @@ out
 
 # Gradle files
 .gradle
+.kotlin
 build
 release
+
+# Local caches and generated inspection output
+.tmp/
+.pytest_cache/
+**/__pycache__/
+**/.externalNativeBuild/
+**/.cxx/
 
 # Local configuration file (sdk path, etc)
 local.properties

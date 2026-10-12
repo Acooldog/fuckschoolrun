@@ -18,6 +18,8 @@
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="buttonStyle">@style/AppTheme.Button</item>
         <item name="android:windowBackground">@color/surfaceBackground</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
 </resources>

@@ -1,21 +1,20 @@
 package com.acooldog.toolbox;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
 import com.acooldog.toolbox.config.InternalAuthStore;
+import com.acooldog.toolbox.share.domain.model.FsrBindingState;
 import com.acooldog.toolbox.share.domain.model.InternalAccountProfile;
 import com.acooldog.toolbox.share.domain.model.InternalLoginResult;
-import com.acooldog.toolbox.share.domain.model.FsrBindingState;
 import com.acooldog.toolbox.share.presentation.ShareModule;
+import com.acooldog.toolbox.ui.CupertinoInternalLoginView;
 import com.acooldog.toolbox.utils.GoUtils;
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,42 +22,45 @@ import java.util.concurrent.Executors;
 public class InternalLoginActivity extends BaseActivity {
     private InternalAuthStore authStore;
     private ExecutorService ioExecutor;
-    private TextView statusView;
-    private TextView deviceIdView;
-    private TextView deviceNameView;
-    private TextInputEditText usernameInput;
-    private TextInputEditText passwordInput;
+    private CupertinoInternalLoginView contentView;
     private String deviceId;
     private String deviceName;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_internal_login);
 
         authStore = new InternalAuthStore(getApplicationContext());
         ioExecutor = Executors.newSingleThreadExecutor();
         deviceId = resolveDeviceId();
         deviceName = resolveDeviceName();
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar_internal_login);
-        toolbar.setNavigationOnClickListener(v -> finish());
+        contentView = new CupertinoInternalLoginView(this);
+        contentView.setActions(new CupertinoInternalLoginView.Actions() {
+            @Override
+            public void onBack() {
+                finish();
+            }
 
-        statusView = findViewById(R.id.internal_login_status);
-        deviceIdView = findViewById(R.id.internal_login_device_id);
-        deviceNameView = findViewById(R.id.internal_login_device_name);
-        usernameInput = findViewById(R.id.internal_login_username_input);
-        passwordInput = findViewById(R.id.internal_login_password_input);
+            @Override
+            public void onLogin() {
+                login();
+            }
 
-        deviceIdView.setText(deviceId);
-        deviceNameView.setText(deviceName);
+            @Override
+            public void onLogout() {
+                logout();
+            }
 
-        findViewById(R.id.internal_login_button).setOnClickListener(v -> login());
-        findViewById(R.id.internal_logout_button).setOnClickListener(v -> logout());
-        findViewById(R.id.internal_register_button).setOnClickListener(
-                v -> startActivity(new android.content.Intent(this, EmailRegisterActivity.class))
-        );
-
+            @Override
+            public void onRegister() {
+                startActivity(new Intent(
+                        InternalLoginActivity.this,
+                        EmailRegisterActivity.class
+                ));
+            }
+        });
+        setContentView(contentView);
         refreshSessionState();
     }
 
@@ -73,22 +75,31 @@ public class InternalLoginActivity extends BaseActivity {
     private void refreshSessionState() {
         InternalAccountProfile profile = authStore.getProfile();
         if (profile == null) {
-            statusView.setText(getString(R.string.internal_login_status_logged_out));
+            contentView.render(
+                    getString(R.string.internal_login_status_logged_out),
+                    contentView.getUsername(),
+                    deviceId,
+                    deviceName,
+                    false
+            );
             return;
         }
-        statusView.setText(getString(
-                R.string.internal_login_status_logged_in,
+        contentView.render(
+                getString(
+                        R.string.internal_login_status_logged_in,
+                        profile.getUsername(),
+                        profile.getTesterTypeLabel()
+                ),
                 profile.getUsername(),
-                profile.getTesterTypeLabel()
-        ));
-        if (usernameInput != null) {
-            usernameInput.setText(profile.getUsername());
-        }
+                deviceId,
+                deviceName,
+                true
+        );
     }
 
     private void login() {
-        String username = usernameInput.getText() == null ? "" : usernameInput.getText().toString().trim();
-        String password = passwordInput.getText() == null ? "" : passwordInput.getText().toString().trim();
+        String username = contentView.getUsername();
+        String password = contentView.getPassword();
         if (TextUtils.isEmpty(username)) {
             GoUtils.DisplayToast(this, getString(R.string.internal_login_need_username));
             return;
@@ -102,7 +113,8 @@ public class InternalLoginActivity extends BaseActivity {
             return;
         }
 
-        statusView.setText(getString(R.string.tips_loading));
+        contentView.setLoading(true);
+        contentView.setStatus(getString(R.string.tips_loading));
         ioExecutor.execute(() -> {
             try {
                 InternalLoginResult result = ShareModule.from(getApplicationContext())
@@ -110,15 +122,11 @@ public class InternalLoginActivity extends BaseActivity {
                         .loginInternalAccount(username, password, deviceId, deviceName);
                 authStore.saveSession(result.getToken(), result.getAccount());
                 runOnUiThread(() -> {
-                    if (passwordInput != null) {
-                        passwordInput.setText("");
-                    }
+                    contentView.setLoading(false);
+                    contentView.setPassword("");
                     FsrBindingState binding = result.getFsrBinding();
                     if (binding != null && !TextUtils.isEmpty(binding.getCommand())) {
-                        android.content.Intent intent = new android.content.Intent(
-                                this,
-                                FsrBindingActivity.class
-                        );
+                        Intent intent = new Intent(this, FsrBindingActivity.class);
                         intent.putExtra(FsrBindingActivity.EXTRA_COMMAND, binding.getCommand());
                         intent.putExtra(FsrBindingActivity.EXTRA_JOB_ID, binding.getJobId());
                         startActivity(intent);
@@ -131,8 +139,12 @@ public class InternalLoginActivity extends BaseActivity {
                 });
             } catch (Exception exception) {
                 runOnUiThread(() -> {
+                    contentView.setLoading(false);
                     refreshSessionState();
-                    GoUtils.DisplayToast(this, buildDetailedToast(R.string.internal_login_failed, exception));
+                    GoUtils.DisplayToast(
+                            this,
+                            buildDetailedToast(R.string.internal_login_failed, exception)
+                    );
                 });
             }
         });
@@ -140,9 +152,7 @@ public class InternalLoginActivity extends BaseActivity {
 
     private void logout() {
         authStore.clear();
-        if (passwordInput != null) {
-            passwordInput.setText("");
-        }
+        contentView.setPassword("");
         refreshSessionState();
         GoUtils.DisplayToast(this, getString(R.string.internal_logout_success));
     }
@@ -157,7 +167,9 @@ public class InternalLoginActivity extends BaseActivity {
     }
 
     private String buildDetailedToast(int prefixResId, Exception exception) {
-        String detail = exception == null || exception.getMessage() == null ? "" : exception.getMessage().trim();
+        String detail = exception == null || exception.getMessage() == null
+                ? ""
+                : exception.getMessage().trim();
         if (detail.isEmpty()) {
             return getString(prefixResId);
         }

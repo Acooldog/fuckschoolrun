@@ -19,8 +19,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-
 import com.acooldog.toolbox.config.SavedNfcConfig;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
@@ -31,6 +29,7 @@ import com.acooldog.toolbox.nfc.domain.NfcPayloadParser;
 import com.acooldog.toolbox.nfc.domain.ReadNfcPayloadUseCase;
 import com.acooldog.toolbox.share.domain.model.SharedNfcEntry;
 import com.acooldog.toolbox.share.presentation.ShareModule;
+import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.acooldog.toolbox.utils.SearchSortUtils;
 
@@ -239,16 +238,20 @@ public class NfcToolsActivity extends BaseActivity {
                     getString(R.string.nfc_share_manual_option),
                     getString(R.string.nfc_share_saved_option)
             };
-            new AlertDialog.Builder(this)
-                    .setTitle(R.string.nfc_share_source_title)
-                    .setItems(options, (dialog, which) -> {
+            CupertinoDialogs.showChoices(
+                    this,
+                    getString(R.string.nfc_share_source_title),
+                    null,
+                    options,
+                    getString(R.string.nfc_share_cancel),
+                    which -> {
                         if (which == 0) {
                             showManualShareDialog();
                         } else {
                             showLocalConfigPicker(true);
                         }
-                    })
-                    .show();
+                    }
+            );
             return;
         }
         showManualShareDialog();
@@ -273,37 +276,38 @@ public class NfcToolsActivity extends BaseActivity {
         urlEdit.setText(defaultUrl);
         packageEdit.setText(defaultPackage);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.nfc_share_dialog_title)
-                .setView(dialogView)
-                .setPositiveButton(R.string.nfc_share_confirm, null)
-                .setNegativeButton(R.string.nfc_share_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String name = nameInput.getText() == null ? "" : nameInput.getText().toString().trim();
-            String url = urlEdit.getText() == null ? "" : urlEdit.getText().toString().trim();
-            String packageName = packageEdit.getText() == null ? "" : packageEdit.getText().toString().trim();
-            if (TextUtils.isEmpty(name)) {
-                setStatus(mockStatusView, getString(R.string.nfc_share_need_name), true);
-                return;
-            }
-            if (TextUtils.isEmpty(url)) {
-                setStatus(mockStatusView, getString(R.string.nfc_mock_need_url), true);
-                return;
-            }
-            if (TextUtils.isEmpty(packageName)) {
-                setStatus(mockStatusView, getString(R.string.nfc_mock_need_package), true);
-                return;
-            }
+        CupertinoDialogs.showCustom(
+                this,
+                getString(R.string.nfc_share_dialog_title),
+                dialogView,
+                getString(R.string.nfc_share_cancel),
+                getString(R.string.nfc_share_confirm),
+                () -> {
+                    String name = nameInput.getText() == null ? "" : nameInput.getText().toString().trim();
+                    String url = urlEdit.getText() == null ? "" : urlEdit.getText().toString().trim();
+                    String packageName = packageEdit.getText() == null ? "" : packageEdit.getText().toString().trim();
+                    if (TextUtils.isEmpty(name)) {
+                        setStatus(mockStatusView, getString(R.string.nfc_share_need_name), true);
+                        return false;
+                    }
+                    if (TextUtils.isEmpty(url)) {
+                        setStatus(mockStatusView, getString(R.string.nfc_mock_need_url), true);
+                        return false;
+                    }
+                    if (TextUtils.isEmpty(packageName)) {
+                        setStatus(mockStatusView, getString(R.string.nfc_mock_need_package), true);
+                        return false;
+                    }
 
-            urlInput.setText(url);
-            packageInput.setText(packageName);
-            currentPayloadSource = TextUtils.isEmpty(source) ? "manual" : source;
-            persistNfcConfig();
-            dialog.dismiss();
-            uploadSharedNfc(name, url, packageName);
-        }));
-        dialog.show();
+                    urlInput.setText(url);
+                    packageInput.setText(packageName);
+                    currentPayloadSource = TextUtils.isEmpty(source) ? "manual" : source;
+                    persistNfcConfig();
+                    uploadSharedNfc(name, url, packageName);
+                    return true;
+                },
+                null
+        );
     }
 
     private void showSaveConfigDialog() {
@@ -318,29 +322,27 @@ public class NfcToolsActivity extends BaseActivity {
             return;
         }
 
-        EditText nameInput = new EditText(this);
-        nameInput.setHint(R.string.nfc_save_name_hint);
-        nameInput.setText(buildDefaultLocalConfigName());
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.nfc_save_dialog_title)
-                .setView(nameInput)
-                .setPositiveButton(R.string.nfc_save_confirm, null)
-                .setNegativeButton(R.string.nfc_share_cancel, null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String name = nameInput.getText() == null ? "" : nameInput.getText().toString().trim();
-            if (TextUtils.isEmpty(name)) {
-                setStatus(mockStatusView, getString(R.string.nfc_save_need_name), true);
-                return;
-            }
-
-            prefsStore.saveSavedNfcConfig(new SavedNfcConfig(name, url, packageName, currentPayloadSource));
-            persistNfcConfig();
-            dialog.dismiss();
-            setStatus(mockStatusView, getString(R.string.nfc_save_success), false);
-        }));
-        dialog.show();
+        CupertinoDialogs.showInput(
+                this,
+                getString(R.string.nfc_save_dialog_title),
+                null,
+                buildDefaultLocalConfigName(),
+                getString(R.string.nfc_save_name_hint),
+                getString(R.string.nfc_share_cancel),
+                getString(R.string.nfc_save_confirm),
+                value -> {
+                    String name = value == null ? "" : value.trim();
+                    if (TextUtils.isEmpty(name)) {
+                        setStatus(mockStatusView, getString(R.string.nfc_save_need_name), true);
+                        return;
+                    }
+                    prefsStore.saveSavedNfcConfig(
+                            new SavedNfcConfig(name, url, packageName, currentPayloadSource)
+                    );
+                    persistNfcConfig();
+                    setStatus(mockStatusView, getString(R.string.nfc_save_success), false);
+                }
+        );
     }
 
     private void showLocalConfigPicker(boolean shareAfterPick) {
@@ -356,10 +358,18 @@ public class NfcToolsActivity extends BaseActivity {
             items[index] = config.getName() + " · " + config.getPackageName();
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle(shareAfterPick ? R.string.nfc_share_local_pick_title : R.string.nfc_local_pick_title)
-                .setItems(items, (dialog, which) -> {
+        ListView listView = new ListView(this);
+        listView.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items));
+        CupertinoDialogs.DialogHandle[] dialogHandle = new CupertinoDialogs.DialogHandle[1];
+        dialogHandle[0] = CupertinoDialogs.showContent(
+                this,
+                getString(shareAfterPick ? R.string.nfc_share_local_pick_title : R.string.nfc_local_pick_title),
+                listView,
+                getString(R.string.nfc_share_cancel)
+        );
+        listView.setOnItemClickListener((parent, view, which, id) -> {
                     SavedNfcConfig selected = configs.get(which);
+                    dialogHandle[0].dismiss();
                     if (shareAfterPick) {
                         showShareDetailDialog(
                                 selected.getName(),
@@ -370,8 +380,7 @@ public class NfcToolsActivity extends BaseActivity {
                     } else {
                         applySavedNfcConfig(selected);
                     }
-                })
-                .show();
+                });
     }
 
     private void applySavedNfcConfig(SavedNfcConfig config) {
@@ -437,16 +446,18 @@ public class NfcToolsActivity extends BaseActivity {
         fillNfcAdapter(adapter, filteredItems);
         listView.setAdapter(adapter);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.nfc_download_pick_title)
-                .setView(dialogView)
-                .setNegativeButton(R.string.nfc_share_cancel, null)
-                .create();
+        CupertinoDialogs.DialogHandle[] dialogHandle = new CupertinoDialogs.DialogHandle[1];
+        dialogHandle[0] = CupertinoDialogs.showContent(
+                this,
+                getString(R.string.nfc_download_pick_title),
+                dialogView,
+                getString(R.string.nfc_share_cancel)
+        );
         listView.setOnItemClickListener((parent, view, position, id) -> {
             if (filteredItems.isEmpty()) {
                 return;
             }
-            dialog.dismiss();
+            dialogHandle[0].dismiss();
             applySharedNfc(filteredItems.get(position).entry);
         });
         searchInput.addTextChangedListener(new SimpleTextWatcher() {
@@ -455,7 +466,6 @@ public class NfcToolsActivity extends BaseActivity {
                 filterNfcItems(editable == null ? "" : editable.toString(), allItems, filteredItems, adapter);
             }
         });
-        dialog.show();
     }
 
     private void applySharedNfc(SharedNfcEntry entry) {
