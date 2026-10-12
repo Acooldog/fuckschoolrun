@@ -68,6 +68,7 @@ tools/
 tmp_*.xml
 
 # Python backend
+/backend/
 backend/.venv/
 backend/.env
 backend/.pytest_cache/
