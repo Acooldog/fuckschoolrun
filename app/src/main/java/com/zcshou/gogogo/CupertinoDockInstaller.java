@@ -23,6 +23,14 @@ public final class CupertinoDockInstaller {
     }
 
     public static void install(@NonNull Activity activity, int selectedTab) {
+        install(activity, selectedTab, false);
+    }
+
+    public static void install(
+            @NonNull Activity activity,
+            int selectedTab,
+            boolean simulationPage
+    ) {
         ViewGroup content = activity.findViewById(android.R.id.content);
         if (content == null) {
             return;
@@ -30,14 +38,19 @@ public final class CupertinoDockInstaller {
 
         CupertinoDockView dockView = new CupertinoDockView(activity);
         int previousTab = activity.getIntent().getIntExtra(EXTRA_PREVIOUS_TAB, selectedTab);
-        dockView.setSelectedTab(previousTab);
+        boolean animateSimulationLabel = simulationPage && previousTab != selectedTab;
+        dockView.setTabs(
+                previousTab,
+                selectedTab,
+                simulationPage,
+                animateSimulationLabel
+        );
         dockView.setListener(new CupertinoDockView.Listener() {
             @Override
             public void onTabSelected(int tab) {
                 openTab(activity, tab);
             }
         });
-        dockView.post(() -> dockView.setSelectedTab(selectedTab));
 
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

@@ -101,7 +101,7 @@ private fun RouteRunOverlay(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(end = 18.dp, bottom = 24.dp),
+            .padding(end = 18.dp, bottom = 120.dp),
         contentAlignment = Alignment.BottomEnd
     ) {
         AnimatedVisibility(

@@ -344,6 +344,11 @@ public class RouteRunActivity extends BaseActivity {
         routeEditRouteHitSlopPx = Math.round(dp(ROUTE_INSERT_SCREEN_HIT_SLOP_DP));
         completionOverlay = findViewById(R.id.route_completion_overlay);
         hideLegacyRunControls();
+        CupertinoDockInstaller.install(
+                this,
+                CupertinoDockInstaller.TAB_SIMULATION,
+                true
+        );
 
         setupSimulationModeSpinner();
         setupRouteEditingInteractions();
