@@ -178,17 +178,43 @@ fun CupertinoDock(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center,
                                 transitionSpec = {
-                                    (
-                                        slideInVertically(
-                                            animationSpec = tween(300, easing = FastOutSlowInEasing),
-                                            initialOffsetY = { -it }
-                                        ) + fadeIn(tween(180))
-                                    ).togetherWith(
-                                        slideOutVertically(
-                                            animationSpec = tween(300, easing = FastOutSlowInEasing),
-                                            targetOffsetY = { it }
-                                        ) + fadeOut(tween(180))
-                                    )
+                                    if (targetState) {
+                                        (
+                                            slideInVertically(
+                                                animationSpec = tween(
+                                                    440,
+                                                    easing = FastOutSlowInEasing
+                                                ),
+                                                initialOffsetY = { -it }
+                                            ) + fadeIn(tween(240))
+                                        ).togetherWith(
+                                            slideOutVertically(
+                                                animationSpec = tween(
+                                                    440,
+                                                    easing = FastOutSlowInEasing
+                                                ),
+                                                targetOffsetY = { it }
+                                            ) + fadeOut(tween(240))
+                                        )
+                                    } else {
+                                        (
+                                            slideInVertically(
+                                                animationSpec = tween(
+                                                    440,
+                                                    easing = FastOutSlowInEasing
+                                                ),
+                                                initialOffsetY = { it }
+                                            ) + fadeIn(tween(240))
+                                        ).togetherWith(
+                                            slideOutVertically(
+                                                animationSpec = tween(
+                                                    440,
+                                                    easing = FastOutSlowInEasing
+                                                ),
+                                                targetOffsetY = { -it }
+                                            ) + fadeOut(tween(240))
+                                        )
+                                    }
                                 },
                                 label = "simulation-dock-item"
                             ) { isSimulationPage ->
@@ -249,18 +275,21 @@ class CupertinoDockView @JvmOverloads constructor(
     private var initialSelectedTabState by mutableIntStateOf(0)
     private var selectedTabState by mutableIntStateOf(0)
     private var simulationPageState by mutableStateOf(false)
+    private var targetSimulationPageState by mutableStateOf(false)
     private var animateSimulationLabelState by mutableStateOf(false)
     private var listener: Listener? = null
 
     fun setTabs(
         initialTab: Int,
         selectedTab: Int,
+        initialSimulationPage: Boolean,
         simulationPage: Boolean,
         animateSimulationLabel: Boolean
     ) {
         initialSelectedTabState = initialTab.coerceIn(0, 3)
         selectedTabState = selectedTab.coerceIn(0, 3)
-        simulationPageState = simulationPage && !animateSimulationLabel
+        simulationPageState = initialSimulationPage
+        targetSimulationPageState = simulationPage
         animateSimulationLabelState = animateSimulationLabel
     }
 
@@ -270,10 +299,10 @@ class CupertinoDockView @JvmOverloads constructor(
 
     @Composable
     override fun Content() {
-        LaunchedEffect(animateSimulationLabelState) {
+        LaunchedEffect(animateSimulationLabelState, targetSimulationPageState) {
             if (animateSimulationLabelState) {
                 withFrameNanos { }
-                simulationPageState = true
+                simulationPageState = targetSimulationPageState
             }
         }
         CupertinoTheme {

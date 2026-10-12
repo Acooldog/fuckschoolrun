@@ -38,10 +38,13 @@ public final class CupertinoDockInstaller {
 
         CupertinoDockView dockView = new CupertinoDockView(activity);
         int previousTab = activity.getIntent().getIntExtra(EXTRA_PREVIOUS_TAB, selectedTab);
-        boolean animateSimulationLabel = simulationPage && previousTab != selectedTab;
+        boolean initialSimulationPage = previousTab == TAB_SIMULATION;
+        boolean animateSimulationLabel = previousTab != selectedTab
+                && (initialSimulationPage || simulationPage);
         dockView.setTabs(
                 previousTab,
                 selectedTab,
+                initialSimulationPage,
                 simulationPage,
                 animateSimulationLabel
         );

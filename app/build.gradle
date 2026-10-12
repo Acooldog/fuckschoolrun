@@ -80,8 +80,8 @@ android {
         applicationId "com.acooldog.toolbox"
         minSdkVersion 28
         targetSdkVersion 36
-        versionCode 20303
-        versionName 'v2.3.3' // https://semver.org/lang/zh-CN/
+        versionCode 20304
+        versionName 'v2.3.4' // https://semver.org/lang/zh-CN/
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['zh', 'zh-rCN', 'en', 'en-rUS']
         ndk {

@@ -311,6 +311,7 @@ public class RouteRunActivity extends BaseActivity {
 
         viewModel = new ViewModelProvider(this).get(RouteRunViewModel.class);
         mapView = findViewById(R.id.map_run);
+        mapView.showZoomControls(false);
         baiduMap = mapView.getMap();
         currentRouteView = findViewById(R.id.tv_current_route);
         routeEditHintView = findViewById(R.id.tv_run_route_edit_hint);
