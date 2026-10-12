@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.using
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -189,7 +188,7 @@ fun CupertinoDock(
                                             animationSpec = tween(300, easing = FastOutSlowInEasing),
                                             targetOffsetY = { it }
                                         ) + fadeOut(tween(180))
-                                    ).using(null)
+                                    )
                                 },
                                 label = "simulation-dock-item"
                             ) { isSimulationPage ->
