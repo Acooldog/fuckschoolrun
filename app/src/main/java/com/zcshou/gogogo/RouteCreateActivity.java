@@ -132,7 +132,7 @@ public class RouteCreateActivity extends BaseActivity {
     private int recordIntervalSeconds;
     private int toolMode = TOOL_MODE_DRAW;
     private int selectedPointIndex = -1;
-    private boolean toolboxCollapsed;
+    private boolean toolboxCollapsed = true;
     private boolean closeRoutePromptVisible;
     private boolean loginPromptVisible;
     private String editingRouteId;
