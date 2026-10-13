@@ -684,7 +684,7 @@ private fun SectionScope.AuthorContactCardContent(
                 }
                 Spacer(Modifier.height(6.dp))
                 CupertinoText(
-                    text = "SchoolRun",
+                    text = "牢大_科比",
                     style = TextStyle(
                         color = MinePrimary,
                         fontSize = 12.sp,
