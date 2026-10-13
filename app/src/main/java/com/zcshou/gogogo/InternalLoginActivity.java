@@ -76,10 +76,8 @@ public class InternalLoginActivity extends BaseActivity {
         InternalAccountProfile profile = authStore.getProfile();
         if (profile == null) {
             contentView.render(
-                    getString(R.string.internal_login_status_logged_out),
+                    "",
                     contentView.getUsername(),
-                    deviceId,
-                    deviceName,
                     false
             );
             return;
@@ -91,8 +89,6 @@ public class InternalLoginActivity extends BaseActivity {
                         profile.getTesterTypeLabel()
                 ),
                 profile.getUsername(),
-                deviceId,
-                deviceName,
                 true
         );
     }

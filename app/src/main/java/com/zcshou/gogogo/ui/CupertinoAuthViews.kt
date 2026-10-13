@@ -6,20 +6,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.material.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,10 +25,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.alexzhirkevich.cupertino.CupertinoButton
+import io.github.alexzhirkevich.cupertino.CupertinoButtonDefaults
+import io.github.alexzhirkevich.cupertino.CupertinoDivider
+import io.github.alexzhirkevich.cupertino.CupertinoIcon
 import io.github.alexzhirkevich.cupertino.CupertinoIconButton
+import io.github.alexzhirkevich.cupertino.CupertinoScaffold
 import io.github.alexzhirkevich.cupertino.CupertinoText
 import io.github.alexzhirkevich.cupertino.CupertinoTextField
 import io.github.alexzhirkevich.cupertino.CupertinoTopAppBar
@@ -47,6 +46,7 @@ private val AuthSurface = Color.White
 private val AuthPrimary = Color(0xFF1C1C1E)
 private val AuthSecondary = Color(0xFF6D6D72)
 private val AuthAccent = Color(0xFF007AFF)
+private val AuthDivider = Color(0xFFE5E5EA)
 
 class CupertinoInternalLoginView @JvmOverloads constructor(
     context: Context,
@@ -63,8 +63,6 @@ class CupertinoInternalLoginView @JvmOverloads constructor(
         val status: String = "",
         val username: String = "",
         val password: String = "",
-        val deviceId: String = "",
-        val deviceName: String = "",
         val loggedIn: Boolean = false,
         val loading: Boolean = false
     )
@@ -99,15 +97,11 @@ class CupertinoInternalLoginView @JvmOverloads constructor(
     fun render(
         status: String,
         username: String,
-        deviceId: String,
-        deviceName: String,
         loggedIn: Boolean
     ) {
         state = state.copy(
             status = status,
             username = username,
-            deviceId = deviceId,
-            deviceName = deviceName,
             loggedIn = loggedIn
         )
     }
@@ -128,62 +122,49 @@ private fun InternalLoginContent(
     actions: CupertinoInternalLoginView.Actions?,
     onStateChanged: (CupertinoInternalLoginView.State) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AuthBackground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-    ) {
-        CupertinoTopAppBar(
-            title = {
-                CupertinoText(
-                    "登录",
-                    style = TextStyle(color = AuthPrimary, fontSize = 18.sp)
-                )
-            },
-            navigationIcon = {
-                CupertinoIconButton(
-                    onClick = { actions?.onBack() },
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        CupertinoIcons.Outlined.ChevronBackward,
-                        contentDescription = "返回",
-                        tint = AuthAccent
+    CupertinoScaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = AuthBackground,
+        topBar = {
+            CupertinoTopAppBar(
+                title = {
+                    CupertinoText(
+                        "登录",
+                        style = TextStyle(color = AuthPrimary, fontSize = 18.sp)
                     )
-                }
-            },
-            actions = {}
-        )
-
+                },
+                navigationIcon = {
+                    CupertinoIconButton(
+                        onClick = { actions?.onBack() },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        CupertinoIcon(
+                            imageVector = CupertinoIcons.Outlined.ChevronBackward,
+                            contentDescription = "返回",
+                            tint = AuthAccent
+                        )
+                    }
+                },
+                actions = {}
+            )
+        }
+    ) { contentPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+                .fillMaxSize()
+                .background(AuthBackground)
+                .padding(contentPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            BasicText(
-                "内部账号",
-                style = TextStyle(color = AuthPrimary, fontSize = 28.sp)
-            )
-            BasicText(
-                "登录后可同步共享内容和账号状态。",
-                style = TextStyle(color = AuthSecondary, fontSize = 14.sp)
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(AuthSurface)
-            ) {
+            AuthFieldGroup {
                 AuthField(
                     value = state.username,
                     placeholder = "账号",
                     onValueChange = { onStateChanged(state.copy(username = it)) }
                 )
+                AuthDivider()
                 AuthField(
                     value = state.password,
                     placeholder = "密码",
@@ -192,39 +173,49 @@ private fun InternalLoginContent(
                 )
             }
 
-            DeviceInfo(
-                deviceId = state.deviceId,
-                deviceName = state.deviceName
-            )
-
             if (state.status.isNotEmpty()) {
-                BasicText(
-                    state.status,
+                CupertinoText(
+                    text = state.status,
+                    modifier = Modifier.fillMaxWidth(),
                     style = TextStyle(color = AuthSecondary, fontSize = 13.sp)
                 )
             }
 
-            CupertinoButton(
-                onClick = { actions?.onLogin() },
-                enabled = !state.loading,
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                BasicText(if (state.loading) "登录中…" else "登录")
+                CupertinoButton(
+                    onClick = { actions?.onLogin() },
+                    enabled = !state.loading,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    CupertinoText(if (state.loading) "登录中…" else "登录")
+                }
+                CupertinoButton(
+                    onClick = { actions?.onRegister() },
+                    enabled = !state.loading,
+                    modifier = Modifier.weight(1f),
+                    colors = CupertinoButtonDefaults.plainButtonColors()
+                ) {
+                    CupertinoText(
+                        "注册账号",
+                        style = TextStyle(color = AuthAccent)
+                    )
+                }
             }
-            CupertinoButton(
-                onClick = { actions?.onRegister() },
-                enabled = !state.loading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                BasicText("注册账号")
-            }
+
             if (state.loggedIn) {
                 CupertinoButton(
                     onClick = { actions?.onLogout() },
                     enabled = !state.loading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CupertinoButtonDefaults.plainButtonColors()
                 ) {
-                    BasicText("退出登录")
+                    CupertinoText(
+                        "退出登录",
+                        style = TextStyle(color = AuthAccent)
+                    )
                 }
             }
         }
@@ -232,42 +223,15 @@ private fun InternalLoginContent(
 }
 
 @Composable
-private fun AuthField(
-    value: String,
-    placeholder: String,
-    password: Boolean = false,
-    onValueChange: (String) -> Unit
-) {
-    CupertinoTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        placeholder = { CupertinoText(placeholder, style = TextStyle(color = AuthSecondary)) },
-        singleLine = true,
-        visualTransformation = if (password) {
-            PasswordVisualTransformation()
-        } else {
-            androidx.compose.ui.text.input.VisualTransformation.None
-        },
-        textStyle = TextStyle(color = AuthPrimary, fontSize = 16.sp)
-    )
-}
-
-@Composable
-private fun DeviceInfo(deviceId: String, deviceName: String) {
+private fun AuthFieldGroup(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(AuthSurface)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(AuthSurface),
+        verticalArrangement = Arrangement.Center
     ) {
-        BasicText("设备", style = TextStyle(color = AuthPrimary, fontSize = 15.sp))
-        BasicText(deviceName, style = TextStyle(color = AuthSecondary, fontSize = 13.sp))
-        BasicText(deviceId, style = TextStyle(color = AuthSecondary, fontSize = 12.sp))
+        content()
     }
 }
 
@@ -340,84 +304,84 @@ private fun EmailRegisterContent(
     actions: CupertinoEmailRegisterView.Actions?,
     onStateChanged: (CupertinoEmailRegisterView.State) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AuthBackground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-    ) {
-        CupertinoTopAppBar(
-            title = {
-                CupertinoText(
-                    "注册",
-                    style = TextStyle(color = AuthPrimary, fontSize = 18.sp)
-                )
-            },
-            navigationIcon = {
-                CupertinoIconButton(
-                    onClick = { actions?.onBack() },
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        CupertinoIcons.Outlined.ChevronBackward,
-                        contentDescription = "返回",
-                        tint = AuthAccent
+    CupertinoScaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = AuthBackground,
+        topBar = {
+            CupertinoTopAppBar(
+                title = {
+                    CupertinoText(
+                        "注册",
+                        style = TextStyle(color = AuthPrimary, fontSize = 18.sp)
                     )
-                }
-            },
-            actions = {}
-        )
-
+                },
+                navigationIcon = {
+                    CupertinoIconButton(
+                        onClick = { actions?.onBack() },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        CupertinoIcon(
+                            imageVector = CupertinoIcons.Outlined.ChevronBackward,
+                            contentDescription = "返回",
+                            tint = AuthAccent
+                        )
+                    }
+                },
+                actions = {}
+            )
+        }
+    ) { contentPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+                .fillMaxSize()
+                .background(AuthBackground)
+                .padding(contentPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            BasicText("注册账号", style = TextStyle(color = AuthPrimary, fontSize = 28.sp))
-            BasicText(
-                "使用邮箱创建账号，注册完成后自动登录。",
-                style = TextStyle(color = AuthSecondary, fontSize = 14.sp)
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(AuthSurface)
-            ) {
+            AuthFieldGroup {
                 AuthField(
                     value = state.email,
                     placeholder = "邮箱",
                     onValueChange = { onStateChanged(state.copy(email = it)) }
                 )
+                AuthDivider()
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AuthField(
                         value = state.code,
                         placeholder = "验证码",
-                        onValueChange = { onStateChanged(state.copy(code = it)) }
+                        onValueChange = { onStateChanged(state.copy(code = it)) },
+                        modifier = Modifier.weight(1f)
                     )
                     CupertinoButton(
                         onClick = { actions?.onSendCode() },
                         enabled = state.sendCodeEnabled,
-                        modifier = Modifier.widthIn(min = 104.dp)
+                        modifier = Modifier
+                            .widthIn(min = 108.dp)
+                            .padding(end = 12.dp),
+                        colors = CupertinoButtonDefaults.plainButtonColors()
                     ) {
-                        BasicText(state.sendCodeLabel)
+                        CupertinoText(
+                            text = state.sendCodeLabel,
+                            style = TextStyle(
+                                color = if (state.sendCodeEnabled) AuthAccent else AuthAccent.copy(alpha = 0.45f),
+                                fontSize = 14.sp
+                            )
+                        )
                     }
                 }
+                AuthDivider()
                 AuthField(
                     value = state.password,
                     placeholder = "密码（至少 8 位）",
                     password = true,
                     onValueChange = { onStateChanged(state.copy(password = it)) }
                 )
+                AuthDivider()
                 AuthField(
                     value = state.confirmPassword,
                     placeholder = "确认密码",
@@ -427,18 +391,60 @@ private fun EmailRegisterContent(
             }
 
             if (state.status.isNotEmpty()) {
-                BasicText(
-                    state.status,
+                CupertinoText(
+                    text = state.status,
+                    modifier = Modifier.fillMaxWidth(),
                     style = TextStyle(color = AuthSecondary, fontSize = 13.sp)
                 )
             }
+
             CupertinoButton(
                 onClick = { actions?.onRegister() },
                 enabled = state.registerEnabled,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                BasicText("注册并登录")
+                CupertinoText("注册并登录")
             }
         }
     }
+}
+
+@Composable
+private fun AuthDivider() {
+    CupertinoDivider(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        color = AuthDivider
+    )
+}
+
+@Composable
+private fun AuthField(
+    value: String,
+    placeholder: String,
+    password: Boolean = false,
+    modifier: Modifier = Modifier,
+    onValueChange: (String) -> Unit
+) {
+    CupertinoTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        placeholder = {
+            CupertinoText(
+                placeholder,
+                style = TextStyle(color = AuthSecondary, fontSize = 16.sp)
+            )
+        },
+        singleLine = true,
+        visualTransformation = if (password) {
+            PasswordVisualTransformation()
+        } else {
+            VisualTransformation.None
+        },
+        textStyle = TextStyle(color = AuthPrimary, fontSize = 16.sp)
+    )
 }
