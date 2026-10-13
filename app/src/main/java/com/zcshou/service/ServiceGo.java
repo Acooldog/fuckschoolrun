@@ -1,6 +1,7 @@
 package com.acooldog.toolbox.service;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.pm.PackageManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -9,6 +10,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -37,6 +39,8 @@ import com.acooldog.toolbox.location.MockLocationPermissionManager;
 import com.acooldog.toolbox.location.NmeaInjector;
 
 public class ServiceGo extends Service {
+    public static final String ACTION_STOP_MOCK_LOCATION =
+            "com.acooldog.toolbox.action.STOP_MOCK_LOCATION";
     public static final double DEFAULT_LAT = 36.667662;
     public static final double DEFAULT_LNG = 117.027707;
     public static final double DEFAULT_ALT = 55.0D;
@@ -73,6 +77,18 @@ public class ServiceGo extends Service {
     private boolean gpsKeepaliveRegistered;
     private boolean networkKeepaliveRegistered;
 
+    private final BroadcastReceiver stopMockLocationReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null && ACTION_STOP_MOCK_LOCATION.equals(intent.getAction())) {
+                stopMockLocation();
+                stopForeground(STOP_FOREGROUND_REMOVE);
+                releaseWakeLock();
+                stopSelf();
+            }
+        }
+    };
+
     private final LocationListener gpsKeepaliveListener = new SimpleLocationListener();
     private final LocationListener networkKeepaliveListener = new SimpleLocationListener();
 
@@ -91,6 +107,12 @@ public class ServiceGo extends Service {
         simulationPrefsStore = new SimulationPrefsStore(getApplicationContext());
         permissionManager = new MockLocationPermissionManager(this);
         reloadNmeaSimulationSettings();
+        IntentFilter stopFilter = new IntentFilter(ACTION_STOP_MOCK_LOCATION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stopMockLocationReceiver, stopFilter, RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(stopMockLocationReceiver, stopFilter);
+        }
         if (!permissionManager.isMockLocationEnabled(this)) {
             XLog.w("SERVICEGO: mock location permission is not enabled");
         }
@@ -109,6 +131,14 @@ public class ServiceGo extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        boolean restartingAfterStop = isStop;
+        if (restartingAfterStop) {
+            isStop = false;
+            addTestProviderNetwork();
+            addTestProviderGPS();
+            initWakeLock();
+            initNotification();
+        }
         if (intent != null) {
             mCurLng = intent.getDoubleExtra(MainActivity.LNG_MSG_ID, DEFAULT_LNG);
             mCurLat = intent.getDoubleExtra(MainActivity.LAT_MSG_ID, DEFAULT_LAT);
@@ -117,6 +147,9 @@ public class ServiceGo extends Service {
         reloadNmeaSimulationSettings();
         stopGpsKeepAlive();
         initGpsKeepAlive();
+        if (restartingAfterStop && mLocHandler != null) {
+            mLocHandler.sendEmptyMessage(HANDLER_MSG_ID);
+        }
         return START_STICKY;
     }
 
@@ -141,21 +174,28 @@ public class ServiceGo extends Service {
 
     @Override
     public void onDestroy() {
-        isStop = true;
-        if (mLocHandler != null) {
-            mLocHandler.removeMessages(HANDLER_MSG_ID);
+        stopMockLocation();
+        try {
+            unregisterReceiver(stopMockLocationReceiver);
+        } catch (Exception ignored) {
         }
         if (mLocHandlerThread != null) {
             mLocHandlerThread.quit();
         }
 
-        removeTestProviderNetwork();
-        removeTestProviderGPS();
-        stopGpsKeepAlive();
-
         stopForeground(STOP_FOREGROUND_REMOVE);
         releaseWakeLock();
         super.onDestroy();
+    }
+
+    private void stopMockLocation() {
+        isStop = true;
+        if (mLocHandler != null) {
+            mLocHandler.removeMessages(HANDLER_MSG_ID);
+        }
+        removeTestProviderNetwork();
+        removeTestProviderGPS();
+        stopGpsKeepAlive();
     }
 
     private void initWakeLock() {
@@ -350,7 +390,7 @@ public class ServiceGo extends Service {
     }
 
     private void injectEnhancedLocation(@NonNull LocationPoint point) {
-        if (mLocManager == null) {
+        if (isStop || mLocManager == null) {
             return;
         }
         if (permissionManager != null && !permissionManager.isMockLocationEnabled(this)) {

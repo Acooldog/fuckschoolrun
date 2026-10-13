@@ -151,6 +151,7 @@ public class RouteRunActivity extends BaseActivity {
     private BitmapDescriptor routeEditVertexSelectedDescriptor;
     private ServiceGo.ServiceGoBinder serviceBinder;
     private boolean bound;
+    private boolean serviceStartedByActivity;
     private boolean mockLocationPromptShown;
     private boolean restoringSimulationPrefs;
     private boolean realRunLinkRunning;
@@ -482,10 +483,7 @@ public class RouteRunActivity extends BaseActivity {
         hideCompletionOverlay();
         removeFloatingWindow();
         viewModel.stopSimulation();
-        if (bound) {
-            unbindService(serviceConnection);
-            bound = false;
-        }
+        stopLocationSimulationService();
         if (ioExecutor != null) {
             ioExecutor.shutdownNow();
         }
@@ -562,6 +560,7 @@ public class RouteRunActivity extends BaseActivity {
             }
             lastHandledCompletionToken = token;
             stopLinkedSimulationState();
+            stopLocationSimulationService();
             prefsStore.setRouteCompletionPending(true);
             completionNoticePending = true;
             if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
@@ -970,8 +969,10 @@ public class RouteRunActivity extends BaseActivity {
                     resumeCurrentRoute ? R.string.route_simulation_resumed : R.string.route_simulation_started
             ));
         } catch (IllegalArgumentException exception) {
+            stopLocationSimulationService();
             GoUtils.DisplayToast(this, exception.getMessage());
         } catch (Exception exception) {
+            stopLocationSimulationService();
             GoUtils.DisplayToast(this, buildDetailedToast(R.string.route_simulation_start_failed, exception));
         }
     }
@@ -1098,10 +1099,23 @@ public class RouteRunActivity extends BaseActivity {
         serviceIntent.putExtra(MainActivity.LAT_MSG_ID, firstPoint.getWgsLatitude());
         serviceIntent.putExtra(MainActivity.ALT_MSG_ID, firstPoint.getAltitude());
         startForegroundService(serviceIntent);
+        serviceStartedByActivity = true;
         if (!bound) {
             bindService(serviceIntent, serviceConnection, BIND_AUTO_CREATE);
             bound = true;
         }
+    }
+
+    private void stopLocationSimulationService() {
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
+        if (serviceStartedByActivity) {
+            stopService(new Intent(this, ServiceGo.class));
+            serviceStartedByActivity = false;
+        }
+        serviceBinder = null;
     }
 
     @Nullable
@@ -2059,8 +2073,10 @@ public class RouteRunActivity extends BaseActivity {
             realRunLinkButton.setText(R.string.route_link_stop_button);
             requestActivityRecognitionAndStart(ratioNumerator);
         } catch (IllegalArgumentException exception) {
+            stopLocationSimulationService();
             GoUtils.DisplayToast(this, exception.getMessage());
         } catch (Exception exception) {
+            stopLocationSimulationService();
             stopLinkedSimulationState();
             GoUtils.DisplayToast(this, buildDetailedToast(R.string.route_simulation_start_failed, exception));
         }
