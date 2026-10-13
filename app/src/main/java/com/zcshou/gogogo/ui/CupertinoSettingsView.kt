@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,12 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.preference.PreferenceManager
 import com.acooldog.toolbox.R
 import com.acooldog.toolbox.utils.GoUtils
-import io.github.alexzhirkevich.cupertino.CupertinoDivider
 import io.github.alexzhirkevich.cupertino.CupertinoIcon
 import io.github.alexzhirkevich.cupertino.CupertinoIconButton
 import io.github.alexzhirkevich.cupertino.CupertinoScaffold
@@ -46,6 +45,8 @@ import io.github.alexzhirkevich.cupertino.icons.outlined.ChevronBackward
 import io.github.alexzhirkevich.cupertino.icons.outlined.ChevronForward
 import io.github.alexzhirkevich.cupertino.CupertinoTopAppBar
 import io.github.alexzhirkevich.cupertino.section.CupertinoSection
+import io.github.alexzhirkevich.cupertino.section.SectionItem
+import io.github.alexzhirkevich.cupertino.section.SectionScope
 import io.github.alexzhirkevich.cupertino.section.SectionStyle
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
 
@@ -163,129 +164,150 @@ private fun SettingsContent(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             SettingsSection(context.getString(R.string.setting_group_move), primaryText) {
-                SettingInput(
-                    label = context.getString(R.string.setting_walk),
-                    value = walk,
-                    onValueChange = {
-                        walk = it
-                        preferences.edit().putString("setting_walk", it).apply()
-                    }
-                )
-                SettingsDivider()
-                SettingInput(
-                    label = context.getString(R.string.setting_run),
-                    value = run,
-                    onValueChange = {
-                        run = it
-                        preferences.edit().putString("setting_run", it).apply()
-                    }
-                )
-                SettingsDivider()
-                SettingInput(
-                    label = context.getString(R.string.setting_bike),
-                    value = bike,
-                    onValueChange = {
-                        bike = it
-                        preferences.edit().putString("setting_bike", it).apply()
-                    }
-                )
+                SectionRow {
+                    SettingInput(
+                        label = context.getString(R.string.setting_walk),
+                        value = walk,
+                        onValueChange = {
+                            walk = it
+                            preferences.edit().putString("setting_walk", it).apply()
+                        }
+                    )
+                }
+                SectionRow {
+                    SettingInput(
+                        label = context.getString(R.string.setting_run),
+                        value = run,
+                        onValueChange = {
+                            run = it
+                            preferences.edit().putString("setting_run", it).apply()
+                        }
+                    )
+                }
+                SectionRow {
+                    SettingInput(
+                        label = context.getString(R.string.setting_bike),
+                        value = bike,
+                        onValueChange = {
+                            bike = it
+                            preferences.edit().putString("setting_bike", it).apply()
+                        }
+                    )
+                }
             }
 
             SettingsSection(context.getString(R.string.setting_location), primaryText) {
-                SettingSwitch(
-                    label = context.getString(R.string.setting_random_offset),
-                    summary = context.getString(R.string.setting_random_offset_summary),
-                    checked = randomOffset,
-                    onCheckedChange = {
-                        randomOffset = it
-                        preferences.edit().putBoolean("setting_random_offset", it).apply()
-                    }
-                )
-                SettingsDivider()
-                SettingInput(
-                    label = context.getString(R.string.setting_lat_max_offset),
-                    value = latitudeOffset,
-                    onValueChange = {
-                        latitudeOffset = it
-                        preferences.edit().putString("setting_lat_max_offset", it).apply()
-                    }
-                )
-                SettingsDivider()
-                SettingInput(
-                    label = context.getString(R.string.setting_lon_max_offset),
-                    value = longitudeOffset,
-                    onValueChange = {
-                        longitudeOffset = it
-                        preferences.edit().putString("setting_lon_max_offset", it).apply()
-                    }
-                )
+                SectionRow {
+                    SettingSwitch(
+                        label = context.getString(R.string.setting_random_offset),
+                        summary = context.getString(R.string.setting_random_offset_summary),
+                        checked = randomOffset,
+                        onCheckedChange = {
+                            randomOffset = it
+                            preferences.edit().putBoolean("setting_random_offset", it).apply()
+                        }
+                    )
+                }
+                SectionRow {
+                    SettingInput(
+                        label = context.getString(R.string.setting_lat_max_offset),
+                        value = latitudeOffset,
+                        onValueChange = {
+                            latitudeOffset = it
+                            preferences.edit().putString("setting_lat_max_offset", it).apply()
+                        }
+                    )
+                }
+                SectionRow {
+                    SettingInput(
+                        label = context.getString(R.string.setting_lon_max_offset),
+                        value = longitudeOffset,
+                        onValueChange = {
+                            longitudeOffset = it
+                            preferences.edit().putString("setting_lon_max_offset", it).apply()
+                        }
+                    )
+                }
             }
 
             SettingsSection(context.getString(R.string.setting_group_log), primaryText) {
-                SettingSwitch(
-                    label = context.getString(R.string.setting_log_off),
-                    checked = logOff,
-                    onCheckedChange = {
-                        logOff = it
-                        preferences.edit().putBoolean("setting_log_off", it).apply()
-                    }
-                )
-                SettingsDivider()
-                SettingInput(
-                    label = context.getString(R.string.setting_pos_history),
-                    value = historyDays,
-                    onValueChange = {
-                        historyDays = it
-                        preferences.edit().putString("setting_pos_history", it).apply()
-                    }
-                )
+                SectionRow {
+                    SettingSwitch(
+                        label = context.getString(R.string.setting_log_off),
+                        checked = logOff,
+                        onCheckedChange = {
+                            logOff = it
+                            preferences.edit().putBoolean("setting_log_off", it).apply()
+                        }
+                    )
+                }
+                SectionRow {
+                    SettingInput(
+                        label = context.getString(R.string.setting_pos_history),
+                        value = historyDays,
+                        onValueChange = {
+                            historyDays = it
+                            preferences.edit().putString("setting_pos_history", it).apply()
+                        }
+                    )
+                }
             }
 
             SettingsSection(context.getString(R.string.setting_group_about), primaryText) {
-                SettingInfo(
-                    context.getString(R.string.setting_version),
-                    GoUtils.getVersionName(context)
-                )
-                SettingsDivider()
-                SettingLink(context.getString(R.string.home_update_title), onClick = onCheckUpdate)
-                SettingsDivider()
-                SettingInfo(
-                    context.getString(R.string.setting_author),
-                    context.getString(R.string.app_author)
-                )
-                SettingsDivider()
-                SettingLink(context.getString(R.string.setting_user_agreement)) {
-                    CupertinoDialogs.showDocument(
-                        context as android.app.Activity,
-                        context.getString(R.string.app_agreement),
-                        context.getString(R.string.app_agreement_content),
-                        context.getString(R.string.legal_document_close)
+                SectionRow {
+                    SettingInfo(
+                        context.getString(R.string.setting_version),
+                        GoUtils.getVersionName(context)
                     )
                 }
-                SettingsDivider()
-                SettingLink(context.getString(R.string.setting_disclaimer)) {
-                    CupertinoDialogs.showDocument(
-                        context as android.app.Activity,
-                        context.getString(R.string.app_privacy),
-                        context.getString(R.string.app_privacy_content),
-                        context.getString(R.string.legal_document_close)
+                SectionRow {
+                    SettingLink(context.getString(R.string.home_update_title), onClick = onCheckUpdate)
+                }
+                SectionRow {
+                    SettingInfo(
+                        context.getString(R.string.setting_author),
+                        context.getString(R.string.app_author)
                     )
                 }
-                SettingsDivider()
-                SettingLink(context.getString(R.string.setting_license_protocol)) {
-                    openLink(context, context.getString(R.string.setting_license_protocol_link))
+                SectionRow {
+                    SettingLink(context.getString(R.string.setting_user_agreement)) {
+                        CupertinoDialogs.showDocument(
+                            context as android.app.Activity,
+                            context.getString(R.string.app_agreement),
+                            context.getString(R.string.app_agreement_content),
+                            context.getString(R.string.legal_document_close)
+                        )
+                    }
                 }
-                SettingsDivider()
-                SettingLink(context.getString(R.string.setting_reference_link)) {
-                    openLink(context, context.getString(R.string.setting_reference_repo_link_summary))
+                SectionRow {
+                    SettingLink(context.getString(R.string.setting_disclaimer)) {
+                        CupertinoDialogs.showDocument(
+                            context as android.app.Activity,
+                            context.getString(R.string.app_privacy),
+                            context.getString(R.string.app_privacy_content),
+                            context.getString(R.string.legal_document_close)
+                        )
+                    }
                 }
-                SettingsDivider()
-                SettingLink(context.getString(R.string.setting_project_link)) {
-                    openLink(context, context.getString(R.string.setting_project_link_summary))
+                SectionRow {
+                    SettingLink(context.getString(R.string.setting_license_protocol)) {
+                        openLink(context, context.getString(R.string.setting_license_protocol_link))
+                    }
                 }
-                SettingsDivider()
-                SettingLink(context.getString(R.string.setting_bilibili_link)) {
-                    openLink(context, context.getString(R.string.app_bilibili_url))
+                SectionRow {
+                    SettingLink(context.getString(R.string.setting_reference_link)) {
+                        openLink(context, context.getString(R.string.setting_reference_repo_link_summary))
+                    }
+                }
+                SectionRow {
+                    SettingLink(context.getString(R.string.setting_project_link)) {
+                        openLink(context, context.getString(R.string.setting_project_link_summary))
+                    }
+                }
+                SectionRow {
+                    SettingLink(context.getString(R.string.setting_bilibili_link)) {
+                        openLink(context, context.getString(R.string.app_bilibili_url))
+                    }
                 }
             }
         }
@@ -296,22 +318,26 @@ private fun SettingsContent(
 private fun SettingsSection(
     title: String,
     textColor: Color,
-    content: @Composable () -> Unit
+    content: @Composable SectionScope.() -> Unit
 ) {
     CupertinoSection(
         modifier = Modifier.fillMaxWidth(),
         style = SectionStyle.InsetGrouped,
-        contentPadding = PaddingValues(8.dp),
+        contentPadding = PaddingValues(0.dp),
+        dividerPadding = PaddingValues(horizontal = 12.dp),
         title = {
             CupertinoText(title, style = TextStyle(color = textColor, fontSize = 14.sp))
         }
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            content()
-        }
+        content()
     }
+}
+
+@Composable
+private fun SectionScope.SectionRow(content: @Composable () -> Unit) {
+    SectionItem(
+        title = { content() }
+    )
 }
 
 @Composable
@@ -320,36 +346,30 @@ private fun SettingInput(
     value: String,
     onValueChange: (String) -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
-        val inputWidth = 104.dp
-        val textStyle = TextStyle(color = Color(0xFF1C1C1E), fontSize = 15.sp, lineHeight = 21.sp)
-        if (maxWidth < 280.dp) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                CupertinoText(label, style = textStyle)
-                CupertinoTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = textStyle
-                )
-            }
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CupertinoText(
-                    label,
-                    modifier = Modifier.weight(1f).padding(end = 12.dp),
-                    style = textStyle
-                )
-                CupertinoTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    modifier = Modifier.width(inputWidth),
-                    singleLine = true,
-                    textStyle = textStyle
-                )
-            }
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val textStyle = TextStyle(
+            color = Color(0xFF1C1C1E),
+            fontSize = 15.sp,
+            lineHeight = 21.sp
+        )
+        CupertinoText(
+            label,
+            modifier = Modifier.weight(1f),
+            style = textStyle
+        )
+        CupertinoTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.width(112.dp),
+            singleLine = true,
+            textStyle = textStyle
+        )
     }
 }
 
@@ -361,15 +381,23 @@ private fun SettingSwitch(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            CupertinoText(label, style = TextStyle(color = Color(0xFF1C1C1E), fontSize = 15.sp))
+            CupertinoText(
+                label,
+                style = TextStyle(color = Color(0xFF1C1C1E), fontSize = 15.sp)
+            )
             if (!summary.isNullOrEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                CupertinoText(summary, style = TextStyle(color = Color(0xFF6D6D72), fontSize = 12.sp))
+                CupertinoText(
+                    summary,
+                    style = TextStyle(color = Color(0xFF6D6D72), fontSize = 12.sp)
+                )
             }
         }
         CupertinoSwitch(checked = checked, onCheckedChange = onCheckedChange)
@@ -379,7 +407,9 @@ private fun SettingSwitch(
 @Composable
 private fun SettingInfo(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -391,7 +421,11 @@ private fun SettingInfo(label: String, value: String) {
         CupertinoText(
             value,
             modifier = Modifier.weight(1f),
-            style = TextStyle(color = Color(0xFF6D6D72), fontSize = 14.sp)
+            style = TextStyle(
+                color = Color(0xFF6D6D72),
+                fontSize = 14.sp,
+                textAlign = TextAlign.End
+            )
         )
     }
 }
@@ -418,11 +452,6 @@ private fun SettingLink(label: String, onClick: () -> Unit) {
             modifier = Modifier.size(16.dp)
         )
     }
-}
-
-@Composable
-private fun SettingsDivider() {
-    CupertinoDivider(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
 }
 
 private fun openLink(context: Context, url: String) {
