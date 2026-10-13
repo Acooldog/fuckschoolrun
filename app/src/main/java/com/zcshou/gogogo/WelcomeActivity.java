@@ -200,29 +200,30 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
     }
 
     private void resolveEntryNoticeContent(@NonNull EntryNoticeCallback callback) {
-        EntryNoticeContent fallback = EntryNoticeContent.local(this);
+        EntryNoticeContent normalFallback = EntryNoticeContent.local(this, false);
+        EntryNoticeContent offlineFallback = EntryNoticeContent.local(this, true);
         if (!GoUtils.isNetworkAvailable(this)) {
-            callback.onReady(fallback);
+            callback.onReady(offlineFallback);
             return;
         }
 
         AtomicBoolean delivered = new AtomicBoolean(false);
         Runnable fallbackRunnable = () -> {
             if (delivered.compareAndSet(false, true)) {
-                callback.onReady(fallback);
+                callback.onReady(offlineFallback);
             }
         };
         mainHandler.postDelayed(fallbackRunnable, REMOTE_NOTICE_TIMEOUT_MILLIS);
 
         ioExecutor.execute(() -> {
-            EntryNoticeContent resolved = fallback;
+            EntryNoticeContent resolved = offlineFallback;
             try {
                 AppClientConfig config = ShareModule.from(getApplicationContext())
                         .shareApiClient()
                         .getAppClientConfig();
-                resolved = EntryNoticeContent.fromRemote(config, fallback);
+                resolved = EntryNoticeContent.fromRemote(config, normalFallback);
             } catch (Exception ignored) {
-                resolved = fallback;
+                resolved = offlineFallback;
             }
             EntryNoticeContent finalResolved = resolved;
             runOnUiThread(() -> {
@@ -392,12 +393,19 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
         }
 
         @NonNull
-        private static EntryNoticeContent local(@NonNull WelcomeActivity activity) {
+        private static EntryNoticeContent local(
+                @NonNull WelcomeActivity activity,
+                boolean offline
+        ) {
             return new EntryNoticeContent(
                     activity.getString(R.string.app_entry_notice_title),
-                    activity.getString(R.string.app_entry_notice_message),
+                    activity.getString(
+                            offline
+                                    ? R.string.app_entry_notice_offline_message
+                                    : R.string.app_entry_notice_message
+                    ),
                     activity.getString(R.string.app_entry_notice_group_number),
-                    activity.getString(R.string.app_bilibili_notice_text),
+                    offline ? "" : activity.getString(R.string.app_bilibili_notice_text),
                     activity.getString(R.string.app_bilibili_url),
                     false,
                     ""

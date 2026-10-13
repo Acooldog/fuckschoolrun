@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -43,9 +44,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.gestures.Orientation
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.vibrancy
 import io.github.alexzhirkevich.cupertino.AlertDialogActionsScope
 import io.github.alexzhirkevich.cupertino.CupertinoActionSheet
 import io.github.alexzhirkevich.cupertino.CupertinoAlertDialog
+import io.github.alexzhirkevich.cupertino.CupertinoButton
 import io.github.alexzhirkevich.cupertino.CupertinoCheckBox
 import io.github.alexzhirkevich.cupertino.CupertinoText
 import io.github.alexzhirkevich.cupertino.CupertinoTextField
@@ -106,7 +113,6 @@ object CupertinoDialogs {
                 dialog = dialog,
                 title = title,
                 onDismiss = { listener.onLegalCancelled() },
-                buttonsOrientation = Orientation.Vertical,
                 content = {
                     CupertinoText(message, modifier = Modifier.fillMaxWidth(), style = BodyStyle)
                     Spacer(Modifier.height(12.dp))
@@ -127,20 +133,25 @@ object CupertinoDialogs {
                         CupertinoText(checkboxLabel, style = BodyStyle)
                     }
                     Spacer(Modifier.height(10.dp))
-                    DialogActionRow(agreementTitle) {
-                        listener.onOpenDocument(agreementTitle, agreementContent)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    DialogActionRow(privacyTitle) {
-                        listener.onOpenDocument(privacyTitle, privacyContent)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    DialogActionRow(confirmLabel, enabled = checked) {
-                        if (checked) {
-                            dialog.dismiss()
-                            listener.onLegalConfirmed()
-                        } else {
-                            listener.onLegalRejected()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CupertinoButton(
+                            onClick = {
+                                listener.onOpenDocument(agreementTitle, agreementContent)
+                            }
+                        ) {
+                            CupertinoText(bookTitle(agreementTitle), style = LinkStyle)
+                        }
+                        Spacer(Modifier.size(8.dp))
+                        CupertinoButton(
+                            onClick = {
+                                listener.onOpenDocument(privacyTitle, privacyContent)
+                            }
+                        ) {
+                            CupertinoText(bookTitle(privacyTitle), style = LinkStyle)
                         }
                     }
                 },
@@ -151,6 +162,17 @@ object CupertinoDialogs {
                             listener.onLegalCancelled()
                         }
                     ) { CupertinoText(cancelLabel) }
+                    default(
+                        onClick = {
+                            if (!checked) {
+                                listener.onLegalRejected()
+                            } else {
+                                dialog.dismiss()
+                                listener.onLegalConfirmed()
+                            }
+                        },
+                        enabled = checked
+                    ) { CupertinoText(confirmLabel) }
                 }
             )
         }
@@ -194,7 +216,7 @@ object CupertinoDialogs {
             DialogShell(
                 dialog = dialog,
                 title = title,
-                onDismiss = {},
+                onDismiss = { dialog.dismiss() },
                 buttonsOrientation = Orientation.Vertical,
                 content = {
                     CupertinoText(
@@ -205,20 +227,18 @@ object CupertinoDialogs {
                             .verticalScroll(rememberScrollState()),
                         style = BodyStyle
                     )
+                },
+                actions = {
                     if (groupLabel.isNotEmpty()) {
-                        Spacer(Modifier.height(10.dp))
-                        DialogActionRow(groupLabel) {
-                            listener.onCopyGroup()
+                        default(onClick = { listener.onCopyGroup() }) {
+                            CupertinoText(groupLabel)
                         }
                     }
                     if (bilibiliLabel.isNotEmpty()) {
-                        Spacer(Modifier.height(6.dp))
-                        DialogActionRow(bilibiliLabel) {
-                            listener.onOpenBilibili()
+                        default(onClick = { listener.onOpenBilibili() }) {
+                            CupertinoText(bilibiliLabel)
                         }
                     }
-                },
-                actions = {
                     default(
                         onClick = {
                             dialog.dismiss()
@@ -594,7 +614,26 @@ object CupertinoDialogs {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
                 CupertinoTheme {
-                    content(handle)
+                    val backdrop = rememberLayerBackdrop()
+                    Box(Modifier.fillMaxSize()) {
+                        Box(Modifier.fillMaxSize().layerBackdrop(backdrop))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .drawBackdrop(
+                                    backdrop = backdrop,
+                                    shape = { RoundedCornerShape(0.dp) },
+                                    effects = {
+                                        vibrancy()
+                                        blur(18.dp.toPx())
+                                    },
+                                    onDrawSurface = {
+                                        drawRect(Color.Black.copy(alpha = 0.24f))
+                                    }
+                                )
+                        )
+                        content(handle)
+                    }
                 }
             }
         }
@@ -612,6 +651,8 @@ object CupertinoDialogs {
 
 private val PrimaryText = Color(0xFF1C1C1E)
 private val BodyStyle = TextStyle(color = PrimaryText, fontSize = 15.sp, lineHeight = 22.sp)
+private val LinkStyle = BodyStyle.copy(color = Color(0xFF007AFF))
+private val DialogSurfaceColor = Color.White.copy(alpha = 0.82f)
 private val EmphasisStyle = TextStyle(
     color = PrimaryText,
     fontSize = 16.sp,
@@ -686,6 +727,7 @@ private fun DialogShell(
                 content()
             }
         },
+        containerColor = DialogSurfaceColor,
         properties = DialogProperties(
             dismissOnBackPress = true,
             dismissOnClickOutside = false,
@@ -694,4 +736,13 @@ private fun DialogShell(
         buttonsOrientation = buttonsOrientation,
         buttons = actions
     )
+}
+
+private fun bookTitle(value: String): String {
+    val trimmed = value.trim()
+    return if (trimmed.startsWith("《") && trimmed.endsWith("》")) {
+        trimmed
+    } else {
+        "《$trimmed》"
+    }
 }

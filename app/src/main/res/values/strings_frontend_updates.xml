@@ -48,6 +48,7 @@
     <string name="route_share_select_local_title">选择本地路线</string>
     <string name="app_entry_notice_title">使用说明</string>
     <string name="app_entry_notice_message">本软件为完全免费开源软件，基于影梭打造，仅供学习交流，禁止盈利，目前仅测试过阳光校园跑，其他的你们自行测试，QQ群号：951300122</string>
+    <string name="app_entry_notice_offline_message">此为bilibiliup主 牢大_科比 制作的免费开源软件，如果你是通过购买教程或购买软件得到的本软件，请立即退款，并向作者汇报，作者会帮你进行维权；如果是先用后付，请不要付款！！！</string>
     <string name="app_entry_notice_group_number">951300122</string>
     <string name="app_entry_notice_copy_group">复制群号</string>
     <string name="app_entry_notice_known">我知道了</string>
