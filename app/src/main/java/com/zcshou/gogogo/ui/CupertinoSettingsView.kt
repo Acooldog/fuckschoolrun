@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.AbstractComposeView
@@ -305,6 +307,7 @@ private fun SectionScope.SectionInput(
         title = {
             CupertinoText(
                 label,
+                modifier = Modifier.fillMaxWidth(),
                 style = TextStyle(
                     color = Color(0xFF1C1C1E),
                     fontSize = 15.sp,
@@ -313,17 +316,22 @@ private fun SectionScope.SectionInput(
             )
         },
         trailingContent = {
-            CupertinoTextField(
-                value = value,
-                onValueChange = onValueChange,
+            Box(
                 modifier = Modifier.width(112.dp),
-                singleLine = true,
-                textStyle = TextStyle(
-                    color = Color(0xFF1C1C1E),
-                    fontSize = 15.sp,
-                    lineHeight = 21.sp
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                CupertinoTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = Color(0xFF1C1C1E),
+                        fontSize = 15.sp,
+                        lineHeight = 21.sp
+                    )
                 )
-            )
+            }
         }
     )
 }
@@ -337,7 +345,10 @@ private fun SectionScope.SectionSwitch(
 ) {
     SectionItem(
         title = {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 CupertinoText(
                     label,
                     style = TextStyle(color = Color(0xFF1C1C1E), fontSize = 15.sp)
@@ -362,19 +373,25 @@ private fun SectionScope.SectionInfo(label: String, value: String) {
         title = {
             CupertinoText(
                 label,
+                modifier = Modifier.fillMaxWidth(),
                 style = TextStyle(color = Color(0xFF1C1C1E), fontSize = 15.sp)
             )
         },
         trailingContent = {
-            CupertinoText(
-                value,
+            Box(
                 modifier = Modifier.width(112.dp),
-                style = TextStyle(
-                    color = Color(0xFF6D6D72),
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.End
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                CupertinoText(
+                    value,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = TextStyle(
+                        color = Color(0xFF6D6D72),
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.End
+                    )
                 )
-            )
+            }
         }
     )
 }
@@ -386,6 +403,7 @@ private fun SectionScope.SectionLink(label: String, onClick: () -> Unit) {
         title = {
             CupertinoText(
                 label,
+                modifier = Modifier.fillMaxWidth(),
                 style = TextStyle(color = Color(0xFF1C1C1E), fontSize = 15.sp)
             )
         },
