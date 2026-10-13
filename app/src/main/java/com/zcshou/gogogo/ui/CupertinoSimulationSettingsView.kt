@@ -1,5 +1,7 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialNamedAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.foundation.layout.Arrangement
@@ -263,7 +265,7 @@ private fun SimulationSettingsContent(
             state = state.copy(signalQuality = it)
             actions?.onSignalQualityChanged(it)
         }
-        SliderRow("HDOP", state.hdop, 0f..3f, "%.1f".format(state.hdop)) {
+        SliderRow("水平精度因子 HDOP", state.hdop, 0f..3f, "%.1f".format(state.hdop)) {
             state = state.copy(hdop = it)
             actions?.onHdopChanged(it)
         }
@@ -368,7 +370,8 @@ private fun SimulationSettingsContent(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             BasicText(state.ringtone, style = BodyText)
-            CupertinoButton(onClick = { actions?.onPickRingtone() }) {
+            CupertinoButton(onClick = { actions?.onPickRingtone() },
+                modifier = Modifier.tutorialNamedAnchor("选择提示音", "simulation_settings")) {
                 BasicText("选择提示音")
             }
         }
@@ -378,13 +381,13 @@ private fun SimulationSettingsContent(
         ) {
             CupertinoButton(
                 onClick = { actions?.onUpload() },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).tutorialNamedAnchor("上传设置", "simulation_settings")
             ) {
                 BasicText("上传设置")
             }
             CupertinoButton(
                 onClick = { actions?.onDownload() },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).tutorialNamedAnchor("下载设置", "simulation_settings")
             ) {
                 BasicText("下载设置")
             }
@@ -422,6 +425,7 @@ private fun InputRow(
             onValueChange = onValueChange,
             modifier = Modifier
                 .weight(1.1f)
+                .tutorialNamedAnchor(label, "simulation_settings")
                 .widthIn(min = 116.dp),
             singleLine = true,
             textStyle = TextStyle(fontSize = 14.sp)
@@ -453,7 +457,8 @@ private fun ToggleRow(
             else label,
             style = BodyText
         )
-        CupertinoSwitch(checked = checked, onCheckedChange = onCheckedChange)
+        CupertinoSwitch(checked = checked, onCheckedChange = onCheckedChange,
+            modifier = Modifier.tutorialNamedAnchor(label, "simulation_settings"))
     }
 }
 
@@ -474,7 +479,7 @@ private fun ChoiceRow(
                 CupertinoButton(
                     onClick = { onSelected(index) },
                     enabled = index != selected,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).tutorialNamedAnchor("$label：$choice", "simulation_settings")
                 ) {
                     BasicText(choice)
                 }
@@ -503,7 +508,7 @@ private fun SliderRow(
             value = value,
             onValueChange = onValueChange,
             valueRange = range,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().tutorialNamedAnchor(label, "simulation_settings")
         )
     }
 }

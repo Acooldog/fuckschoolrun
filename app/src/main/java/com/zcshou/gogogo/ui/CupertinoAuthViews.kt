@@ -1,5 +1,8 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+import com.acooldog.toolbox.tutorial.tutorialNamedAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.foundation.background
@@ -144,7 +147,7 @@ private fun InternalLoginContent(
             navigationIcon = {
                 CupertinoIconButton(
                     onClick = { actions?.onBack() },
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(44.dp).tutorialAnchor("login.back", onClick = { actions?.onBack() })
                 ) {
                     Icon(
                         CupertinoIcons.Outlined.ChevronBackward,
@@ -207,14 +210,15 @@ private fun InternalLoginContent(
             CupertinoButton(
                 onClick = { actions?.onLogin() },
                 enabled = !state.loading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().tutorialAnchor("login.submit", !state.loading)
             ) {
                 BasicText(if (state.loading) "登录中…" else "登录")
             }
             CupertinoButton(
                 onClick = { actions?.onRegister() },
                 enabled = !state.loading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().tutorialAnchor("login.register", !state.loading,
+                    onClick = { actions?.onRegister() })
             ) {
                 BasicText("注册账号")
             }
@@ -222,7 +226,7 @@ private fun InternalLoginContent(
                 CupertinoButton(
                     onClick = { actions?.onLogout() },
                     enabled = !state.loading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().tutorialAnchor("login.logout", !state.loading)
                 ) {
                     BasicText("退出登录")
                 }
@@ -243,6 +247,7 @@ private fun AuthField(
         onValueChange = onValueChange,
         modifier = Modifier
             .fillMaxWidth()
+            .tutorialNamedAnchor(placeholder, if (placeholder == "账号" || placeholder == "密码") "login" else "register")
             .padding(horizontal = 16.dp, vertical = 4.dp),
         placeholder = { CupertinoText(placeholder, style = TextStyle(color = AuthSecondary)) },
         singleLine = true,
@@ -356,7 +361,7 @@ private fun EmailRegisterContent(
             navigationIcon = {
                 CupertinoIconButton(
                     onClick = { actions?.onBack() },
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(44.dp).tutorialAnchor("register.back", onClick = { actions?.onBack() })
                 ) {
                     Icon(
                         CupertinoIcons.Outlined.ChevronBackward,
@@ -407,7 +412,7 @@ private fun EmailRegisterContent(
                     CupertinoButton(
                         onClick = { actions?.onSendCode() },
                         enabled = state.sendCodeEnabled,
-                        modifier = Modifier.widthIn(min = 104.dp)
+                        modifier = Modifier.widthIn(min = 104.dp).tutorialAnchor("register.code", state.sendCodeEnabled)
                     ) {
                         BasicText(state.sendCodeLabel)
                     }
@@ -435,7 +440,7 @@ private fun EmailRegisterContent(
             CupertinoButton(
                 onClick = { actions?.onRegister() },
                 enabled = state.registerEnabled,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().tutorialAnchor("register.submit", state.registerEnabled)
             ) {
                 BasicText("注册并登录")
             }

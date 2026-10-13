@@ -2202,6 +2202,14 @@ public class RouteRunActivity extends BaseActivity {
         showSimulationSettingsDialog();
     }
 
+    public void dismissSimulationSettingsForTutorial() {
+        if (simulationSettingsDialog != null) {
+            simulationSettingsDialog.dismiss();
+            stopReminderFeedback();
+            clearSimulationSettingsReferences();
+        }
+    }
+
     private void showSimulationSettingsDialog() {
         if (simulationSettingsDialog != null) {
             return;

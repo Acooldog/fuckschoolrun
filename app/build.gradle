@@ -80,8 +80,8 @@ android {
         applicationId "com.acooldog.toolbox"
         minSdkVersion 28
         targetSdkVersion 36
-        versionCode 20308
-        versionName 'v2.3.8' // https://semver.org/lang/zh-CN/
+        versionCode 20310
+        versionName 'v2.3.10' // v2.3.9 is reserved by the existing local worktree.
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['zh', 'zh-rCN', 'en', 'en-rUS']
         ndk {

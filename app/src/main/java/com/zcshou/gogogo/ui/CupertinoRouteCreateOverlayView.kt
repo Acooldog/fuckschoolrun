@@ -1,5 +1,7 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.animation.AnimatedVisibility
@@ -491,6 +493,7 @@ private fun RouteCreateOverlay(
                 colors = CupertinoButtonDefaults.plainButtonColors(),
                 modifier = Modifier
                     .size(gearSize)
+                    .tutorialAnchor("draw.tools", onClick = { collapseSearch(); actions?.onToggleToolbox() })
                     .background(
                         Color.White.copy(
                             alpha = if (gearDragging || gearPressed || !state.toolboxCollapsed) {
@@ -553,6 +556,7 @@ private fun RouteCreateOverlay(
                             },
                             modifier = Modifier
                                 .weight(1f)
+                                .tutorialAnchor("draw.search_input")
                                 .focusRequester(searchFocusRequester)
                                 .onFocusChanged {
                                     searchSession.onFocusChanged(it.hasFocus)
@@ -568,7 +572,8 @@ private fun RouteCreateOverlay(
                         )
                         CupertinoIconButton(
                             onClick = { actions?.onSearchSubmit(searchText) },
-                            modifier = Modifier.size(44.dp),
+                            modifier = Modifier.size(44.dp)
+                                .tutorialAnchor("draw.search_submit", onClick = { actions?.onSearchSubmit(searchText) }),
                         ) {
                             Icon(
                                 imageVector = CupertinoIcons.Outlined.MagnifyingGlass,
@@ -579,7 +584,8 @@ private fun RouteCreateOverlay(
                     } else {
                         CupertinoIconButton(
                             onClick = { searchSession.open() },
-                            modifier = Modifier.size(44.dp),
+                            modifier = Modifier.size(44.dp)
+                                .tutorialAnchor("draw.search_open", onClick = { searchSession.open() }),
                         ) {
                             Icon(
                                 imageVector = CupertinoIcons.Outlined.MagnifyingGlass,
@@ -613,6 +619,7 @@ private fun RouteCreateOverlay(
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .tutorialAnchor("draw.search_result")
                                     .height(58.dp),
                             ) {
                                 Column(
@@ -686,7 +693,9 @@ private fun RouteCreateOverlay(
                                     collapseSearch()
                                     actions?.onSelectMapType(satellite)
                                 },
-                                modifier = Modifier.width(tabWidth).height(36.dp),
+                                modifier = Modifier.width(tabWidth).height(36.dp)
+                                    .tutorialAnchor(if (satellite) "draw.map_satellite" else "draw.map_standard",
+                                        onClick = { collapseSearch(); actions?.onSelectMapType(satellite) }),
                                 colors = CupertinoButtonDefaults.plainButtonColors(),
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                             ) {
@@ -731,6 +740,7 @@ private fun RouteCreateOverlay(
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .tutorialAnchor("draw.close_route", onClick = { collapseSearch(); actions?.onCloseRoute() })
                     .padding(bottom = 64.dp),
             ) {
                 CupertinoText("闭合路线")
@@ -768,7 +778,8 @@ private fun RouteCreateOverlay(
                     collapseSearch()
                     actions?.onLocation()
                 },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
+                    .tutorialAnchor("draw.location", onClick = { collapseSearch(); actions?.onLocation() }),
             ) {
                 Icon(
                     imageVector = CupertinoIcons.Outlined.Location,
@@ -813,6 +824,8 @@ private fun RouteCreateOverlay(
                         style = TextStyle(fontSize = 10.sp),
                     )
                     CupertinoSwitch(
+                        modifier = Modifier.tutorialAnchor("draw.record_mode",
+                            onClick = { actions?.onRecordModeChanged(!state.recordMode) }),
                         checked = state.recordMode,
                         onCheckedChange = {
                             collapseSearch()
@@ -826,7 +839,8 @@ private fun RouteCreateOverlay(
                     collapseSearch()
                     actions?.onRecordSettings()
                 },
-                modifier = Modifier.size(42.dp),
+                modifier = Modifier.size(42.dp)
+                    .tutorialAnchor("draw.record_settings", onClick = { collapseSearch(); actions?.onRecordSettings() }),
             ) {
                 Icon(
                     imageVector = CupertinoIcons.Outlined.Gearshape,
@@ -842,6 +856,7 @@ private fun RouteCreateOverlay(
                 enabled = state.recordMode || state.recording,
                 modifier = Modifier
                     .height(34.dp)
+                    .tutorialAnchor("draw.record", enabled = state.recordMode || state.recording)
                     .padding(horizontal = 2.dp),
             ) {
                 CupertinoText(
@@ -885,17 +900,18 @@ private fun OverflowMenu(
             ),
         )
         Spacer(modifier = Modifier.height(4.dp))
-        OverflowActionButton("保存路线", enabled = !state.recording) {
+        OverflowActionButton("保存路线", key = "draw.save", enabled = !state.recording) {
             perform { actions?.onSave() }
         }
-        OverflowActionButton("清除重画", enabled = !state.recording) {
+        OverflowActionButton("清除重画", key = "draw.clear", enabled = !state.recording) {
             perform { actions?.onClear() }
         }
-        OverflowActionButton("分享路线", enabled = !state.recording) {
+        OverflowActionButton("分享路线", key = "draw.share", enabled = !state.recording) {
             perform { actions?.onShare() }
         }
         OverflowActionButton(
             label = nextMode,
+            key = "draw.mode",
             enabled = state.selectedTool != 0 || state.canEdit,
         ) {
             perform {
@@ -906,26 +922,26 @@ private fun OverflowMenu(
                 }
             }
         }
-        OverflowActionButton("自动加点", enabled = state.canAutoAdd) {
+        OverflowActionButton("自动加点", key = "draw.auto_add", enabled = state.canAutoAdd) {
             perform { actions?.onAutoAdd() }
         }
-        OverflowActionButton("自动减点", enabled = state.canAutoReduce) {
+        OverflowActionButton("自动减点", key = "draw.auto_reduce", enabled = state.canAutoReduce) {
             perform { actions?.onAutoReduce() }
         }
-        OverflowActionButton("平滑拐角", enabled = state.canSmooth) {
+        OverflowActionButton("平滑拐角", key = "draw.smooth", enabled = state.canSmooth) {
             perform { actions?.onSmoothCorner() }
         }
-        OverflowActionButton("撤销", enabled = state.canUndo) {
+        OverflowActionButton("撤销", key = "draw.undo", enabled = state.canUndo) {
             perform { actions?.onUndo() }
         }
-        OverflowActionButton("重做", enabled = state.canRedo) {
+        OverflowActionButton("重做", key = "draw.redo", enabled = state.canRedo) {
             perform { actions?.onRedo() }
         }
         if (state.selectedPointIndex >= 0) {
-            OverflowActionButton("保留点 ${state.selectedPointIndex + 1}") {
+            OverflowActionButton("保留点 ${state.selectedPointIndex + 1}", key = "draw.keep") {
                 perform { actions?.onKeep() }
             }
-            OverflowActionButton("删除点 ${state.selectedPointIndex + 1}") {
+            OverflowActionButton("删除点 ${state.selectedPointIndex + 1}", key = "draw.delete") {
                 perform { actions?.onDelete() }
             }
         }
@@ -935,13 +951,14 @@ private fun OverflowMenu(
 @Composable
 private fun OverflowActionButton(
     label: String,
+    key: String,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     CupertinoButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().tutorialAnchor(key, enabled, onClick),
     ) {
         CupertinoText(
             text = label,

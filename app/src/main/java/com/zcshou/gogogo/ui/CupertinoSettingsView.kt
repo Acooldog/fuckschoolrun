@@ -1,5 +1,8 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+import com.acooldog.toolbox.tutorial.tutorialNamedAnchor
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -133,7 +136,7 @@ private fun SettingsContent(
             navigationIcon = {
                 CupertinoIconButton(
                     onClick = onBack,
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(44.dp).tutorialAnchor("settings.back", onClick = onBack)
                 ) {
                     androidx.compose.material.Icon(
                         CupertinoIcons.Outlined.ChevronBackward,
@@ -316,7 +319,7 @@ private fun SettingInput(
         CupertinoTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.widthIn(min = 132.dp, max = 168.dp),
+            modifier = Modifier.widthIn(min = 132.dp, max = 168.dp).tutorialNamedAnchor(label, "settings"),
             singleLine = true,
             textStyle = TextStyle(color = Color(0xFF1C1C1E), fontSize = 15.sp)
         )
@@ -342,7 +345,8 @@ private fun SettingSwitch(
                 BasicText(summary, style = TextStyle(color = Color(0xFF6D6D72), fontSize = 12.sp))
             }
         }
-        CupertinoSwitch(checked = checked, onCheckedChange = onCheckedChange)
+        CupertinoSwitch(checked = checked, onCheckedChange = onCheckedChange,
+            modifier = Modifier.tutorialNamedAnchor(label, "settings", onClick = { onCheckedChange(!checked) }))
     }
 }
 
@@ -361,7 +365,7 @@ private fun SettingInfo(label: String, value: String) {
 private fun SettingButton(label: String, onClick: () -> Unit) {
     CupertinoButton(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().tutorialNamedAnchor(label, "settings", onClick = onClick)
     ) {
         BasicText(label, style = TextStyle(color = Color(0xFF007AFF), fontSize = 15.sp))
     }

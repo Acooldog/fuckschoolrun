@@ -26,4 +26,9 @@ public class MineActivity extends BaseActivity implements MineComposeView.Action
     public void openInternalLogin() {
         startActivity(new Intent(this, InternalLoginActivity.class));
     }
+
+    @Override
+    public void openTutorial() {
+        com.acooldog.toolbox.tutorial.TutorialController.replay(this);
+    }
 }

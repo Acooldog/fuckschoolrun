@@ -49,7 +49,8 @@ com.acooldog.toolbox
 
 本仓库保留 `backend/` 目录用于本地管理和 login-fsr 账号维护；后端也同步维护到独立仓库：
 
-- `git@gitee.com:daoges_x/campus-backend-running.git`
+- FSR 专属后端：`git@github.com:Acooldog/FSRbackend.git`，主分支 `main`。
+- 共享后台前端：`git@gitee.com:daoges_x/campus-backend-running.git`。
 
 ## 免责声明
 

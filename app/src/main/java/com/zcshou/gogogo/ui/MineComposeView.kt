@@ -1,5 +1,7 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.foundation.background
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +48,7 @@ class MineComposeView @JvmOverloads constructor(
     interface Actions {
         fun openSettings()
         fun openInternalLogin()
+        fun openTutorial()
     }
 
     var actions: Actions? = null
@@ -84,6 +88,7 @@ private fun MineScreen(actions: MineComposeView.Actions?) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .tutorialAnchor("mine.login", onClick = { actions?.openInternalLogin() })
                     .cupertinoClickable { actions?.openInternalLogin() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -123,6 +128,7 @@ private fun MineScreen(actions: MineComposeView.Actions?) {
                     tint = primary,
                     modifier = Modifier
                         .size(28.dp)
+                        .tutorialAnchor("mine.settings", onClick = { actions?.openSettings() })
                         .clip(CircleShape)
                         .cupertinoClickable { actions?.openSettings() }
                         .padding(4.dp)
@@ -155,6 +161,7 @@ private fun MineScreen(actions: MineComposeView.Actions?) {
         }
         item {
             MineAction(
+                key = "mine.settings",
                 title = "应用设置",
                 subtitle = "管理应用偏好和运行选项",
                 icon = Icons.Outlined.Settings,
@@ -169,6 +176,7 @@ private fun MineScreen(actions: MineComposeView.Actions?) {
         }
         item {
             MineAction(
+                key = "mine.update",
                 title = "版本更新",
                 subtitle = "更新检查由应用设置统一管理",
                 icon = Icons.Outlined.Update,
@@ -179,6 +187,14 @@ private fun MineScreen(actions: MineComposeView.Actions?) {
                 accent = accent,
                 accentSoft = accentSoft,
                 separator = separator
+            )
+        }
+        item {
+            MineAction(
+                key = "mine.tutorial", title = "使用教程", subtitle = "重新查看",
+                icon = Icons.Outlined.HelpOutline, onClick = { actions?.openTutorial() },
+                surface = surface, primary = primary, secondary = secondary, accent = accent,
+                accentSoft = accentSoft, separator = separator
             )
         }
     }
@@ -220,6 +236,7 @@ private fun MineStat(
 
 @Composable
 private fun MineAction(
+    key: String,
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -234,6 +251,7 @@ private fun MineAction(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .tutorialAnchor(key, onClick = onClick)
             .clip(RoundedCornerShape(18.dp))
             .background(surface)
             .border(1.dp, separator.copy(alpha = 0.55f), RoundedCornerShape(18.dp))

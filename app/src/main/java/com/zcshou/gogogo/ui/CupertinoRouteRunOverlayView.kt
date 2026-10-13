@@ -1,5 +1,7 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.animation.AnimatedVisibility
@@ -117,6 +119,7 @@ private fun RouteRunOverlay(
             ) {
                 RunAction(
                     label = if (state.running) "停止模拟" else "开始模拟",
+                    key = "simulation.start",
                     icon = Icons.Outlined.PlayArrow,
                     onClick = {
                         expanded = false
@@ -125,6 +128,7 @@ private fun RouteRunOverlay(
                 )
                 RunAction(
                     label = "选择路线",
+                    key = "simulation.route",
                     icon = Icons.Outlined.List,
                     onClick = {
                         expanded = false
@@ -133,6 +137,7 @@ private fun RouteRunOverlay(
                 )
                 RunAction(
                     label = if (state.realRunLinkRunning) "停止跑步联动" else "跑步联动",
+                    key = "simulation.real_run",
                     icon = Icons.Outlined.Accessibility,
                     onClick = {
                         expanded = false
@@ -141,6 +146,7 @@ private fun RouteRunOverlay(
                 )
                 RunAction(
                     label = "NFC 联动",
+                    key = "simulation.nfc",
                     icon = Icons.Outlined.Nfc,
                     onClick = {
                         expanded = false
@@ -153,6 +159,7 @@ private fun RouteRunOverlay(
         CupertinoIconButton(
             onClick = { expanded = !expanded },
             modifier = Modifier
+                .tutorialAnchor("simulation.tools", onClick = { expanded = !expanded })
                 .padding(2.dp)
                 .background(
                     color = Color.White.copy(alpha = 0.92f),
@@ -171,12 +178,13 @@ private fun RouteRunOverlay(
 @Composable
 private fun RunAction(
     label: String,
+    key: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
     CupertinoButton(
         onClick = onClick,
-        modifier = Modifier.widthIn(min = 180.dp, max = 236.dp)
+        modifier = Modifier.widthIn(min = 180.dp, max = 236.dp).tutorialAnchor(key, onClick = onClick)
     ) {
         androidx.compose.foundation.layout.Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),

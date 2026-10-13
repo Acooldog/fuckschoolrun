@@ -452,6 +452,19 @@ public final class ShareApiClient {
         }
     }
 
+    public JSONObject getTutorialConfig(String token) throws IOException {
+        return executeObject(newRequestBuilder(buildUrl("api/tutorial/config"), token).get().build());
+    }
+
+    public JSONObject getTutorialProgress(String token) throws IOException {
+        return executeObject(newRequestBuilder(buildUrl("api/tutorial/progress"), token).get().build());
+    }
+
+    public void saveTutorialProgress(String token, JSONObject progress) throws IOException {
+        executeObject(newRequestBuilder(buildUrl("api/tutorial/progress"), token)
+                .put(RequestBody.create(progress.toString(), JSON_MEDIA_TYPE)).build());
+    }
+
     private HttpUrl buildUrl(String relativePath) throws IOException {
         if (baseUrl == null) {
             throw new IOException("请先配置 SHARE_API_BASE_URL");
@@ -560,7 +573,10 @@ public final class ShareApiClient {
                 if ((response.code() == 401 || response.code() == 403)
                         && request.header("Authorization") != null
                         && applicationContext != null) {
-                    new InternalAuthStore(applicationContext).clear();
+                    InternalAuthStore store = new InternalAuthStore(applicationContext);
+                    if (("Bearer " + store.getToken()).equals(request.header("Authorization"))) {
+                        store.clear();
+                    }
                 }
                 throw new IOException(extractErrorMessage(response.code(), responseText));
             }

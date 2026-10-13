@@ -1,0 +1,975 @@
+[
+  {
+    "key": "dialog",
+    "name": "对话框",
+    "description": "不选择元素，以软件对话框显示文案。",
+    "page": "dialog",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "dock.draw",
+    "name": "绘制页面入口",
+    "description": "绘制页面入口",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "dock.simulation",
+    "name": "模拟页面入口",
+    "description": "模拟页面入口",
+    "page": "simulation",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "dock.routes",
+    "name": "路线管理入口",
+    "description": "路线管理入口",
+    "page": "routes",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "dock.mine",
+    "name": "我的页面入口",
+    "description": "我的页面入口",
+    "page": "mine",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.search_open",
+    "name": "展开地点搜索",
+    "description": "展开地点搜索",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.search_input",
+    "name": "地点搜索输入框",
+    "description": "地点搜索输入框",
+    "page": "draw",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "draw.search_submit",
+    "name": "搜索地点",
+    "description": "搜索地点",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.search_result",
+    "name": "地点搜索结果",
+    "description": "地点搜索结果",
+    "page": "draw",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "draw.tools",
+    "name": "路线工具齿轮",
+    "description": "路线工具齿轮",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.map_standard",
+    "name": "标准地图",
+    "description": "标准地图",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.map_satellite",
+    "name": "卫星地图",
+    "description": "卫星地图",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.location",
+    "name": "当前位置",
+    "description": "当前位置",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.record_mode",
+    "name": "录制路线开关",
+    "description": "录制路线开关",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.record_settings",
+    "name": "录制设置",
+    "description": "录制设置",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.record",
+    "name": "开始或停止录制",
+    "description": "开始或停止录制",
+    "page": "draw",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "draw.close_route",
+    "name": "闭合路线",
+    "description": "闭合路线",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.save",
+    "name": "保存路线",
+    "description": "保存路线",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.clear",
+    "name": "清除重画",
+    "description": "清除重画",
+    "page": "draw",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "draw.share",
+    "name": "分享路线",
+    "description": "分享路线",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.mode",
+    "name": "切换绘制或编辑模式",
+    "description": "切换绘制或编辑模式",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.auto_add",
+    "name": "自动加点",
+    "description": "自动加点",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.auto_reduce",
+    "name": "自动减点",
+    "description": "自动减点",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.smooth",
+    "name": "平滑拐角",
+    "description": "平滑拐角",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.undo",
+    "name": "撤销",
+    "description": "撤销",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.redo",
+    "name": "重做",
+    "description": "重做",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.keep",
+    "name": "保留选中的路线点",
+    "description": "保留选中的路线点",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "draw.delete",
+    "name": "删除选中的路线点",
+    "description": "删除选中的路线点",
+    "page": "draw",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation.tools",
+    "name": "模拟操作齿轮",
+    "description": "模拟操作齿轮",
+    "page": "simulation",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "simulation.start",
+    "name": "开始或停止模拟",
+    "description": "开始或停止模拟",
+    "page": "simulation",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation.route",
+    "name": "选择模拟路线",
+    "description": "选择模拟路线",
+    "page": "simulation",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "simulation.real_run",
+    "name": "跑步联动",
+    "description": "跑步联动",
+    "page": "simulation",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation.nfc",
+    "name": "NFC 联动",
+    "description": "NFC 联动",
+    "page": "simulation",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "mine.login",
+    "name": "账号登录入口",
+    "description": "账号登录入口",
+    "page": "mine",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "mine.settings",
+    "name": "应用设置入口",
+    "description": "应用设置入口",
+    "page": "mine",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "mine.update",
+    "name": "版本更新入口",
+    "description": "版本更新入口",
+    "page": "mine",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "mine.tutorial",
+    "name": "重新查看教程",
+    "description": "重新查看教程",
+    "page": "mine",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.walk",
+    "name": "步行速度(米/秒)",
+    "description": "步行速度(米/秒)",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.run",
+    "name": "跑步速度(米/秒)",
+    "description": "跑步速度(米/秒)",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.bike",
+    "name": "驾驶速度(米/秒)",
+    "description": "驾驶速度(米/秒)",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.random_offset",
+    "name": "随机偏移",
+    "description": "随机偏移",
+    "page": "settings",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "settings.lat_max_offset",
+    "name": "经度最大偏移距离(米)",
+    "description": "经度最大偏移距离(米)",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.lon_max_offset",
+    "name": "纬度最大偏移距离(米)",
+    "description": "纬度最大偏移距离(米)",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.log_off",
+    "name": "关闭日志",
+    "description": "关闭日志",
+    "page": "settings",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "settings.pos_history",
+    "name": "历史记录有效期(天)",
+    "description": "历史记录有效期(天)",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.user_agreement",
+    "name": "用户协议",
+    "description": "用户协议",
+    "page": "settings",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "settings.disclaimer",
+    "name": "免责声明",
+    "description": "免责声明",
+    "page": "settings",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "settings.license_protocol",
+    "name": "使用的协议",
+    "description": "使用的协议",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.reference_link",
+    "name": "参考的链接",
+    "description": "参考的链接",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.project_link",
+    "name": "项目链接",
+    "description": "项目链接",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "settings.bilibili_link",
+    "name": "Bilibili 主页",
+    "description": "Bilibili 主页",
+    "page": "settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "login.submit",
+    "name": "登录",
+    "description": "登录",
+    "page": "login",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "login.register",
+    "name": "注册账号",
+    "description": "注册账号",
+    "page": "login",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "login.logout",
+    "name": "退出登录",
+    "description": "退出登录",
+    "page": "login",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "login.back",
+    "name": "登录页面返回",
+    "description": "登录页面返回",
+    "page": "login",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "register.submit",
+    "name": "注册并登录",
+    "description": "注册并登录",
+    "page": "register",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "register.code",
+    "name": "发送验证码",
+    "description": "发送验证码",
+    "page": "register",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "register.back",
+    "name": "注册页面返回",
+    "description": "注册页面返回",
+    "page": "register",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "settings.back",
+    "name": "设置页面返回",
+    "description": "设置页面返回",
+    "page": "settings",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "login.input_username",
+    "name": "账号",
+    "description": "账号",
+    "page": "login",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "login.input_password",
+    "name": "密码",
+    "description": "密码",
+    "page": "login",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "register.input_email",
+    "name": "邮箱",
+    "description": "邮箱",
+    "page": "register",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "register.input_code",
+    "name": "验证码",
+    "description": "验证码",
+    "page": "register",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "register.input_register_password",
+    "name": "密码（至少 8 位）",
+    "description": "密码（至少 8 位）",
+    "page": "register",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "register.input_confirm_password",
+    "name": "确认密码",
+    "description": "确认密码",
+    "page": "register",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.fab_import",
+    "name": "导入路线",
+    "description": "导入路线",
+    "page": "routes",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_et_mock_url",
+    "name": "模拟 NFC 链接",
+    "description": "模拟 NFC 链接",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_btn_copy_url",
+    "name": "复制链接",
+    "description": "复制链接",
+    "page": "nfc",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.nfc_et_mock_package",
+    "name": "模拟 NFC 包名",
+    "description": "模拟 NFC 包名",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_btn_copy_package",
+    "name": "复制包名",
+    "description": "复制包名",
+    "page": "nfc",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.nfc_btn_mock",
+    "name": "模拟 NFC",
+    "description": "模拟 NFC",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_btn_save",
+    "name": "保存配置",
+    "description": "保存配置",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_btn_load_local",
+    "name": "载入本地配置",
+    "description": "载入本地配置",
+    "page": "nfc",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.nfc_btn_share",
+    "name": "共享 NFC",
+    "description": "共享 NFC",
+    "page": "nfc",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.nfc_btn_download",
+    "name": "下载共享 NFC",
+    "description": "下载共享 NFC",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.tips_search_input",
+    "name": "搜索标题或内容",
+    "description": "搜索标题或内容",
+    "page": "tips",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.tips_search_button",
+    "name": "搜索",
+    "description": "搜索",
+    "page": "tips",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tips_refresh_button",
+    "name": "刷新",
+    "description": "刷新",
+    "page": "tips",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tips_new_fab",
+    "name": "新建",
+    "description": "新建",
+    "page": "tips",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_detail_edit_button",
+    "name": "编辑",
+    "description": "编辑",
+    "page": "tip_detail",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_detail_update_button",
+    "name": "更新",
+    "description": "更新",
+    "page": "tip_detail",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_detail_delete_button",
+    "name": "删除",
+    "description": "删除",
+    "page": "tip_detail",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.tip_editor_title_input",
+    "name": "提示标题",
+    "description": "提示标题",
+    "page": "tip_editor",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.tip_editor_contributor_input",
+    "name": "贡献者",
+    "description": "贡献者",
+    "page": "tip_editor",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.tip_editor_publish_switch",
+    "name": "立即发布",
+    "description": "立即发布",
+    "page": "tip_editor",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_editor_bold",
+    "name": "粗体",
+    "description": "粗体",
+    "page": "tip_editor",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_editor_italic",
+    "name": "斜体",
+    "description": "斜体",
+    "page": "tip_editor",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_editor_underline",
+    "name": "下划线",
+    "description": "下划线",
+    "page": "tip_editor",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_editor_h1",
+    "name": "大标题",
+    "description": "大标题",
+    "page": "tip_editor",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_editor_h2",
+    "name": "小标题",
+    "description": "小标题",
+    "page": "tip_editor",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_editor_list",
+    "name": "列表",
+    "description": "列表",
+    "page": "tip_editor",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.tip_editor_import_word",
+    "name": "导入 Word",
+    "description": "导入 Word",
+    "page": "tip_editor",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.tip_editor_save_button",
+    "name": "保存",
+    "description": "保存",
+    "page": "tip_editor",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.tip_editor_delete_button",
+    "name": "删除",
+    "description": "删除",
+    "page": "tip_editor",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.fsr_binding_copy",
+    "name": "复制绑定命令",
+    "description": "复制绑定命令",
+    "page": "binding",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.btn_route_item_run",
+    "name": "开始模拟",
+    "description": "开始模拟",
+    "page": "routes",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.btn_route_item_edit",
+    "name": "编辑路线",
+    "description": "编辑路线",
+    "page": "routes",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.btn_route_item_share",
+    "name": "导出路线",
+    "description": "导出路线",
+    "page": "routes",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.btn_route_item_delete",
+    "name": "删除路线",
+    "description": "删除路线",
+    "page": "routes",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.btn_route_item_download",
+    "name": "下载保存",
+    "description": "下载保存",
+    "page": "routes",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.btn_route_item_download_run",
+    "name": "下载并模拟",
+    "description": "下载并模拟",
+    "page": "routes",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.route_share_name_input",
+    "name": "分享路线名称",
+    "description": "分享路线名称",
+    "page": "draw",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.route_share_privacy_checkbox",
+    "name": "开启隐私模式",
+    "description": "开启隐私模式",
+    "page": "draw",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "view.nfc_share_name_input",
+    "name": "分享 NFC 名称",
+    "description": "分享 NFC 名称",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_share_url_input",
+    "name": "分享 NFC 链接",
+    "description": "分享 NFC 链接",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_share_package_input",
+    "name": "分享 NFC 包名",
+    "description": "分享 NFC 包名",
+    "page": "nfc",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_manual_url_input",
+    "name": "NFC 链接",
+    "description": "NFC 链接",
+    "page": "simulation",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.nfc_manual_package_input",
+    "name": "NFC 包名",
+    "description": "NFC 包名",
+    "page": "simulation",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "view.searchable_picker_input",
+    "name": "输入名称或首字母筛查",
+    "description": "输入名称或首字母筛查",
+    "page": "simulation",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_0",
+    "name": "模拟方式",
+    "description": "模拟方式",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_1",
+    "name": "速度",
+    "description": "速度",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_2",
+    "name": "步频",
+    "description": "步频",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_3",
+    "name": "实时路线编辑",
+    "description": "实时路线编辑",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_4",
+    "name": "路线比例",
+    "description": "路线比例",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_5",
+    "name": "每米步数",
+    "description": "每米步数",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_6",
+    "name": "循环次数",
+    "description": "循环次数",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_7",
+    "name": "网络模拟",
+    "description": "网络模拟",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_8",
+    "name": "卫星数量",
+    "description": "卫星数量",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_9",
+    "name": "信号质量：强",
+    "description": "信号质量：强",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_10",
+    "name": "信号质量：中",
+    "description": "信号质量：中",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_11",
+    "name": "信号质量：弱",
+    "description": "信号质量：弱",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_12",
+    "name": "水平精度因子 HDOP",
+    "description": "水平精度因子 HDOP",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_13",
+    "name": "更新间隔",
+    "description": "更新间隔",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_14",
+    "name": "速度浮动",
+    "description": "速度浮动",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_15",
+    "name": "浮动范围",
+    "description": "浮动范围",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_16",
+    "name": "浮动频率",
+    "description": "浮动频率",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_17",
+    "name": "路径扰动",
+    "description": "路径扰动",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_18",
+    "name": "路径幅度",
+    "description": "路径幅度",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_19",
+    "name": "海拔扰动",
+    "description": "海拔扰动",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_20",
+    "name": "基础海拔",
+    "description": "基础海拔",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_21",
+    "name": "变化范围",
+    "description": "变化范围",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_22",
+    "name": "变化高度",
+    "description": "变化高度",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_23",
+    "name": "触发概率",
+    "description": "触发概率",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_24",
+    "name": "启用悬浮窗",
+    "description": "启用悬浮窗",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_25",
+    "name": "缩放比例",
+    "description": "缩放比例",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_26",
+    "name": "按钮大小",
+    "description": "按钮大小",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_27",
+    "name": "选择提示音",
+    "description": "选择提示音",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_28",
+    "name": "上传设置",
+    "description": "上传设置",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  },
+  {
+    "key": "simulation_settings.control_29",
+    "name": "下载设置",
+    "description": "下载设置",
+    "page": "simulation_settings",
+    "autoClickAllowed": false
+  }
+]
