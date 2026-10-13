@@ -675,7 +675,7 @@ private fun SectionScope.AuthorContactCardContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = com.acooldog.toolbox.R.mipmap.ic_launcher),
+                        painter = painterResource(id = com.acooldog.toolbox.R.drawable.ic_launcher_foreground_image),
                         contentDescription = "软件图标",
                         modifier = Modifier
                             .size(30.dp)
