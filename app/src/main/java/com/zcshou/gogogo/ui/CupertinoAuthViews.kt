@@ -156,9 +156,14 @@ private fun InternalLoginContent(
                 .padding(contentPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuthFieldGroup {
+            AuthFieldGroup(
+                modifier = Modifier
+                    .widthIn(max = 420.dp)
+                    .fillMaxWidth()
+            ) {
                 AuthField(
                     value = state.username,
                     placeholder = "账号",
@@ -176,27 +181,35 @@ private fun InternalLoginContent(
             if (state.status.isNotEmpty()) {
                 CupertinoText(
                     text = state.status,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .widthIn(max = 420.dp)
+                        .fillMaxWidth(),
                     style = TextStyle(color = AuthSecondary, fontSize = 13.sp)
                 )
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .widthIn(max = 420.dp)
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 CupertinoButton(
                     onClick = { actions?.onLogin() },
                     enabled = !state.loading,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = CupertinoButtonDefaults.tintedButtonColors()
                 ) {
-                    CupertinoText(if (state.loading) "登录中…" else "登录")
+                    CupertinoText(
+                        if (state.loading) "登录中…" else "登录",
+                        style = TextStyle(color = AuthAccent)
+                    )
                 }
                 CupertinoButton(
                     onClick = { actions?.onRegister() },
                     enabled = !state.loading,
                     modifier = Modifier.weight(1f),
-                    colors = CupertinoButtonDefaults.plainButtonColors()
+                    colors = CupertinoButtonDefaults.tintedButtonColors()
                 ) {
                     CupertinoText(
                         "注册账号",
@@ -209,7 +222,9 @@ private fun InternalLoginContent(
                 CupertinoButton(
                     onClick = { actions?.onLogout() },
                     enabled = !state.loading,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .widthIn(max = 420.dp)
+                        .fillMaxWidth(),
                     colors = CupertinoButtonDefaults.plainButtonColors()
                 ) {
                     CupertinoText(
@@ -223,10 +238,12 @@ private fun InternalLoginContent(
 }
 
 @Composable
-private fun AuthFieldGroup(content: @Composable () -> Unit) {
+private fun AuthFieldGroup(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(AuthSurface),
         verticalArrangement = Arrangement.Center
@@ -338,9 +355,14 @@ private fun EmailRegisterContent(
                 .padding(contentPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuthFieldGroup {
+            AuthFieldGroup(
+                modifier = Modifier
+                    .widthIn(max = 420.dp)
+                    .fillMaxWidth()
+            ) {
                 AuthField(
                     value = state.email,
                     placeholder = "邮箱",
@@ -348,21 +370,25 @@ private fun EmailRegisterContent(
                 )
                 AuthDivider()
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AuthField(
                         value = state.code,
                         placeholder = "验证码",
                         onValueChange = { onStateChanged(state.copy(code = it)) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        horizontalPadding = 0.dp,
+                        verticalPadding = 0.dp
                     )
                     CupertinoButton(
                         onClick = { actions?.onSendCode() },
                         enabled = state.sendCodeEnabled,
                         modifier = Modifier
-                            .widthIn(min = 108.dp)
-                            .padding(end = 12.dp),
+                            .widthIn(min = 92.dp, max = 136.dp),
                         colors = CupertinoButtonDefaults.plainButtonColors()
                     ) {
                         CupertinoText(
@@ -393,7 +419,9 @@ private fun EmailRegisterContent(
             if (state.status.isNotEmpty()) {
                 CupertinoText(
                     text = state.status,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .widthIn(max = 420.dp)
+                        .fillMaxWidth(),
                     style = TextStyle(color = AuthSecondary, fontSize = 13.sp)
                 )
             }
@@ -401,9 +429,15 @@ private fun EmailRegisterContent(
             CupertinoButton(
                 onClick = { actions?.onRegister() },
                 enabled = state.registerEnabled,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .widthIn(max = 420.dp)
+                    .fillMaxWidth(),
+                colors = CupertinoButtonDefaults.tintedButtonColors()
             ) {
-                CupertinoText("注册并登录")
+                CupertinoText(
+                    "注册并登录",
+                    style = TextStyle(color = AuthAccent)
+                )
             }
         }
     }
@@ -425,6 +459,8 @@ private fun AuthField(
     placeholder: String,
     password: Boolean = false,
     modifier: Modifier = Modifier,
+    horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
+    verticalPadding: androidx.compose.ui.unit.Dp = 12.dp,
     onValueChange: (String) -> Unit
 ) {
     CupertinoTextField(
@@ -432,7 +468,7 @@ private fun AuthField(
         onValueChange = onValueChange,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         placeholder = {
             CupertinoText(
                 placeholder,

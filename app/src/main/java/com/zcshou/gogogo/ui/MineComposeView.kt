@@ -112,7 +112,7 @@ private fun MineScreen(actions: MineComposeView.Actions?) {
                         )
                         Spacer(Modifier.size(4.dp))
                         CupertinoText(
-                            text = "登录后同步共享内容",
+                            text = "登录后解锁更多功能",
                             style = TextStyle(color = secondary, fontSize = 13.sp)
                         )
                     }
