@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,7 +13,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -42,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -52,6 +55,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -63,10 +67,11 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
 import io.github.alexzhirkevich.cupertino.CupertinoButton
+import io.github.alexzhirkevich.cupertino.CupertinoDivider
 import io.github.alexzhirkevich.cupertino.CupertinoIconButton
-import io.github.alexzhirkevich.cupertino.CupertinoSearchTextField
 import io.github.alexzhirkevich.cupertino.CupertinoSwitch
 import io.github.alexzhirkevich.cupertino.CupertinoText
+import io.github.alexzhirkevich.cupertino.CupertinoTextField
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.Gearshape
 import io.github.alexzhirkevich.cupertino.icons.outlined.Location
@@ -78,6 +83,9 @@ private val SurfaceShape = RoundedCornerShape(24.dp)
 private val SurfaceColor = Color(0xFFF5F5F7).copy(alpha = 0.9f)
 private val LabelColor = Color(0xFF1C1C1E)
 private val SecondaryLabelColor = Color(0xFF6D6D72)
+private const val ROUTE_CREATE_PREFERENCES = "route_create_prefs"
+private const val GEAR_X_FRACTION_KEY = "gear_x_fraction"
+private const val GEAR_Y_FRACTION_KEY = "gear_y_fraction"
 
 class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
     context: Context,
@@ -87,6 +95,7 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
     interface Actions {
         fun onSearchChanged(query: String)
         fun onSearchSubmit(query: String)
+        fun onSearchResultSelected(latitude: Double, longitude: Double): Boolean
         fun onSelectMapType(satellite: Boolean)
         fun onSave()
         fun onClear()
@@ -123,6 +132,14 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
         val canCloseRoute: Boolean = false,
         val hint: String = "",
         val satelliteMap: Boolean = false,
+        val searchResults: List<SearchResult> = emptyList(),
+    )
+
+    data class SearchResult(
+        val name: String,
+        val address: String,
+        val latitude: Double,
+        val longitude: Double,
     )
 
     private var actions: Actions? = null
@@ -147,6 +164,7 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
         canCloseRoute: Boolean,
         hint: String,
         satelliteMap: Boolean,
+        searchResults: List<SearchResult>,
     ) {
         state = State(
             recordMode = recordMode,
@@ -163,6 +181,7 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
             canCloseRoute = canCloseRoute,
             hint = hint,
             satelliteMap = satelliteMap,
+            searchResults = searchResults,
         )
         invalidate()
     }
@@ -180,10 +199,15 @@ private fun RouteCreateOverlay(
     state: CupertinoRouteCreateOverlayView.State,
     actions: CupertinoRouteCreateOverlayView.Actions?,
 ) {
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val backdrop = rememberLayerBackdrop()
+    val gearPreferences = remember(context) {
+        context.getSharedPreferences(ROUTE_CREATE_PREFERENCES, Context.MODE_PRIVATE)
+    }
     var searchExpanded by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+    val searchScrollState = rememberScrollState()
     val searchFocusRequester = remember { FocusRequester() }
     var gearX by remember { mutableFloatStateOf(Float.NaN) }
     var gearY by remember { mutableFloatStateOf(Float.NaN) }
@@ -226,6 +250,20 @@ private fun RouteCreateOverlay(
         } else {
             gearY.coerceIn(0f, maxGearY)
         }
+        fun persistGearPosition() {
+            val savedX = if (gearX.isNaN()) maxGearX else gearX.coerceIn(0f, maxGearX)
+            val savedY = if (gearY.isNaN()) defaultGearY else gearY.coerceIn(0f, maxGearY)
+            gearPreferences.edit()
+                .putFloat(
+                    GEAR_X_FRACTION_KEY,
+                    if (maxGearX > 0f) savedX / maxGearX else 0f,
+                )
+                .putFloat(
+                    GEAR_Y_FRACTION_KEY,
+                    if (maxGearY > 0f) savedY / maxGearY else 0f,
+                )
+                .apply()
+        }
         val menuX = (currentGearX + gearSizePx - menuWidthPx).coerceIn(0f, maxMenuX)
         val menuTopY = if (currentGearY - menuHeightPx - 8.dp.toPx(density) >= 0f) {
             currentGearY - menuHeightPx - 8.dp.toPx(density)
@@ -236,8 +274,15 @@ private fun RouteCreateOverlay(
 
         LaunchedEffect(maxGearX, maxGearY) {
             if (gearX.isNaN()) {
-                gearX = maxGearX
-                gearY = defaultGearY
+                val savedX = gearPreferences.getFloat(GEAR_X_FRACTION_KEY, Float.NaN)
+                val savedY = gearPreferences.getFloat(GEAR_Y_FRACTION_KEY, Float.NaN)
+                if (!savedX.isNaN() && !savedY.isNaN()) {
+                    gearX = (savedX * maxGearX).coerceIn(0f, maxGearX)
+                    gearY = (savedY * maxGearY).coerceIn(0f, maxGearY)
+                } else {
+                    gearX = maxGearX
+                    gearY = defaultGearY
+                }
             } else {
                 gearX = gearX.coerceIn(0f, maxGearX)
                 gearY = gearY.coerceIn(0f, maxGearY)
@@ -282,7 +327,10 @@ private fun RouteCreateOverlay(
                 .size(gearSize)
                 .zIndex(3f)
                 .pointerInput(maxGearX, maxGearY) {
-                    detectDragGesturesAfterLongPress { change, dragAmount ->
+                    detectDragGestures(
+                        onDragEnd = { persistGearPosition() },
+                        onDragCancel = { persistGearPosition() },
+                    ) { _, dragAmount ->
                         val startX = if (gearX.isNaN()) maxGearX else gearX
                         val startY = if (gearY.isNaN()) defaultGearY else gearY
                         gearX = (startX + dragAmount.x).coerceIn(0f, maxGearX)
@@ -307,86 +355,166 @@ private fun RouteCreateOverlay(
             }
         }
 
-        Row(
+        val searchWidth by animateDpAsState(
+            targetValue = if (searchExpanded) maxWidth else 52.dp,
+            animationSpec = tween(260),
+            label = "route-search-width",
+        )
+        Box(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
+                .align(Alignment.TopStart)
+                .width(searchWidth)
+                .zIndex(4f)
+                .clip(RoundedCornerShape(22.dp))
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { RoundedCornerShape(22.dp) },
+                    effects = {
+                        vibrancy()
+                        blur(18.dp.toPx())
+                    },
+                    onDrawSurface = {
+                        drawRect(SurfaceColor)
+                    },
+                )
+                .animateContentSize(tween(260))
+                .padding(4.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .then(
-                        if (searchExpanded) {
-                            Modifier
-                                .fillMaxWidth(0.72f)
-                                .widthIn(max = 320.dp)
-                        } else {
-                            Modifier.width(52.dp)
-                        },
-                    )
-                    .animateContentSize(tween(240)),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (searchExpanded) {
-                    CupertinoSearchTextField(
-                        value = searchText,
-                        onValueChange = {
-                            searchText = it
-                            actions?.onSearchChanged(it)
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(searchFocusRequester)
-                            .onFocusChanged {
-                                if (!it.isFocused && searchExpanded) {
-                                    searchExpanded = false
-                                }
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (searchExpanded) {
+                        CupertinoTextField(
+                            value = searchText,
+                            onValueChange = {
+                                searchText = it
+                                actions?.onSearchChanged(it)
                             },
-                        placeholder = {
-                            CupertinoText("搜索地点")
-                        },
-                        textStyle = TextStyle(fontSize = 15.sp),
-                    )
-                    CupertinoIconButton(
-                        onClick = {
-                            actions?.onSearchSubmit(searchText)
-                            focusManager.clearFocus()
-                            searchExpanded = false
-                        },
-                        modifier = Modifier.size(44.dp),
-                    ) {
-                        Icon(
-                            imageVector = CupertinoIcons.Outlined.MagnifyingGlass,
-                            contentDescription = "搜索",
-                            tint = LabelColor,
+                            modifier = Modifier
+                                .weight(1f)
+                                .focusRequester(searchFocusRequester)
+                                .onFocusChanged {
+                                    if (!it.isFocused && searchExpanded) {
+                                        searchExpanded = false
+                                    }
+                                },
+                            placeholder = {
+                                CupertinoText(
+                                    "搜索地点",
+                                    style = TextStyle(color = SecondaryLabelColor),
+                                )
+                            },
+                            singleLine = true,
+                            textStyle = TextStyle(fontSize = 15.sp),
                         )
+                        CupertinoIconButton(
+                            onClick = { actions?.onSearchSubmit(searchText) },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Icon(
+                                imageVector = CupertinoIcons.Outlined.MagnifyingGlass,
+                                contentDescription = "搜索",
+                                tint = LabelColor,
+                            )
+                        }
+                    } else {
+                        CupertinoIconButton(
+                            onClick = { searchExpanded = true },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Icon(
+                                imageVector = CupertinoIcons.Outlined.MagnifyingGlass,
+                                contentDescription = "展开搜索",
+                                tint = LabelColor,
+                            )
+                        }
                     }
-                } else {
-                    CupertinoIconButton(
-                        onClick = { searchExpanded = true },
-                        modifier = Modifier.size(52.dp),
+                }
+                AnimatedVisibility(
+                    visible = searchExpanded && state.searchResults.isNotEmpty(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 236.dp)
+                            .verticalScroll(searchScrollState),
                     ) {
-                        Icon(
-                            imageVector = CupertinoIcons.Outlined.MagnifyingGlass,
-                            contentDescription = "展开搜索",
-                            tint = LabelColor,
-                        )
+                        state.searchResults.forEachIndexed { index, result ->
+                            CupertinoButton(
+                                onClick = {
+                                    val added = actions?.onSearchResultSelected(
+                                        result.latitude,
+                                        result.longitude,
+                                    ) == true
+                                    if (added) {
+                                        focusManager.clearFocus()
+                                        searchExpanded = false
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(58.dp),
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                ) {
+                                    CupertinoText(
+                                        text = result.name.ifBlank { result.address },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        style = TextStyle(
+                                            color = LabelColor,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                    )
+                                    if (result.address.isNotBlank() && result.address != result.name) {
+                                        CupertinoText(
+                                            text = result.address,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 2.dp),
+                                            style = TextStyle(
+                                                color = SecondaryLabelColor,
+                                                fontSize = 12.sp,
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                            if (index < state.searchResults.lastIndex) {
+                                CupertinoDivider(modifier = Modifier.fillMaxWidth())
+                            }
+                        }
                     }
                 }
             }
+        }
 
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .zIndex(1f),
+            horizontalAlignment = Alignment.End,
+        ) {
             Column(horizontalAlignment = Alignment.End) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CupertinoButton(
                         onClick = { actions?.onSelectMapType(false) },
-                        enabled = state.satelliteMap,
+                        modifier = Modifier.alpha(if (state.satelliteMap) 0.45f else 1f),
                     ) {
                         CupertinoText("标准")
                     }
                     CupertinoButton(
                         onClick = { actions?.onSelectMapType(true) },
-                        enabled = !state.satelliteMap,
+                        modifier = Modifier.alpha(if (state.satelliteMap) 1f else 0.45f),
                     ) {
                         CupertinoText("卫星")
                     }
@@ -420,18 +548,36 @@ private fun RouteCreateOverlay(
             }
         }
 
-        CupertinoIconButton(
-            onClick = { actions?.onLocation() },
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 2.dp, bottom = 72.dp)
-                .size(44.dp),
+                .align(Alignment.CenterEnd)
+                .padding(end = 4.dp)
+                .size(48.dp)
+                .zIndex(2f)
+                .clip(RoundedCornerShape(24.dp))
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { RoundedCornerShape(24.dp) },
+                    effects = {
+                        vibrancy()
+                        blur(18.dp.toPx())
+                    },
+                    onDrawSurface = {
+                        drawRect(SurfaceColor)
+                    },
+                )
+                .padding(2.dp),
         ) {
-            Icon(
-                imageVector = CupertinoIcons.Outlined.Location,
-                contentDescription = "当前位置",
-                tint = LabelColor,
-            )
+            CupertinoIconButton(
+                onClick = { actions?.onLocation() },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Icon(
+                    imageVector = CupertinoIcons.Outlined.Location,
+                    contentDescription = "当前位置",
+                    tint = LabelColor,
+                )
+            }
         }
 
         Row(
@@ -450,21 +596,32 @@ private fun RouteCreateOverlay(
                         drawRect(SurfaceColor)
                     },
                 )
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 10.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            CupertinoSwitch(
-                checked = state.recordMode,
-                onCheckedChange = {
-                    actions?.onRecordModeChanged(it)
-                },
-            )
-            CupertinoText(
-                text = "录制路线",
-                modifier = Modifier.weight(1f),
-                style = TextStyle(fontSize = 15.sp),
-            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .widthIn(min = 76.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    CupertinoSwitch(
+                        checked = state.recordMode,
+                        onCheckedChange = {
+                            actions?.onRecordModeChanged(it)
+                        },
+                    )
+                    CupertinoText(
+                        text = "录制路线",
+                        style = TextStyle(fontSize = 12.sp),
+                    )
+                }
+            }
             CupertinoIconButton(
                 onClick = { actions?.onRecordSettings() },
                 modifier = Modifier.size(42.dp),

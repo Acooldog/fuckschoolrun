@@ -16,10 +16,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.RadioGroup;
-import android.widget.SearchView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -60,20 +57,14 @@ import com.baidu.mapapi.model.LatLng;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class RouteCreateActivity extends BaseActivity {
     public static final String EXTRA_EDIT_ROUTE_ID = "edit_route_id";
 
-    private static final String POI_NAME = "poi_name";
-    private static final String POI_ADDRESS = "poi_address";
-    private static final String POI_LONGITUDE = "poi_longitude";
-    private static final String POI_LATITUDE = "poi_latitude";
     private static final String PREF_ROUTE_RECORD_INTERVAL_SECONDS = "pref_route_record_interval_seconds";
     private static final String PREF_ROUTE_CREATE = "route_create_prefs";
     private static final String MARKER_INDEX_KEY = "marker_index";
@@ -99,8 +90,6 @@ public class RouteCreateActivity extends BaseActivity {
     private ExecutorService ioExecutor;
     private InternalAuthStore authStore;
     private String currentCity = "";
-    private LinearLayout searchResultContainer;
-    private ListView searchResultList;
     private TextView routeHintView;
     private TextView selectedPointView;
     private Button clearButton;
@@ -121,8 +110,6 @@ public class RouteCreateActivity extends BaseActivity {
     private View toolboxContainer;
     private LinearLayout toolboxPanel;
     private View toolboxScrollView;
-    private View routeSearchContainer;
-    private SearchView routeSearchView;
     private CupertinoRouteCreateOverlayView createOverlayView;
     private boolean satelliteMapSelected;
     private SwitchCompat recordModeSwitch;
@@ -135,6 +122,8 @@ public class RouteCreateActivity extends BaseActivity {
     private boolean toolboxCollapsed = true;
     private boolean closeRoutePromptVisible;
     private boolean loginPromptVisible;
+    private List<CupertinoRouteCreateOverlayView.SearchResult> searchResults = new ArrayList<>();
+    private long searchRequestSequence;
     private String editingRouteId;
     private String editingRouteName;
     private RouteShareInfo editingShareInfo = RouteShareInfo.NONE;
@@ -175,7 +164,6 @@ public class RouteCreateActivity extends BaseActivity {
 
         initMap();
         initButtons();
-        initSearch();
         initLocationClient();
         observeRoutePoints();
         loadEditingRouteIfNeeded();
@@ -187,14 +175,41 @@ public class RouteCreateActivity extends BaseActivity {
         createOverlayView.setActions(new CupertinoRouteCreateOverlayView.Actions() {
             @Override
             public void onSearchChanged(String query) {
-                if (!TextUtils.isEmpty(query)) {
+                if (TextUtils.isEmpty(query)) {
+                    searchRequestSequence++;
+                    searchResults.clear();
+                    renderCreateOverlay();
+                } else {
                     requestPoiSearch(query);
                 }
             }
 
             @Override
             public void onSearchSubmit(String query) {
-                requestPoiSearch(query);
+                if (TextUtils.isEmpty(query)) {
+                    searchRequestSequence++;
+                    searchResults.clear();
+                    renderCreateOverlay();
+                } else {
+                    requestPoiSearch(query);
+                }
+            }
+
+            @Override
+            public boolean onSearchResultSelected(double latitude, double longitude) {
+                if (isRecording || isRecordModeEnabled()) {
+                    return false;
+                }
+                searchRequestSequence++;
+                LatLng target = new LatLng(latitude, longitude);
+                closeRoutePromptVisible = false;
+                selectedPointIndex = -1;
+                searchResults.clear();
+                viewModel.addPoint(buildRoutePoint(target, DEFAULT_ALTITUDE));
+                baiduMap.animateMapStatus(
+                        MapStatusUpdateFactory.newLatLngZoom(target, DEFAULT_ZOOM_LEVEL)
+                );
+                return true;
             }
 
             @Override
@@ -379,9 +394,6 @@ public class RouteCreateActivity extends BaseActivity {
         baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-                if (searchResultContainer != null) {
-                    searchResultContainer.setVisibility(View.GONE);
-                }
                 if (isRecordModeEnabled()) {
                     return;
                 }
@@ -532,55 +544,6 @@ public class RouteCreateActivity extends BaseActivity {
         });
     }
 
-    private void initSearch() {
-        routeSearchContainer = findViewById(R.id.route_search_container);
-        routeSearchView = findViewById(R.id.route_create_search_view);
-        SearchView searchView = routeSearchView;
-        searchResultContainer = findViewById(R.id.route_search_result_container);
-        searchResultList = findViewById(R.id.route_search_result_list);
-        searchView.clearFocus();
-        searchView.setQueryHint("");
-        searchView.setOnSearchClickListener(v -> animateSearchContainer(true));
-        searchView.setOnCloseListener(() -> {
-            animateSearchContainer(false);
-            return false;
-        });
-        searchView.setOnQueryTextFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                animateSearchContainer(true);
-            } else if (TextUtils.isEmpty(searchView.getQuery())) {
-                animateSearchContainer(false);
-            } else {
-                animateSearchContainer(false);
-            }
-        });
-        searchResultList.setOnItemClickListener((parent, view, position, id) -> {
-            String lng = ((TextView) view.findViewById(R.id.poi_longitude)).getText().toString();
-            String lat = ((TextView) view.findViewById(R.id.poi_latitude)).getText().toString();
-            LatLng target = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
-            baiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLngZoom(target, DEFAULT_ZOOM_LEVEL));
-            searchResultContainer.setVisibility(View.GONE);
-        });
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                requestPoiSearch(query);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                if (TextUtils.isEmpty(newText)) {
-                    searchResultContainer.setVisibility(View.GONE);
-                    return true;
-                }
-                requestPoiSearch(newText);
-                return true;
-            }
-        });
-    }
-
     private void hideLegacyCreateControls() {
         int[] legacyIds = new int[]{
                 R.id.route_search_container,
@@ -600,44 +563,15 @@ public class RouteCreateActivity extends BaseActivity {
         }
     }
 
-    private void animateSearchContainer(boolean expanded) {
-        if (routeSearchContainer == null || routeSearchView == null) {
-            return;
-        }
-        View parent = (View) routeSearchContainer.getParent();
-        if (parent == null || parent.getWidth() == 0) {
-            return;
-        }
-        int startWidth = routeSearchContainer.getWidth();
-        int targetWidth = expanded
-                ? Math.max(Math.round(dp(52f)), parent.getWidth() - Math.round(dp(24f)))
-                : Math.round(dp(52f));
-        if (startWidth == 0) {
-            startWidth = expanded ? Math.round(dp(52f)) : targetWidth;
-        }
-        if (expanded) {
-            routeSearchView.setIconified(false);
-        } else {
-            searchResultContainer.setVisibility(View.GONE);
-            routeSearchView.clearFocus();
-        }
-        ValueAnimator animator = ValueAnimator.ofInt(startWidth, targetWidth);
-        animator.setDuration(260L);
-        animator.addUpdateListener(valueAnimator -> {
-            ViewGroup.LayoutParams params = routeSearchContainer.getLayoutParams();
-            params.width = (Integer) valueAnimator.getAnimatedValue();
-            routeSearchContainer.setLayoutParams(params);
-        });
-        animator.start();
-    }
-
     private void requestPoiSearch(String keyword) {
         if (TextUtils.isEmpty(keyword)) {
             return;
         }
+        long requestSequence = ++searchRequestSequence;
         String token = authStore == null ? "" : authStore.getToken();
         if (TextUtils.isEmpty(token)) {
-            searchResultContainer.setVisibility(View.GONE);
+            searchResults.clear();
+            renderCreateOverlay();
             showSearchLoginPrompt();
             return;
         }
@@ -646,31 +580,48 @@ public class RouteCreateActivity extends BaseActivity {
                 List<MapSearchResult> results = ShareModule.from(getApplicationContext())
                         .shareApiClient()
                         .searchMap(keyword, currentCity, token);
-                List<Map<String, Object>> data = getPoiResultList(results);
                 runOnUiThread(() -> {
-                    if (data.isEmpty()) {
-                        searchResultContainer.setVisibility(View.GONE);
+                    if (requestSequence != searchRequestSequence) {
                         return;
                     }
-                    SimpleAdapter adapter = new SimpleAdapter(
-                            RouteCreateActivity.this,
-                            data,
-                            R.layout.search_poi_item,
-                            new String[]{POI_NAME, POI_ADDRESS, POI_LONGITUDE, POI_LATITUDE},
-                            new int[]{R.id.poi_name, R.id.poi_address, R.id.poi_longitude, R.id.poi_latitude}
-                    );
-                    searchResultList.setAdapter(adapter);
-                    searchResultContainer.setVisibility(View.VISIBLE);
+                    searchResults = toOverlaySearchResults(results);
+                    renderCreateOverlay();
                 });
             } catch (Exception exception) {
                 runOnUiThread(() -> {
-                    searchResultContainer.setVisibility(View.GONE);
+                    if (requestSequence != searchRequestSequence) {
+                        return;
+                    }
+                    searchResults.clear();
+                    renderCreateOverlay();
                     if (!TextUtils.isEmpty(exception.getMessage())) {
                         GoUtils.DisplayToast(this, exception.getMessage());
                     }
                 });
             }
         });
+    }
+
+    @NonNull
+    private List<CupertinoRouteCreateOverlayView.SearchResult> toOverlaySearchResults(
+            @Nullable List<MapSearchResult> results
+    ) {
+        List<CupertinoRouteCreateOverlayView.SearchResult> overlayResults = new ArrayList<>();
+        if (results == null) {
+            return overlayResults;
+        }
+        for (MapSearchResult result : results) {
+            if (result == null) {
+                continue;
+            }
+            overlayResults.add(new CupertinoRouteCreateOverlayView.SearchResult(
+                    result.getName(),
+                    result.getAddress(),
+                    result.getLatitude(),
+                    result.getLongitude()
+            ));
+        }
+        return overlayResults;
     }
 
     private void showSearchLoginPrompt() {
@@ -690,24 +641,6 @@ public class RouteCreateActivity extends BaseActivity {
                     loginPromptVisible = false;
                 }
         );
-    }
-
-    @NonNull
-    private List<Map<String, Object>> getPoiResultList(List<MapSearchResult> results) {
-        List<Map<String, Object>> data = new ArrayList<>();
-        for (MapSearchResult result : results) {
-            if (result == null) {
-                continue;
-            }
-
-            Map<String, Object> poiItem = new HashMap<>();
-            poiItem.put(POI_NAME, result.getName());
-            poiItem.put(POI_ADDRESS, result.getAddress());
-            poiItem.put(POI_LONGITUDE, String.valueOf(result.getLongitude()));
-            poiItem.put(POI_LATITUDE, String.valueOf(result.getLatitude()));
-            data.add(poiItem);
-        }
-        return data;
     }
 
     private void initLocationClient() {
@@ -1335,7 +1268,8 @@ public class RouteCreateActivity extends BaseActivity {
                         && closeRoutePromptVisible
                         && canCloseCurrentRoute(),
                 routeHintView == null ? "" : routeHintView.getText().toString(),
-                satelliteMapSelected
+                satelliteMapSelected,
+                searchResults
         );
     }
 
