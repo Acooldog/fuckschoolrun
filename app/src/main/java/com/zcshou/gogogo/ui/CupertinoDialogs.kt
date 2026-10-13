@@ -15,20 +15,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,6 +48,7 @@ import io.github.alexzhirkevich.cupertino.CupertinoActionSheet
 import io.github.alexzhirkevich.cupertino.CupertinoAlertDialog
 import io.github.alexzhirkevich.cupertino.CupertinoCheckBox
 import io.github.alexzhirkevich.cupertino.CupertinoText
+import io.github.alexzhirkevich.cupertino.CupertinoTextField
 import io.github.alexzhirkevich.cupertino.cancel
 import io.github.alexzhirkevich.cupertino.default
 import io.github.alexzhirkevich.cupertino.destructive
@@ -373,6 +382,31 @@ object CupertinoDialogs {
         confirmLabel: String,
         listener: TextInputListener
     ) {
+        showInput(
+            activity,
+            title,
+            message,
+            initialValue,
+            hint,
+            cancelLabel,
+            confirmLabel,
+            false,
+            listener
+        )
+    }
+
+    @JvmStatic
+    fun showInput(
+        activity: Activity,
+        title: String,
+        message: String?,
+        initialValue: String,
+        hint: String,
+        cancelLabel: String,
+        confirmLabel: String,
+        numericInput: Boolean,
+        listener: TextInputListener
+    ) {
         show(activity) { dialog ->
             var value by remember { mutableStateOf(initialValue) }
             DialogShell(
@@ -380,6 +414,15 @@ object CupertinoDialogs {
                 title = title,
                 onDismiss = { dialog.dismiss() },
                 content = {
+                    val inputFocusRequester = remember { FocusRequester() }
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    LaunchedEffect(numericInput) {
+                        if (numericInput) {
+                            withFrameNanos { }
+                            inputFocusRequester.requestFocus()
+                            keyboardController?.show()
+                        }
+                    }
                     if (!message.isNullOrEmpty()) {
                         CupertinoText(
                             message,
@@ -388,12 +431,30 @@ object CupertinoDialogs {
                         )
                         Spacer(Modifier.height(10.dp))
                     }
-                    io.github.alexzhirkevich.cupertino.CupertinoTextField(
+                    CupertinoTextField(
                         value = value,
                         onValueChange = { value = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (numericInput) {
+                                    Modifier
+                                        .heightIn(min = 44.dp)
+                                        .focusRequester(inputFocusRequester)
+                                } else {
+                                    Modifier
+                                }
+                            ),
                         placeholder = { CupertinoText(hint) },
                         singleLine = true,
+                        keyboardOptions = if (numericInput) {
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done,
+                            )
+                        } else {
+                            KeyboardOptions.Default
+                        },
                         textStyle = BodyStyle
                     )
                 },

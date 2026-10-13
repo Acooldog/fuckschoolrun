@@ -5,6 +5,8 @@ import android.util.AttributeSet
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -57,6 +59,7 @@ import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -154,9 +157,14 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
 
     private var actions: Actions? = null
     private var state by mutableStateOf(State())
+    private val searchSession = RouteCreateSearchSession()
 
     fun setActions(actions: Actions?) {
         this.actions = actions
+    }
+
+    fun collapseSearch() {
+        searchSession.collapse()
     }
 
     fun render(
@@ -199,7 +207,11 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
     @Composable
     override fun Content() {
         CupertinoTheme {
-            RouteCreateOverlay(state = state, actions = actions)
+            RouteCreateOverlay(
+                state = state,
+                actions = actions,
+                searchSession = searchSession,
+            )
         }
     }
 }
@@ -208,15 +220,16 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
 private fun RouteCreateOverlay(
     state: CupertinoRouteCreateOverlayView.State,
     actions: CupertinoRouteCreateOverlayView.Actions?,
+    searchSession: RouteCreateSearchSession,
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val backdrop = rememberLayerBackdrop()
     val gearPreferences = remember(context) {
         context.getSharedPreferences(ROUTE_CREATE_PREFERENCES, Context.MODE_PRIVATE)
     }
-    var searchExpanded by remember { mutableStateOf(false) }
-    var searchHadFocus by remember { mutableStateOf(false) }
+    val searchExpanded = searchSession.expanded
     var searchText by remember { mutableStateOf("") }
     val searchScrollState = rememberScrollState()
     val searchFocusRequester = remember { FocusRequester() }
@@ -228,13 +241,20 @@ private fun RouteCreateOverlay(
     var gearSnappedToEdge by remember { mutableIntStateOf(GEAR_EDGE_NONE) }
     var edgeSnapArmed by remember { mutableStateOf(false) }
 
+    fun collapseSearch() {
+        searchSession.collapse()
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+
     LaunchedEffect(searchExpanded) {
         if (searchExpanded) {
             searchFocusRequester.requestFocus()
             delay(260)
             actions?.onSearchOpened()
         } else {
-            searchHadFocus = false
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
         }
     }
 
@@ -411,7 +431,10 @@ private fun RouteCreateOverlay(
                 OverflowMenu(
                     state = state,
                     actions = actions,
-                    onDismiss = { actions?.onToggleToolbox() },
+                    onDismiss = {
+                        collapseSearch()
+                        actions?.onToggleToolbox()
+                    },
                 )
             }
         }
@@ -424,6 +447,7 @@ private fun RouteCreateOverlay(
                 .pointerInput(maxGearX, maxGearY) {
                     detectDragGestures(
                         onDragStart = {
+                            collapseSearch()
                             gearDragging = true
                             edgeSnapArmed = false
                             if (gearSnappedToEdge != GEAR_EDGE_NONE) {
@@ -454,13 +478,13 @@ private fun RouteCreateOverlay(
         ) {
             CupertinoIconButton(
                 onClick = {
+                    collapseSearch()
                     edgeSnapArmed = false
                     if (gearSnappedToEdge != GEAR_EDGE_NONE) {
                         gearX = if (gearSnappedToEdge == GEAR_EDGE_START) 0f else maxGearX
                         gearSnappedToEdge = GEAR_EDGE_NONE
                         persistGearPosition()
                     }
-                    focusManager.clearFocus()
                     actions?.onToggleToolbox()
                 },
                 interactionSource = gearInteractionSource,
@@ -531,11 +555,7 @@ private fun RouteCreateOverlay(
                                 .weight(1f)
                                 .focusRequester(searchFocusRequester)
                                 .onFocusChanged {
-                                    if (it.isFocused) {
-                                        searchHadFocus = true
-                                    } else if (searchHadFocus && searchExpanded) {
-                                        searchExpanded = false
-                                    }
+                                    searchSession.onFocusChanged(it.hasFocus)
                                 },
                             placeholder = {
                                 CupertinoText(
@@ -558,10 +578,7 @@ private fun RouteCreateOverlay(
                         }
                     } else {
                         CupertinoIconButton(
-                            onClick = {
-                                searchHadFocus = false
-                                searchExpanded = true
-                            },
+                            onClick = { searchSession.open() },
                             modifier = Modifier.size(44.dp),
                         ) {
                             Icon(
@@ -591,8 +608,7 @@ private fun RouteCreateOverlay(
                                         result.longitude,
                                     ) == true
                                     if (added) {
-                                        focusManager.clearFocus()
-                                        searchExpanded = false
+                                        collapseSearch()
                                     }
                                 },
                                 modifier = Modifier
@@ -643,50 +659,50 @@ private fun RouteCreateOverlay(
             horizontalAlignment = Alignment.End,
         ) {
             Column(horizontalAlignment = Alignment.End) {
-                Row(
+                val mapSelection by animateFloatAsState(
+                    targetValue = if (state.satelliteMap) 1f else 0f,
+                    animationSpec = tween(320, easing = FastOutSlowInEasing),
+                    label = "route-map-type-selection",
+                )
+                Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(18.dp))
                         .background(Color.White.copy(alpha = 0.92f))
                         .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    CupertinoButton(
-                        onClick = { actions?.onSelectMapType(false) },
+                    val tabWidth = 58.dp
+                    Box(
                         modifier = Modifier
+                            .offset(x = (tabWidth + 2.dp) * mapSelection)
+                            .width(tabWidth)
+                            .height(36.dp)
                             .clip(RoundedCornerShape(15.dp))
-                            .background(Color.White.copy(alpha = 0.96f))
-                            .padding(horizontal = 2.dp),
-                        colors = CupertinoButtonDefaults.plainButtonColors(),
-                    ) {
-                        CupertinoText(
-                            text = "标准",
-                            style = TextStyle(
-                                color = if (state.satelliteMap) {
-                                    LabelColor.copy(alpha = 0.72f)
-                                } else {
-                                    Color.Black
+                            .background(Color(0xFFE4E4E7)),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        listOf(false, true).forEach { satellite ->
+                            CupertinoButton(
+                                onClick = {
+                                    collapseSearch()
+                                    actions?.onSelectMapType(satellite)
                                 },
-                            ),
-                        )
-                    }
-                    CupertinoButton(
-                        onClick = { actions?.onSelectMapType(true) },
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(15.dp))
-                            .background(Color.White.copy(alpha = 0.96f))
-                            .padding(horizontal = 2.dp),
-                        colors = CupertinoButtonDefaults.plainButtonColors(),
-                    ) {
-                        CupertinoText(
-                            text = "卫星",
-                            style = TextStyle(
-                                color = if (state.satelliteMap) {
-                                    Color.Black
-                                } else {
-                                    LabelColor.copy(alpha = 0.72f)
-                                },
-                            ),
-                        )
+                                modifier = Modifier.width(tabWidth).height(36.dp),
+                                colors = CupertinoButtonDefaults.plainButtonColors(),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                            ) {
+                                CupertinoText(
+                                    text = if (satellite) "卫星" else "标准",
+                                    style = TextStyle(
+                                        color = if (state.satelliteMap == satellite) {
+                                            Color.Black
+                                        } else {
+                                            LabelColor.copy(alpha = 0.72f)
+                                        },
+                                        fontSize = 14.sp,
+                                    ),
+                                )
+                            }
+                        }
                     }
                 }
                 if (state.hint.isNotBlank()) {
@@ -709,7 +725,10 @@ private fun RouteCreateOverlay(
 
         if (state.canCloseRoute) {
             CupertinoButton(
-                onClick = { actions?.onCloseRoute() },
+                onClick = {
+                    collapseSearch()
+                    actions?.onCloseRoute()
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 64.dp),
@@ -745,7 +764,10 @@ private fun RouteCreateOverlay(
                 .padding(2.dp),
         ) {
             CupertinoIconButton(
-                onClick = { actions?.onLocation() },
+                onClick = {
+                    collapseSearch()
+                    actions?.onLocation()
+                },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 Icon(
@@ -793,13 +815,17 @@ private fun RouteCreateOverlay(
                     CupertinoSwitch(
                         checked = state.recordMode,
                         onCheckedChange = {
+                            collapseSearch()
                             actions?.onRecordModeChanged(it)
                         },
                     )
                 }
             }
             CupertinoIconButton(
-                onClick = { actions?.onRecordSettings() },
+                onClick = {
+                    collapseSearch()
+                    actions?.onRecordSettings()
+                },
                 modifier = Modifier.size(42.dp),
             ) {
                 Icon(
@@ -809,7 +835,10 @@ private fun RouteCreateOverlay(
                 )
             }
             CupertinoButton(
-                onClick = { actions?.onRecord() },
+                onClick = {
+                    collapseSearch()
+                    actions?.onRecord()
+                },
                 enabled = state.recordMode || state.recording,
                 modifier = Modifier
                     .height(34.dp)
@@ -925,6 +954,30 @@ internal fun routeCreateGearEdge(x: Float, maxX: Float, threshold: Float): Int =
     x <= threshold -> GEAR_EDGE_START
     x >= maxX - threshold -> GEAR_EDGE_END
     else -> GEAR_EDGE_NONE
+}
+
+internal class RouteCreateSearchSession {
+    var expanded by mutableStateOf(false)
+        private set
+    private var hadFocus = false
+
+    fun open() {
+        hadFocus = false
+        expanded = true
+    }
+
+    fun collapse() {
+        expanded = false
+        hadFocus = false
+    }
+
+    fun onFocusChanged(hasFocus: Boolean) {
+        if (hasFocus) {
+            hadFocus = true
+        } else if (hadFocus) {
+            collapse()
+        }
+    }
 }
 
 internal fun routeCreateMenuTopY(

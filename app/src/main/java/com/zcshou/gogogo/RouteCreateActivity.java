@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -18,6 +19,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,6 +41,7 @@ import com.acooldog.toolbox.utils.GoUtils;
 import com.acooldog.toolbox.utils.MapUtils;
 import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.ui.CupertinoRouteCreateOverlayView;
+import com.acooldog.toolbox.ui.RouteCreateMapTransition;
 import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
 import com.baidu.location.LocationClient;
@@ -47,7 +50,8 @@ import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
-import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MapStatus;
+import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
@@ -83,8 +87,9 @@ public class RouteCreateActivity extends BaseActivity {
     private static final int TOOL_MODE_EDIT = 1;
     private static final double ROUTE_INSERT_MAX_DISTANCE_METERS = 20d;
 
-    private MapView mapView;
+    private TextureMapView mapView;
     private BaiduMap baiduMap;
+    private RouteCreateMapTransition mapTransition;
     private RouteCreateViewModel viewModel;
     private LocationClient locationClient;
     private LatLng currentLocation;
@@ -164,6 +169,38 @@ public class RouteCreateActivity extends BaseActivity {
         recordIntervalSeconds = getSharedPreferences(PREF_ROUTE_CREATE, MODE_PRIVATE)
                 .getInt(PREF_ROUTE_RECORD_INTERVAL_SECONDS, DEFAULT_RECORD_INTERVAL_SECONDS);
 
+        mapTransition = new RouteCreateMapTransition(
+                (FrameLayout) findViewById(R.id.route_create_map_host),
+                new RouteCreateMapTransition.Listener() {
+                    @Override
+                    public void prepareMap(BaiduMap map) {
+                        configureLocationLayer(map);
+                        MyLocationData locationData = baiduMap.getLocationData();
+                        if (locationData != null) {
+                            map.setMyLocationData(locationData);
+                        }
+                        drawRouteOverlays(map, viewModel.getCurrentPoints());
+                    }
+
+                    @Override
+                    public void onMapChanged(TextureMapView view) {
+                        mapView = view;
+                        baiduMap = view.getMap();
+                        initMap();
+                    }
+
+                    @Override
+                    public void onLoadFailed() {
+                        satelliteMapSelected = baiduMap.getMapType() == BaiduMap.MAP_TYPE_SATELLITE;
+                        renderCreateOverlay();
+                        GoUtils.DisplayToast(RouteCreateActivity.this, "地图加载超时，请重试");
+                    }
+
+                    @Override
+                    public void onMapInteraction() {
+                        createOverlayView.collapseSearch();
+                    }
+                });
         initMap();
         initButtons();
         initLocationClient();
@@ -225,11 +262,7 @@ public class RouteCreateActivity extends BaseActivity {
 
             @Override
             public void onSelectMapType(boolean satellite) {
-                satelliteMapSelected = satellite;
-                baiduMap.setMapType(satellite
-                        ? BaiduMap.MAP_TYPE_SATELLITE
-                        : BaiduMap.MAP_TYPE_NORMAL);
-                renderCreateOverlay();
+                selectMapType(satellite);
             }
 
             @Override
@@ -362,6 +395,10 @@ public class RouteCreateActivity extends BaseActivity {
 
     @Override
     protected void onPause() {
+        mapTransition.cancel();
+        satelliteMapSelected = baiduMap.getMapType() == BaiduMap.MAP_TYPE_SATELLITE;
+        renderCreateOverlay();
+        createOverlayView.collapseSearch();
         mapView.onPause();
         super.onPause();
     }
@@ -375,11 +412,12 @@ public class RouteCreateActivity extends BaseActivity {
         if (ioExecutor != null) {
             ioExecutor.shutdownNow();
         }
-        recycleMarkerDescriptors();
+        mapTransition.cancel();
         if (baiduMap != null) {
             baiduMap.setMyLocationEnabled(false);
         }
         mapView.onDestroy();
+        recycleMarkerDescriptors();
         super.onDestroy();
     }
 
@@ -404,18 +442,38 @@ public class RouteCreateActivity extends BaseActivity {
 
     private void initMap() {
         mapView.showZoomControls(false);
-        baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
-        baiduMap.setMyLocationEnabled(true);
-        baiduMap.setMyLocationConfiguration(
-                new MyLocationConfiguration(
-                        MyLocationConfiguration.LocationMode.NORMAL,
-                        true,
-                        null
-                )
-        );
+        configureLocationLayer(baiduMap);
+        baiduMap.setOnMapTouchListener(event -> {
+            mapTransition.onMapTouch(event);
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                createOverlayView.collapseSearch();
+            }
+        });
+        baiduMap.setOnMapStatusChangeListener(new BaiduMap.OnMapStatusChangeListener() {
+            @Override
+            public void onMapStatusChangeStart(MapStatus status) {
+                mapTransition.syncMapStatus(status);
+            }
+
+            @Override
+            public void onMapStatusChangeStart(MapStatus status, int reason) {
+                mapTransition.syncMapStatus(status);
+            }
+
+            @Override
+            public void onMapStatusChange(MapStatus status) {
+                mapTransition.syncMapStatus(status);
+            }
+
+            @Override
+            public void onMapStatusChangeFinish(MapStatus status) {
+                mapTransition.syncMapStatus(status);
+            }
+        });
         baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
+                createOverlayView.collapseSearch();
                 if (isRecordModeEnabled()) {
                     return;
                 }
@@ -442,13 +500,33 @@ public class RouteCreateActivity extends BaseActivity {
 
             @Override
             public void onMapPoiClick(com.baidu.mapapi.map.MapPoi mapPoi) {
-                // No-op.
+                createOverlayView.collapseSearch();
             }
         });
         baiduMap.setOnMarkerClickListener(this::handleMarkerClick);
     }
 
+    private void configureLocationLayer(BaiduMap map) {
+        map.setMyLocationEnabled(true);
+        map.setMyLocationConfiguration(new MyLocationConfiguration(
+                MyLocationConfiguration.LocationMode.NORMAL, true, null));
+    }
+
+    private void selectMapType(boolean satellite) {
+        if (satelliteMapSelected == satellite) {
+            return;
+        }
+        satelliteMapSelected = satellite;
+        if (satellite == (baiduMap.getMapType() == BaiduMap.MAP_TYPE_SATELLITE)) {
+            mapTransition.cancel();
+        } else {
+            mapTransition.start(mapView, satellite);
+        }
+        renderCreateOverlay();
+    }
+
     private boolean handleMarkerClick(Marker marker) {
+        createOverlayView.collapseSearch();
         if (isRecordModeEnabled()) {
             return false;
         }
@@ -504,9 +582,9 @@ public class RouteCreateActivity extends BaseActivity {
 
         mapTypeGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.route_create_map_normal) {
-                baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
+                selectMapType(false);
             } else if (checkedId == R.id.route_create_map_satellite) {
-                baiduMap.setMapType(BaiduMap.MAP_TYPE_SATELLITE);
+                selectMapType(true);
             }
         });
 
@@ -687,6 +765,10 @@ public class RouteCreateActivity extends BaseActivity {
                         .longitude(bdLocation.getLongitude())
                         .build();
                 baiduMap.setMyLocationData(locationData);
+                BaiduMap incomingMap = mapTransition.getIncomingMap();
+                if (incomingMap != null) {
+                    incomingMap.setMyLocationData(locationData);
+                }
                 if (!TextUtils.isEmpty(bdLocation.getCity())) {
                     currentCity = bdLocation.getCity();
                 }
@@ -758,7 +840,23 @@ public class RouteCreateActivity extends BaseActivity {
     }
 
     private void drawRoute(@Nullable List<RoutePoint> routePoints) {
-        baiduMap.clear();
+        drawRouteOverlays(baiduMap, routePoints);
+        BaiduMap incomingMap = mapTransition.getIncomingMap();
+        if (incomingMap != null) {
+            drawRouteOverlays(incomingMap, routePoints);
+        }
+        if (routePoints == null || routePoints.isEmpty()) {
+            return;
+        }
+        RoutePoint target = selectedPointIndex >= 0 && selectedPointIndex < routePoints.size()
+                ? routePoints.get(selectedPointIndex)
+                : routePoints.get(routePoints.size() - 1);
+        baiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLng(
+                new LatLng(target.getBdLatitude(), target.getBdLongitude())));
+    }
+
+    private void drawRouteOverlays(BaiduMap map, @Nullable List<RoutePoint> routePoints) {
+        map.clear();
         if (routePoints == null || routePoints.isEmpty()) {
             return;
         }
@@ -773,7 +871,7 @@ public class RouteCreateActivity extends BaseActivity {
                     .width(8)
                     .color(0xAA2E7D32)
                     .points(latLngs);
-            baiduMap.addOverlay(polyline);
+            map.addOverlay(polyline);
         }
 
         if (toolMode == TOOL_MODE_EDIT && !isRecordModeEnabled()) {
@@ -787,7 +885,7 @@ public class RouteCreateActivity extends BaseActivity {
                 bundle.putInt(MARKER_INDEX_KEY, index);
                 bundle.putString(MARKER_TYPE_KEY, MARKER_TYPE_VERTEX);
                 markerOptions.extraInfo(bundle);
-                baiduMap.addOverlay(markerOptions);
+                map.addOverlay(markerOptions);
             }
         } else {
             LatLng firstPoint = latLngs.get(0);
@@ -799,7 +897,7 @@ public class RouteCreateActivity extends BaseActivity {
             startBundle.putInt(MARKER_INDEX_KEY, 0);
             startBundle.putString(MARKER_TYPE_KEY, MARKER_TYPE_START);
             startMarker.extraInfo(startBundle);
-            baiduMap.addOverlay(startMarker);
+            map.addOverlay(startMarker);
             if (latLngs.size() > 1) {
                 MarkerOptions endMarker = new MarkerOptions()
                         .position(lastPoint)
@@ -808,14 +906,10 @@ public class RouteCreateActivity extends BaseActivity {
                 endBundle.putInt(MARKER_INDEX_KEY, latLngs.size() - 1);
                 endBundle.putString(MARKER_TYPE_KEY, MARKER_TYPE_VERTEX);
                 endMarker.extraInfo(endBundle);
-                baiduMap.addOverlay(endMarker);
+                map.addOverlay(endMarker);
             }
         }
 
-        LatLng target = selectedPointIndex >= 0 && selectedPointIndex < latLngs.size()
-                ? latLngs.get(selectedPointIndex)
-                : latLngs.get(latLngs.size() - 1);
-        baiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLng(target));
     }
 
     private void moveToCurrentLocation() {
@@ -910,6 +1004,7 @@ public class RouteCreateActivity extends BaseActivity {
                 String.valueOf(DEFAULT_RECORD_INTERVAL_SECONDS),
                 getString(R.string.route_share_cancel),
                 getString(R.string.route_record_setting_confirm),
+                true,
                 rawInput -> {
                     String rawValue = rawInput == null ? "" : rawInput.trim();
                     if (TextUtils.isEmpty(rawValue)) {
