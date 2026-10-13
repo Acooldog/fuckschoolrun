@@ -50,6 +50,8 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
+import com.baidu.mapapi.map.MyLocationConfiguration;
+import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
@@ -173,6 +175,15 @@ public class RouteCreateActivity extends BaseActivity {
     private void installCreateOverlay() {
         createOverlayView = new CupertinoRouteCreateOverlayView(this);
         createOverlayView.setActions(new CupertinoRouteCreateOverlayView.Actions() {
+            @Override
+            public void onSearchOpened() {
+                createOverlayView.post(() -> {
+                    if (authStore == null || TextUtils.isEmpty(authStore.getToken())) {
+                        showSearchLoginPrompt();
+                    }
+                });
+            }
+
             @Override
             public void onSearchChanged(String query) {
                 if (TextUtils.isEmpty(query)) {
@@ -365,6 +376,9 @@ public class RouteCreateActivity extends BaseActivity {
             ioExecutor.shutdownNow();
         }
         recycleMarkerDescriptors();
+        if (baiduMap != null) {
+            baiduMap.setMyLocationEnabled(false);
+        }
         mapView.onDestroy();
         super.onDestroy();
     }
@@ -391,6 +405,14 @@ public class RouteCreateActivity extends BaseActivity {
     private void initMap() {
         mapView.showZoomControls(false);
         baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
+        baiduMap.setMyLocationEnabled(true);
+        baiduMap.setMyLocationConfiguration(
+                new MyLocationConfiguration(
+                        MyLocationConfiguration.LocationMode.NORMAL,
+                        true,
+                        null
+                )
+        );
         baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
@@ -658,6 +680,13 @@ public class RouteCreateActivity extends BaseActivity {
                 }
                 lastLocationFix = bdLocation;
                 currentLocation = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
+                MyLocationData locationData = new MyLocationData.Builder()
+                        .accuracy(bdLocation.getRadius())
+                        .direction(bdLocation.getDirection())
+                        .latitude(bdLocation.getLatitude())
+                        .longitude(bdLocation.getLongitude())
+                        .build();
+                baiduMap.setMyLocationData(locationData);
                 if (!TextUtils.isEmpty(bdLocation.getCity())) {
                     currentCity = bdLocation.getCity();
                 }

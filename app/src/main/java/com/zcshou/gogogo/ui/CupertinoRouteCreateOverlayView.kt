@@ -14,6 +14,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -44,13 +46,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalDensity
@@ -67,6 +68,7 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
 import io.github.alexzhirkevich.cupertino.CupertinoButton
+import io.github.alexzhirkevich.cupertino.CupertinoButtonDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoDivider
 import io.github.alexzhirkevich.cupertino.CupertinoIconButton
 import io.github.alexzhirkevich.cupertino.CupertinoSwitch
@@ -77,6 +79,7 @@ import io.github.alexzhirkevich.cupertino.icons.outlined.Gearshape
 import io.github.alexzhirkevich.cupertino.icons.outlined.Location
 import io.github.alexzhirkevich.cupertino.icons.outlined.MagnifyingGlass
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 private val SurfaceShape = RoundedCornerShape(24.dp)
@@ -86,6 +89,12 @@ private val SecondaryLabelColor = Color(0xFF6D6D72)
 private const val ROUTE_CREATE_PREFERENCES = "route_create_prefs"
 private const val GEAR_X_FRACTION_KEY = "gear_x_fraction"
 private const val GEAR_Y_FRACTION_KEY = "gear_y_fraction"
+private const val GEAR_EDGE_KEY = "gear_edge"
+private const val GEAR_EDGE_NONE = 0
+private const val GEAR_EDGE_START = -1
+private const val GEAR_EDGE_END = 1
+private const val GEAR_EDGE_THRESHOLD_DP = 12
+private const val GEAR_EDGE_SNAP_DELAY_MS = 3000L
 
 class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
     context: Context,
@@ -93,6 +102,7 @@ class CupertinoRouteCreateOverlayView @JvmOverloads constructor(
 ) : AbstractComposeView(context, attrs) {
 
     interface Actions {
+        fun onSearchOpened()
         fun onSearchChanged(query: String)
         fun onSearchSubmit(query: String)
         fun onSearchResultSelected(latitude: Double, longitude: Double): Boolean
@@ -206,16 +216,25 @@ private fun RouteCreateOverlay(
         context.getSharedPreferences(ROUTE_CREATE_PREFERENCES, Context.MODE_PRIVATE)
     }
     var searchExpanded by remember { mutableStateOf(false) }
+    var searchHadFocus by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
     val searchScrollState = rememberScrollState()
     val searchFocusRequester = remember { FocusRequester() }
     var gearX by remember { mutableFloatStateOf(Float.NaN) }
     var gearY by remember { mutableFloatStateOf(Float.NaN) }
-    var menuHeightPx by remember { mutableIntStateOf(0) }
+    var gearDragging by remember { mutableStateOf(false) }
+    val gearInteractionSource = remember { MutableInteractionSource() }
+    val gearPressed by gearInteractionSource.collectIsPressedAsState()
+    var gearSnappedToEdge by remember { mutableIntStateOf(GEAR_EDGE_NONE) }
+    var edgeSnapArmed by remember { mutableStateOf(false) }
 
     LaunchedEffect(searchExpanded) {
         if (searchExpanded) {
             searchFocusRequester.requestFocus()
+            delay(260)
+            actions?.onSearchOpened()
+        } else {
+            searchHadFocus = false
         }
     }
 
@@ -239,17 +258,28 @@ private fun RouteCreateOverlay(
         ).coerceAtLeast(0f)
         val dockWidth = (maxWidth - 16.dp).coerceAtLeast(0.dp)
         val recordingContainerWidth = dockWidth * 0.8f
-        val menuWidth = 236.dp
+        val menuWidth = maxWidth.coerceAtMost(236.dp)
+        val menuHeight = maxHeight.coerceAtMost(440.dp)
         val menuWidthPx = with(density) { menuWidth.toPx() }
+        val menuHeightPx = with(density) { menuHeight.toPx() }
+        val gearHalfSizePx = gearSizePx / 2f
+        val horizontalInsetPx = with(density) { 12.dp.toPx() }
+        val edgeThresholdPx = with(density) { GEAR_EDGE_THRESHOLD_DP.dp.toPx() }
         val maxMenuX = with(density) {
             (maxWidth - menuWidth).toPx().coerceAtLeast(0f)
         }
-        val currentGearX = if (gearX.isNaN()) maxGearX else gearX.coerceIn(0f, maxGearX)
+        val currentGearX = when {
+            gearSnappedToEdge == GEAR_EDGE_START -> -gearHalfSizePx - horizontalInsetPx
+            gearSnappedToEdge == GEAR_EDGE_END -> maxGearX + gearHalfSizePx + horizontalInsetPx
+            gearX.isNaN() -> maxGearX
+            else -> gearX.coerceIn(0f, maxGearX)
+        }
         val currentGearY = if (gearY.isNaN()) {
             defaultGearY
         } else {
             gearY.coerceIn(0f, maxGearY)
         }
+        fun edgeForPosition(x: Float): Int = routeCreateGearEdge(x, maxGearX, edgeThresholdPx)
         fun persistGearPosition() {
             val savedX = if (gearX.isNaN()) maxGearX else gearX.coerceIn(0f, maxGearX)
             val savedY = if (gearY.isNaN()) defaultGearY else gearY.coerceIn(0f, maxGearY)
@@ -262,15 +292,23 @@ private fun RouteCreateOverlay(
                     GEAR_Y_FRACTION_KEY,
                     if (maxGearY > 0f) savedY / maxGearY else 0f,
                 )
+                .putInt(GEAR_EDGE_KEY, gearSnappedToEdge)
                 .apply()
         }
         val menuX = (currentGearX + gearSizePx - menuWidthPx).coerceIn(0f, maxMenuX)
-        val menuTopY = if (currentGearY - menuHeightPx - 8.dp.toPx(density) >= 0f) {
-            currentGearY - menuHeightPx - 8.dp.toPx(density)
-        } else {
-            (currentGearY + gearSizePx + 8.dp.toPx(density))
-                .coerceIn(0f, (with(density) { maxHeight.toPx() } - menuHeightPx).coerceAtLeast(0f))
-        }
+        val menuGapPx = 8.dp.toPx(density)
+        val menuTopY = routeCreateMenuTopY(
+            currentGearY,
+            gearSizePx,
+            menuHeightPx,
+            with(density) { maxHeight.toPx() },
+            menuGapPx,
+        )
+        val menuOrigin = TransformOrigin(
+            pivotFractionX = ((currentGearX + gearHalfSizePx - menuX) / menuWidthPx)
+                .coerceIn(0f, 1f),
+            pivotFractionY = if (menuTopY < currentGearY) 1f else 0f,
+        )
 
         LaunchedEffect(maxGearX, maxGearY) {
             if (gearX.isNaN()) {
@@ -279,13 +317,62 @@ private fun RouteCreateOverlay(
                 if (!savedX.isNaN() && !savedY.isNaN()) {
                     gearX = (savedX * maxGearX).coerceIn(0f, maxGearX)
                     gearY = (savedY * maxGearY).coerceIn(0f, maxGearY)
+                    gearSnappedToEdge = gearPreferences
+                        .getInt(GEAR_EDGE_KEY, GEAR_EDGE_NONE)
+                        .coerceIn(GEAR_EDGE_START, GEAR_EDGE_END)
                 } else {
                     gearX = maxGearX
                     gearY = defaultGearY
+                    gearSnappedToEdge = GEAR_EDGE_NONE
                 }
             } else {
                 gearX = gearX.coerceIn(0f, maxGearX)
                 gearY = gearY.coerceIn(0f, maxGearY)
+            }
+        }
+
+        val edgeCandidate = if (
+            gearSnappedToEdge == GEAR_EDGE_NONE &&
+            !gearX.isNaN()
+        ) {
+            edgeForPosition(gearX)
+        } else {
+            GEAR_EDGE_NONE
+        }
+
+        LaunchedEffect(
+            edgeSnapArmed,
+            edgeCandidate,
+            gearDragging,
+            gearPressed,
+            gearSnappedToEdge,
+            state.toolboxCollapsed,
+        ) {
+            if (
+                !edgeSnapArmed ||
+                edgeCandidate == GEAR_EDGE_NONE ||
+                gearDragging ||
+                gearPressed ||
+                gearSnappedToEdge != GEAR_EDGE_NONE ||
+                !state.toolboxCollapsed
+            ) {
+                return@LaunchedEffect
+            }
+            val candidate = edgeCandidate
+            delay(GEAR_EDGE_SNAP_DELAY_MS)
+            val currentX = if (gearX.isNaN()) maxGearX else gearX
+            if (
+                edgeSnapArmed &&
+                !gearDragging &&
+                !gearPressed &&
+                state.toolboxCollapsed &&
+                gearSnappedToEdge == GEAR_EDGE_NONE &&
+                edgeForPosition(currentX) == candidate
+            ) {
+                gearSnappedToEdge = candidate
+                edgeSnapArmed = false
+                gearX = if (candidate == GEAR_EDGE_START) 0f else maxGearX
+                persistGearPosition()
             }
         }
 
@@ -294,31 +381,39 @@ private fun RouteCreateOverlay(
             modifier = Modifier
                 .offset { IntOffset(menuX.roundToInt(), menuTopY.roundToInt()) }
                 .width(menuWidth)
-                .zIndex(2f)
-                .clip(SurfaceShape)
-                .drawBackdrop(
-                    backdrop = backdrop,
-                    shape = { SurfaceShape },
-                    effects = {
-                        vibrancy()
-                        blur(20.dp.toPx())
-                    },
-                    onDrawSurface = {
-                        drawRect(SurfaceColor)
-                    },
-                )
-                .padding(10.dp)
-                .onGloballyPositioned { coordinates ->
-                    menuHeightPx = coordinates.size.height
-                },
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom) + scaleIn(),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom) + scaleOut(),
+                .zIndex(2f),
+            enter = fadeIn(tween(180)) + scaleIn(
+                animationSpec = tween(180),
+                initialScale = 0.92f,
+                transformOrigin = menuOrigin,
+            ),
+            exit = fadeOut(tween(140)) + scaleOut(
+                animationSpec = tween(140),
+                targetScale = 0.92f,
+                transformOrigin = menuOrigin,
+            ),
         ) {
-            OverflowMenu(
-                state = state,
-                actions = actions,
-                onDismiss = { actions?.onToggleToolbox() },
-            )
+            Box(
+                Modifier
+                    .height(menuHeight)
+                    .clip(SurfaceShape)
+                    .drawBackdrop(
+                        backdrop = backdrop,
+                        shape = { SurfaceShape },
+                        effects = {
+                            vibrancy()
+                            blur(20.dp.toPx())
+                        },
+                        onDrawSurface = { drawRect(SurfaceColor) },
+                    )
+                    .padding(10.dp),
+            ) {
+                OverflowMenu(
+                    state = state,
+                    actions = actions,
+                    onDismiss = { actions?.onToggleToolbox() },
+                )
+            }
         }
 
         Box(
@@ -328,9 +423,28 @@ private fun RouteCreateOverlay(
                 .zIndex(3f)
                 .pointerInput(maxGearX, maxGearY) {
                     detectDragGestures(
-                        onDragEnd = { persistGearPosition() },
-                        onDragCancel = { persistGearPosition() },
-                    ) { _, dragAmount ->
+                        onDragStart = {
+                            gearDragging = true
+                            edgeSnapArmed = false
+                            if (gearSnappedToEdge != GEAR_EDGE_NONE) {
+                                gearX = if (gearSnappedToEdge == GEAR_EDGE_START) 0f else maxGearX
+                                gearSnappedToEdge = GEAR_EDGE_NONE
+                            }
+                        },
+                        onDragEnd = {
+                            gearDragging = false
+                            edgeSnapArmed = edgeForPosition(
+                                if (gearX.isNaN()) maxGearX else gearX,
+                            ) != GEAR_EDGE_NONE
+                            persistGearPosition()
+                        },
+                        onDragCancel = {
+                            gearDragging = false
+                            edgeSnapArmed = false
+                            persistGearPosition()
+                        },
+                    ) { change, dragAmount ->
+                        change.consume()
                         val startX = if (gearX.isNaN()) maxGearX else gearX
                         val startY = if (gearY.isNaN()) defaultGearY else gearY
                         gearX = (startX + dragAmount.x).coerceIn(0f, maxGearX)
@@ -340,17 +454,36 @@ private fun RouteCreateOverlay(
         ) {
             CupertinoIconButton(
                 onClick = {
+                    edgeSnapArmed = false
+                    if (gearSnappedToEdge != GEAR_EDGE_NONE) {
+                        gearX = if (gearSnappedToEdge == GEAR_EDGE_START) 0f else maxGearX
+                        gearSnappedToEdge = GEAR_EDGE_NONE
+                        persistGearPosition()
+                    }
                     focusManager.clearFocus()
                     actions?.onToggleToolbox()
                 },
+                interactionSource = gearInteractionSource,
+                colors = CupertinoButtonDefaults.plainButtonColors(),
                 modifier = Modifier
                     .size(gearSize)
-                    .background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(26.dp)),
+                    .background(
+                        Color.White.copy(
+                            alpha = if (gearDragging || gearPressed || !state.toolboxCollapsed) {
+                                0.90f
+                            } else {
+                                0.20f
+                            },
+                        ),
+                        RoundedCornerShape(26.dp),
+                    ),
             ) {
                 Icon(
                     imageVector = CupertinoIcons.Outlined.Gearshape,
                     contentDescription = "路线工具",
-                    tint = LabelColor,
+                    tint = LabelColor.copy(
+                        alpha = if (gearDragging || gearPressed || !state.toolboxCollapsed) 1f else 0.30f,
+                    ),
                 )
             }
         }
@@ -398,7 +531,9 @@ private fun RouteCreateOverlay(
                                 .weight(1f)
                                 .focusRequester(searchFocusRequester)
                                 .onFocusChanged {
-                                    if (!it.isFocused && searchExpanded) {
+                                    if (it.isFocused) {
+                                        searchHadFocus = true
+                                    } else if (searchHadFocus && searchExpanded) {
                                         searchExpanded = false
                                     }
                                 },
@@ -423,7 +558,10 @@ private fun RouteCreateOverlay(
                         }
                     } else {
                         CupertinoIconButton(
-                            onClick = { searchExpanded = true },
+                            onClick = {
+                                searchHadFocus = false
+                                searchExpanded = true
+                            },
                             modifier = Modifier.size(44.dp),
                         ) {
                             Icon(
@@ -505,18 +643,50 @@ private fun RouteCreateOverlay(
             horizontalAlignment = Alignment.End,
         ) {
             Column(horizontalAlignment = Alignment.End) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White.copy(alpha = 0.92f))
+                        .padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
                     CupertinoButton(
                         onClick = { actions?.onSelectMapType(false) },
-                        modifier = Modifier.alpha(if (state.satelliteMap) 0.45f else 1f),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(Color.White.copy(alpha = 0.96f))
+                            .padding(horizontal = 2.dp),
+                        colors = CupertinoButtonDefaults.plainButtonColors(),
                     ) {
-                        CupertinoText("标准")
+                        CupertinoText(
+                            text = "标准",
+                            style = TextStyle(
+                                color = if (state.satelliteMap) {
+                                    LabelColor.copy(alpha = 0.72f)
+                                } else {
+                                    Color.Black
+                                },
+                            ),
+                        )
                     }
                     CupertinoButton(
                         onClick = { actions?.onSelectMapType(true) },
-                        modifier = Modifier.alpha(if (state.satelliteMap) 1f else 0.45f),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(Color.White.copy(alpha = 0.96f))
+                            .padding(horizontal = 2.dp),
+                        colors = CupertinoButtonDefaults.plainButtonColors(),
                     ) {
-                        CupertinoText("卫星")
+                        CupertinoText(
+                            text = "卫星",
+                            style = TextStyle(
+                                color = if (state.satelliteMap) {
+                                    Color.Black
+                                } else {
+                                    LabelColor.copy(alpha = 0.72f)
+                                },
+                            ),
+                        )
                     }
                 }
                 if (state.hint.isNotBlank()) {
@@ -551,6 +721,12 @@ private fun RouteCreateOverlay(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
+                .offset {
+                    IntOffset(
+                        0,
+                        (with(density) { maxHeight.toPx() } * 0.10f).roundToInt(),
+                    )
+                }
                 .padding(end = 4.dp)
                 .size(48.dp)
                 .zIndex(2f)
@@ -610,15 +786,15 @@ private fun RouteCreateOverlay(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
+                    CupertinoText(
+                        text = "录制路线",
+                        style = TextStyle(fontSize = 10.sp),
+                    )
                     CupertinoSwitch(
                         checked = state.recordMode,
                         onCheckedChange = {
                             actions?.onRecordModeChanged(it)
                         },
-                    )
-                    CupertinoText(
-                        text = "录制路线",
-                        style = TextStyle(fontSize = 12.sp),
                     )
                 }
             }
@@ -635,8 +811,14 @@ private fun RouteCreateOverlay(
             CupertinoButton(
                 onClick = { actions?.onRecord() },
                 enabled = state.recordMode || state.recording,
+                modifier = Modifier
+                    .height(34.dp)
+                    .padding(horizontal = 2.dp),
             ) {
-                CupertinoText(if (state.recording) "停止绘制" else "开始绘制")
+                CupertinoText(
+                    text = if (state.recording) "停止绘制" else "开始绘制",
+                    style = TextStyle(fontSize = 13.sp),
+                )
             }
         }
     }
@@ -658,8 +840,7 @@ private fun OverflowMenu(
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(420.dp)
+            .fillMaxSize()
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -737,6 +918,27 @@ private fun OverflowActionButton(
             text = label,
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+internal fun routeCreateGearEdge(x: Float, maxX: Float, threshold: Float): Int = when {
+    x <= threshold -> GEAR_EDGE_START
+    x >= maxX - threshold -> GEAR_EDGE_END
+    else -> GEAR_EDGE_NONE
+}
+
+internal fun routeCreateMenuTopY(
+    gearY: Float,
+    gearSize: Float,
+    menuHeight: Float,
+    viewportHeight: Float,
+    gap: Float,
+): Float {
+    val above = gearY - menuHeight - gap
+    return if (above >= 0f) {
+        above
+    } else {
+        (gearY + gearSize + gap).coerceIn(0f, (viewportHeight - menuHeight).coerceAtLeast(0f))
     }
 }
 
