@@ -328,7 +328,8 @@ private fun SectionScope.SectionInput(
                     textStyle = TextStyle(
                         color = Color(0xFF1C1C1E),
                         fontSize = 15.sp,
-                        lineHeight = 21.sp
+                        lineHeight = 21.sp,
+                        textAlign = TextAlign.End
                     )
                 )
             }

@@ -4,10 +4,12 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -149,16 +151,23 @@ private fun InternalLoginContent(
             )
         }
     ) { contentPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(AuthBackground)
                 .padding(contentPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val authContentShift = -(maxHeight * 0.1f)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .offset(y = authContentShift)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             AuthFieldGroup(
                 modifier = Modifier
                     .widthIn(max = 420.dp)
@@ -198,22 +207,22 @@ private fun InternalLoginContent(
                     onClick = { actions?.onLogin() },
                     enabled = !state.loading,
                     modifier = Modifier.weight(1f),
-                    colors = CupertinoButtonDefaults.tintedButtonColors()
+                    colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
                         if (state.loading) "登录中…" else "登录",
-                        style = TextStyle(color = AuthAccent)
+                        style = TextStyle(color = Color.White)
                     )
                 }
                 CupertinoButton(
                     onClick = { actions?.onRegister() },
                     enabled = !state.loading,
                     modifier = Modifier.weight(1f),
-                    colors = CupertinoButtonDefaults.tintedButtonColors()
+                    colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
                         "注册账号",
-                        style = TextStyle(color = AuthAccent)
+                        style = TextStyle(color = Color.White)
                     )
                 }
             }
@@ -225,13 +234,14 @@ private fun InternalLoginContent(
                     modifier = Modifier
                         .widthIn(max = 420.dp)
                         .fillMaxWidth(),
-                    colors = CupertinoButtonDefaults.plainButtonColors()
+                    colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
                         "退出登录",
-                        style = TextStyle(color = AuthAccent)
+                        style = TextStyle(color = Color.White)
                     )
                 }
+            }
             }
         }
     }
@@ -348,16 +358,23 @@ private fun EmailRegisterContent(
             )
         }
     ) { contentPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(AuthBackground)
                 .padding(contentPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val authContentShift = -(maxHeight * 0.1f)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .offset(y = authContentShift)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             AuthFieldGroup(
                 modifier = Modifier
                     .widthIn(max = 420.dp)
@@ -410,16 +427,12 @@ private fun EmailRegisterContent(
                     onClick = { actions?.onSendCode() },
                     enabled = state.sendCodeEnabled && state.registerEnabled,
                     modifier = Modifier.weight(1f),
-                    colors = CupertinoButtonDefaults.plainButtonColors()
+                    colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
                         text = state.sendCodeLabel,
                         style = TextStyle(
-                            color = if (state.sendCodeEnabled && state.registerEnabled) {
-                                AuthAccent
-                            } else {
-                                AuthAccent.copy(alpha = 0.45f)
-                            },
+                            color = Color.White,
                             fontSize = 14.sp
                         )
                     )
@@ -428,13 +441,14 @@ private fun EmailRegisterContent(
                     onClick = { actions?.onRegister() },
                     enabled = state.registerEnabled,
                     modifier = Modifier.weight(1f),
-                    colors = CupertinoButtonDefaults.tintedButtonColors()
+                    colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
                         "注册并登录",
-                        style = TextStyle(color = AuthAccent)
+                        style = TextStyle(color = Color.White)
                     )
                 }
+            }
             }
         }
     }
@@ -449,6 +463,14 @@ private fun AuthDivider() {
         color = AuthDivider
     )
 }
+
+@Composable
+private fun authFilledButtonColors() = CupertinoButtonDefaults.filledButtonColors(
+    contentColor = Color.White,
+    containerColor = AuthAccent,
+    disabledContentColor = Color.White.copy(alpha = 0.7f),
+    disabledContainerColor = AuthAccent.copy(alpha = 0.45f)
+)
 
 @Composable
 private fun AuthField(
