@@ -912,7 +912,11 @@ public class RouteCreateActivity extends BaseActivity {
 
     }
 
-    private void resetMockLocationAndRequestRealLocation() {
+    protected final void resetMockLocationAndRequestRealLocation() {
+        resetMockLocationAndRequestRealLocation(true);
+    }
+
+    protected final void resetMockLocationAndRequestRealLocation(boolean showToast) {
         GoUtils.clearMockLocation(this);
         currentLocation = null;
         lastLocationFix = null;
@@ -922,7 +926,9 @@ public class RouteCreateActivity extends BaseActivity {
             locationClient.start();
             locationClient.requestLocation();
         }
-        GoUtils.DisplayToast(this, "已清除模拟定位，正在获取真实位置");
+        if (showToast) {
+            GoUtils.DisplayToast(this, "已清除模拟定位，正在获取真实位置");
+        }
     }
 
     private void toggleRecording() {

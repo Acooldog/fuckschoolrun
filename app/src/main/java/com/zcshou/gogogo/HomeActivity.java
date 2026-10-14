@@ -27,8 +27,8 @@ public class HomeActivity extends RouteCreateActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        GoUtils.clearMockLocation(this);
         super.onCreate(savedInstanceState);
+        resetMockLocationAndRequestRealLocation(false);
         ioExecutor = Executors.newSingleThreadExecutor();
         sharedPreferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
         okHttpClient = new OkHttpClient();

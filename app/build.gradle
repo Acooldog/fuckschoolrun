@@ -38,6 +38,11 @@ def escapeBuildConfigString = { value ->
 def mapsApiKey = readLocalConfig("MAPS_API_KEY")
 def mapsSafeCode = readLocalConfig("MAPS_SAFE_CODE")
 def shareApiBaseUrl = readLocalConfig("SHARE_API_BASE_URL", "https://www.daoges.cn/schoolrun-api/")
+if (mapsApiKey.trim().isEmpty()) {
+    throw new GradleException(
+            "MAPS_API_KEY is required to build the Android app. Configure local.private.properties, local.properties, or the MAPS_API_KEY environment variable."
+    )
+}
 def isPublicShareApiBaseUrl = { value ->
     try {
         def uri = new URI(value.trim())
@@ -80,8 +85,8 @@ android {
         applicationId "com.acooldog.toolbox"
         minSdkVersion 28
         targetSdkVersion 36
-        versionCode 20313
-        versionName 'v2.3.13' // v2.3.9 is reserved by the existing local worktree.
+        versionCode 20314
+        versionName 'v2.3.14'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['zh', 'zh-rCN', 'en', 'en-rUS']
         ndk {

@@ -341,12 +341,19 @@ public class ServiceGo extends Service {
     }
 
     private void removeTestProviderGPS() {
+        if (mLocManager == null) {
+            return;
+        }
         try {
-            if (mLocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                mLocManager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, false);
-                mLocManager.removeTestProvider(LocationManager.GPS_PROVIDER);
-            }
-        } catch (Exception exception) {
+            mLocManager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, false);
+        } catch (IllegalArgumentException | SecurityException ignored) {
+            // The provider may already be restored to the system implementation.
+        }
+        try {
+            mLocManager.removeTestProvider(LocationManager.GPS_PROVIDER);
+        } catch (IllegalArgumentException ignored) {
+            // No test provider is registered.
+        } catch (SecurityException exception) {
             XLog.e("SERVICEGO: ERROR - removeTestProviderGPS");
         }
     }
@@ -426,12 +433,19 @@ public class ServiceGo extends Service {
     }
 
     private void removeTestProviderNetwork() {
+        if (mLocManager == null) {
+            return;
+        }
         try {
-            if (mLocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                mLocManager.setTestProviderEnabled(LocationManager.NETWORK_PROVIDER, false);
-                mLocManager.removeTestProvider(LocationManager.NETWORK_PROVIDER);
-            }
-        } catch (Exception exception) {
+            mLocManager.setTestProviderEnabled(LocationManager.NETWORK_PROVIDER, false);
+        } catch (IllegalArgumentException | SecurityException ignored) {
+            // The provider may already be restored to the system implementation.
+        }
+        try {
+            mLocManager.removeTestProvider(LocationManager.NETWORK_PROVIDER);
+        } catch (IllegalArgumentException ignored) {
+            // No test provider is registered.
+        } catch (SecurityException exception) {
             XLog.e("SERVICEGO: ERROR - removeTestProviderNetwork");
         }
     }
