@@ -1,5 +1,7 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.animation.AnimatedContent
@@ -138,6 +140,19 @@ fun CupertinoDock(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxSize()
+                            .let { base ->
+                                val click = { onTabSelected(index) }
+                                if (index == 1 && simulationPage) {
+                                    base
+                                        .tutorialAnchor("dock.simulation", onClick = click)
+                                        .tutorialAnchor("simulation.settings_entry", onClick = click)
+                                } else {
+                                    base.tutorialAnchor(
+                                        listOf("dock.draw", "dock.simulation", "dock.routes", "dock.mine")[index],
+                                        onClick = click
+                                    )
+                                }
+                            }
                             .clip(RoundedCornerShape(22.dp))
                             .drawBehind {
                                 if (pressed) {

@@ -1,5 +1,8 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+import com.acooldog.toolbox.tutorial.tutorialNamedAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.foundation.background
@@ -138,7 +141,9 @@ private fun InternalLoginContent(
                 navigationIcon = {
                     CupertinoIconButton(
                         onClick = { actions?.onBack() },
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier
+                            .size(44.dp)
+                            .tutorialAnchor("login.back", onClick = { actions?.onBack() })
                     ) {
                         CupertinoIcon(
                             imageVector = CupertinoIcons.Outlined.ChevronBackward,
@@ -206,7 +211,9 @@ private fun InternalLoginContent(
                 CupertinoButton(
                     onClick = { actions?.onLogin() },
                     enabled = !state.loading,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tutorialAnchor("login.submit", !state.loading),
                     colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
@@ -217,7 +224,13 @@ private fun InternalLoginContent(
                 CupertinoButton(
                     onClick = { actions?.onRegister() },
                     enabled = !state.loading,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tutorialAnchor(
+                            "login.register",
+                            !state.loading,
+                            onClick = { actions?.onRegister() }
+                        ),
                     colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
@@ -233,7 +246,8 @@ private fun InternalLoginContent(
                     enabled = !state.loading,
                     modifier = Modifier
                         .widthIn(max = 420.dp)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .tutorialAnchor("login.logout", !state.loading),
                     colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
@@ -345,7 +359,9 @@ private fun EmailRegisterContent(
                 navigationIcon = {
                     CupertinoIconButton(
                         onClick = { actions?.onBack() },
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier
+                            .size(44.dp)
+                            .tutorialAnchor("register.back", onClick = { actions?.onBack() })
                     ) {
                         CupertinoIcon(
                             imageVector = CupertinoIcons.Outlined.ChevronBackward,
@@ -426,7 +442,12 @@ private fun EmailRegisterContent(
                 CupertinoButton(
                     onClick = { actions?.onSendCode() },
                     enabled = state.sendCodeEnabled && state.registerEnabled,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tutorialAnchor(
+                            "register.code",
+                            state.sendCodeEnabled && state.registerEnabled
+                        ),
                     colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
@@ -440,7 +461,9 @@ private fun EmailRegisterContent(
                 CupertinoButton(
                     onClick = { actions?.onRegister() },
                     enabled = state.registerEnabled,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tutorialAnchor("register.submit", state.registerEnabled),
                     colors = authFilledButtonColors()
                 ) {
                     CupertinoText(
@@ -485,6 +508,10 @@ private fun AuthField(
         onValueChange = onValueChange,
         modifier = modifier
             .fillMaxWidth()
+            .tutorialNamedAnchor(
+                placeholder,
+                if (placeholder == "账号" || placeholder == "密码") "login" else "register"
+            )
             .padding(horizontal = 20.dp, vertical = 12.dp),
         placeholder = {
             CupertinoText(

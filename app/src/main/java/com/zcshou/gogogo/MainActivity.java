@@ -798,8 +798,11 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
         //可选，默认false，设置是否收集CRASH信息，默认收集
         locationOption.SetIgnoreCacheException(true);
         //可选，默认false，设置是否开启Gps定位
-        //locationOption.setOpenGps(true);
+        locationOption.setOpenGps(true);
         locationOption.setOpenGnss(true);
+        locationOption.setEnableSimulateGps(false);
+        locationOption.setEnableSimulateGnss(false);
+        locationOption.disableCache(true);
         //可选，默认false，设置定位时是否需要海拔信息，默认不需要，除基础定位版本都可用
         locationOption.setIsNeedAltitude(false);
         return locationOption;
@@ -909,10 +912,10 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
 //    //坐标转换
 //    private void transformCoordinate(final String longitude, final String latitude) {
 //        final double error = 0.00000001;
-//        final String safeCode = getResources().getString(R.string.safecode);
-//        final String ak = getResources().getString(R.string.ak);
+//        final String serverConfig = "";
+//        final String serverConfigValue = "";
 //        String mapApiUrl = "https://api.map.baidu.com/geoconv/v1/?coords=" + longitude + "," + latitude +
-//                "&from=5&to=3&ak=" + ak + "&mcode=" + safeCode;
+//                "&from=5&to=3";
 //
 //        okhttp3.Request request = new okhttp3.Request.Builder().url(mapApiUrl).get().build();
 //        final Call call = mOkHttpClient.newCall(request);
@@ -1161,22 +1164,24 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
     // 记录请求的位置信息
     private void recordCurrentLocation(double lng, double lat) {
         //参数坐标系：bd09
-        final String safeCode = BuildConfig.MAPS_SAFE_CODE;
-        final String ak = BuildConfig.MAPS_API_KEY;
         double[] latLng = MapUtils.bd2wgs(lng, lat);
-        if (TextUtils.isEmpty(ak) || TextUtils.isEmpty(safeCode)) {
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LOCATION, mMarkName == null ? getResources().getString(R.string.history_location_default_name) : mMarkName);
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_WGS84, String.valueOf(latLng[0]));
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_WGS84, String.valueOf(latLng[1]));
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_TIMESTAMP, System.currentTimeMillis() / 1000);
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_CUSTOM, Double.toString(lng));
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_CUSTOM, Double.toString(lat));
-            DataBaseHistoryLocation.saveHistoryLocation(mLocationHistoryDB, contentValues);
-            return;
-        }
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(
+                DataBaseHistoryLocation.DB_COLUMN_LOCATION,
+                mMarkName == null
+                        ? getResources().getString(R.string.history_location_default_name)
+                        : mMarkName
+        );
+        contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_WGS84, String.valueOf(latLng[0]));
+        contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_WGS84, String.valueOf(latLng[1]));
+        contentValues.put(DataBaseHistoryLocation.DB_COLUMN_TIMESTAMP, System.currentTimeMillis() / 1000);
+        contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_CUSTOM, Double.toString(lng));
+        contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_CUSTOM, Double.toString(lat));
+        DataBaseHistoryLocation.saveHistoryLocation(mLocationHistoryDB, contentValues);
+        return;
         //bd09坐标的位置信息
-        String mapApiUrl = "https://api.map.baidu.com/reverse_geocoding/v3/?ak=" + ak + "&output=json&coordtype=bd09ll" + "&location=" + lat + "," + lng + "&mcode=" + safeCode;
+        /*
+        String mapApiUrl = "";
 
         okhttp3.Request request = new okhttp3.Request.Builder().url(mapApiUrl).get().build();
         final Call call = mOkHttpClient.newCall(request);
@@ -1241,6 +1246,7 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
                 }
             }
         });
+        */
     }
 
     /*============================== SearchView 相关 ==============================*/

@@ -25,6 +25,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
+import com.acooldog.toolbox.share.domain.model.BaiduMapRuntimeConfig;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.ui.WelcomeComposeView;
@@ -51,7 +52,10 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
     private boolean agreementAccepted;
     private boolean disclaimerAccepted;
     private boolean startupFlowStarted;
+    private boolean waitingForMapBeforeHome;
+    private boolean mapInitializationDialogVisible;
     private EntryNoticeContent activeEntryNotice;
+    private final AtomicBoolean mapInitializationInFlight = new AtomicBoolean(false);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +80,7 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
                 preferences.getBoolean(KEY_ACCEPT_PRIVACY, false)
         );
 
+        startMapInitialization();
         mainHandler.postDelayed(this::beginStartupFlow, SPLASH_DURATION_MILLIS);
     }
 
@@ -113,6 +118,67 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
         showEntryNoticeThenContinue();
     }
 
+    private void startMapInitialization() {
+        if (GoApplication.isBaiduSdkInitialized()
+                || ioExecutor == null
+                || !mapInitializationInFlight.compareAndSet(false, true)) {
+            return;
+        }
+        ioExecutor.execute(() -> {
+            BaiduMapRuntimeConfig config = null;
+            try {
+                config = ShareModule.from(getApplicationContext())
+                        .shareApiClient()
+                        .getBaiduMapRuntimeConfig();
+            } catch (Exception ignored) {
+                // Keep response details and runtime values out of logs.
+            }
+            BaiduMapRuntimeConfig finalConfig = config;
+            runOnUiThread(() -> finishMapInitialization(finalConfig));
+        });
+    }
+
+    private void finishMapInitialization(BaiduMapRuntimeConfig config) {
+        mapInitializationInFlight.set(false);
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        boolean initialized = config != null
+                && GoApplication.initializeBaiduSdk(this, config.getRuntimeValue());
+        if (initialized) {
+            mapInitializationDialogVisible = false;
+            if (waitingForMapBeforeHome) {
+                enterHome();
+            }
+            return;
+        }
+        if (waitingForMapBeforeHome) {
+            showMapInitializationFailure();
+        }
+    }
+
+    private void showMapInitializationFailure() {
+        if (mapInitializationDialogVisible || isFinishing() || isDestroyed()) {
+            return;
+        }
+        mapInitializationDialogVisible = true;
+        CupertinoDialogs.showConfirm(
+                this,
+                getString(R.string.app_map_init_failed_title),
+                getString(R.string.app_map_init_failed_message),
+                getString(R.string.app_exit),
+                getString(R.string.app_retry),
+                () -> {
+                    mapInitializationDialogVisible = false;
+                    finish();
+                },
+                () -> {
+                    mapInitializationDialogVisible = false;
+                    startMapInitialization();
+                }
+        );
+    }
+
     private void showLegalConsentDialog() {
         CupertinoDialogs.showLegalConsent(
                 this,
@@ -122,7 +188,6 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
                 getString(R.string.app_agreement_content),
                 getString(R.string.app_privacy),
                 getString(R.string.app_privacy_content),
-                getString(R.string.legal_consent_checkbox),
                 getString(R.string.legal_consent_cancel),
                 getString(R.string.legal_consent_confirm),
                 this
@@ -200,29 +265,30 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
     }
 
     private void resolveEntryNoticeContent(@NonNull EntryNoticeCallback callback) {
-        EntryNoticeContent fallback = EntryNoticeContent.local(this);
+        EntryNoticeContent normalFallback = EntryNoticeContent.local(this, false);
+        EntryNoticeContent offlineFallback = EntryNoticeContent.local(this, true);
         if (!GoUtils.isNetworkAvailable(this)) {
-            callback.onReady(fallback);
+            callback.onReady(offlineFallback);
             return;
         }
 
         AtomicBoolean delivered = new AtomicBoolean(false);
         Runnable fallbackRunnable = () -> {
             if (delivered.compareAndSet(false, true)) {
-                callback.onReady(fallback);
+                callback.onReady(offlineFallback);
             }
         };
         mainHandler.postDelayed(fallbackRunnable, REMOTE_NOTICE_TIMEOUT_MILLIS);
 
         ioExecutor.execute(() -> {
-            EntryNoticeContent resolved = fallback;
+            EntryNoticeContent resolved = offlineFallback;
             try {
                 AppClientConfig config = ShareModule.from(getApplicationContext())
                         .shareApiClient()
                         .getAppClientConfig();
-                resolved = EntryNoticeContent.fromRemote(config, fallback);
+                resolved = EntryNoticeContent.fromRemote(config, normalFallback);
             } catch (Exception ignored) {
-                resolved = fallback;
+                resolved = offlineFallback;
             }
             EntryNoticeContent finalResolved = resolved;
             runOnUiThread(() -> {
@@ -356,6 +422,15 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
     }
 
     private void enterHome() {
+        if (!GoApplication.isBaiduSdkInitialized()) {
+            waitingForMapBeforeHome = true;
+            startMapInitialization();
+            if (!mapInitializationInFlight.get()) {
+                showMapInitializationFailure();
+            }
+            return;
+        }
+        waitingForMapBeforeHome = false;
         startActivity(new Intent(this, HomeActivity.class));
         finish();
     }
@@ -392,12 +467,19 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
         }
 
         @NonNull
-        private static EntryNoticeContent local(@NonNull WelcomeActivity activity) {
+        private static EntryNoticeContent local(
+                @NonNull WelcomeActivity activity,
+                boolean offline
+        ) {
             return new EntryNoticeContent(
                     activity.getString(R.string.app_entry_notice_title),
-                    activity.getString(R.string.app_entry_notice_message),
+                    activity.getString(
+                            offline
+                                    ? R.string.app_entry_notice_offline_message
+                                    : R.string.app_entry_notice_message
+                    ),
                     activity.getString(R.string.app_entry_notice_group_number),
-                    activity.getString(R.string.app_bilibili_notice_text),
+                    offline ? "" : activity.getString(R.string.app_bilibili_notice_text),
                     activity.getString(R.string.app_bilibili_url),
                     false,
                     ""

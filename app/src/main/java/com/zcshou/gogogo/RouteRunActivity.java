@@ -94,6 +94,7 @@ import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
 import com.acooldog.toolbox.share.domain.model.SharedSimulationConfigEntry;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.service.ServiceGo;
+import com.acooldog.toolbox.tutorial.TutorialAnchors;
 import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.ui.CupertinoRingtoneOptionsView;
 import com.acooldog.toolbox.ui.CupertinoRouteRunOverlayView;
@@ -152,6 +153,7 @@ public class RouteRunActivity extends BaseActivity {
     private BitmapDescriptor routeEditVertexSelectedDescriptor;
     private ServiceGo.ServiceGoBinder serviceBinder;
     private boolean bound;
+    private boolean serviceStartedByActivity;
     private boolean mockLocationPromptShown;
     private boolean restoringSimulationPrefs;
     private boolean realRunLinkRunning;
@@ -397,6 +399,11 @@ public class RouteRunActivity extends BaseActivity {
         runOverlayView = new CupertinoRouteRunOverlayView(this);
         runOverlayView.setActions(new CupertinoRouteRunOverlayView.Actions() {
             @Override
+            public void onInitializeSimulation() {
+                initializeSimulationLocation();
+            }
+
+            @Override
             public void onStartSimulation() {
                 toggleSimulation();
             }
@@ -488,10 +495,7 @@ public class RouteRunActivity extends BaseActivity {
         hideCompletionOverlay();
         removeFloatingWindow();
         viewModel.stopSimulation();
-        if (bound) {
-            unbindService(serviceConnection);
-            bound = false;
-        }
+        stopLocationSimulationService();
         if (ioExecutor != null) {
             ioExecutor.shutdownNow();
         }
@@ -569,6 +573,7 @@ public class RouteRunActivity extends BaseActivity {
             lastHandledCompletionToken = token;
             reportSimulationCompleted();
             stopLinkedSimulationState();
+            stopLocationSimulationService();
             prefsStore.setRouteCompletionPending(true);
             completionNoticePending = true;
             if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
@@ -1007,10 +1012,28 @@ public class RouteRunActivity extends BaseActivity {
                     resumeCurrentRoute ? R.string.route_simulation_resumed : R.string.route_simulation_started
             ));
         } catch (IllegalArgumentException exception) {
+            stopLocationSimulationService();
             GoUtils.DisplayToast(this, exception.getMessage());
         } catch (Exception exception) {
+            stopLocationSimulationService();
             GoUtils.DisplayToast(this, buildDetailedToast(R.string.route_simulation_start_failed, exception));
         }
+    }
+
+    private void initializeSimulationLocation() {
+        if (realRunLinkRunning) {
+            stopLinkedSimulationState();
+        }
+        if (Boolean.TRUE.equals(viewModel.isRunning().getValue())) {
+            hideCompletionOverlay();
+            hideFloatingWindow();
+            viewModel.pauseSimulation();
+        }
+        pendingMotion = null;
+        stopLocationSimulationService();
+        GoUtils.clearMockLocation(this);
+        renderToggleButtonState();
+        GoUtils.DisplayToast(this, "模拟定位已初始化");
     }
 
     private void pauseSimulationFromFloatingWindow() {
@@ -1135,10 +1158,23 @@ public class RouteRunActivity extends BaseActivity {
         serviceIntent.putExtra(MainActivity.LAT_MSG_ID, firstPoint.getWgsLatitude());
         serviceIntent.putExtra(MainActivity.ALT_MSG_ID, firstPoint.getAltitude());
         startForegroundService(serviceIntent);
+        serviceStartedByActivity = true;
         if (!bound) {
             bindService(serviceIntent, serviceConnection, BIND_AUTO_CREATE);
             bound = true;
         }
+    }
+
+    private void stopLocationSimulationService() {
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
+        if (serviceStartedByActivity) {
+            stopService(new Intent(this, ServiceGo.class));
+            serviceStartedByActivity = false;
+        }
+        serviceBinder = null;
     }
 
     @Nullable
@@ -2099,8 +2135,10 @@ public class RouteRunActivity extends BaseActivity {
             realRunLinkButton.setText(R.string.route_link_stop_button);
             requestActivityRecognitionAndStart(ratioNumerator);
         } catch (IllegalArgumentException exception) {
+            stopLocationSimulationService();
             GoUtils.DisplayToast(this, exception.getMessage());
         } catch (Exception exception) {
+            stopLocationSimulationService();
             stopLinkedSimulationState();
             GoUtils.DisplayToast(this, buildDetailedToast(R.string.route_simulation_start_failed, exception));
         }
@@ -2240,6 +2278,14 @@ public class RouteRunActivity extends BaseActivity {
 
     public void openSimulationSettingsFromDock() {
         showSimulationSettingsDialog();
+    }
+
+    public void dismissSimulationSettingsForTutorial() {
+        if (simulationSettingsDialog != null) {
+            simulationSettingsDialog.dismiss();
+            stopReminderFeedback();
+            clearSimulationSettingsReferences();
+        }
     }
 
     private void showSimulationSettingsDialog() {
@@ -4183,6 +4229,11 @@ public class RouteRunActivity extends BaseActivity {
         floatingWindowResumeButton = resumeButton;
         floatingWindowResizeHandle = resizeHandle;
         floatingWindowHandle = handle;
+        TutorialAnchors.registerView(this, "floating_window.map", mapView);
+        TutorialAnchors.registerView(this, "floating_window.pause", pauseButton);
+        TutorialAnchors.registerView(this, "floating_window.resume", resumeButton);
+        TutorialAnchors.registerView(this, "floating_window.resize", resizeHandle);
+        TutorialAnchors.registerView(this, "floating_window.drag", handle);
         applyFloatingWindowButtonSize();
         updateFloatingWindowControlsState();
     }

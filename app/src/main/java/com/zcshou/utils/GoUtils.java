@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.widget.Toast;
 
 import com.acooldog.toolbox.ui.CupertinoDialogs;
+import com.acooldog.toolbox.service.ServiceGo;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -73,6 +74,37 @@ public class GoUtils {
     //网络是否可用
     public static boolean isNetworkAvailable(Context context) {
         return ((isWifiConnected(context) || isMobileConnected(context)) && isNetworkConnected(context));
+    }
+
+    /**
+     * Removes this app's mock providers and stops any stale location simulation service.
+     */
+    public static void clearMockLocation(Context context) {
+        if (context == null) {
+            return;
+        }
+        Intent stopIntent = new Intent(ServiceGo.ACTION_STOP_MOCK_LOCATION)
+                .setPackage(context.getPackageName());
+        context.sendBroadcast(stopIntent);
+        context.stopService(new Intent(context, ServiceGo.class));
+        removeMockProvider(context, LocationManager.GPS_PROVIDER);
+        removeMockProvider(context, LocationManager.NETWORK_PROVIDER);
+    }
+
+    private static void removeMockProvider(Context context, String provider) {
+        LocationManager locationManager =
+                (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) {
+            return;
+        }
+        try {
+            locationManager.setTestProviderEnabled(provider, false);
+        } catch (IllegalArgumentException | SecurityException ignored) {
+        }
+        try {
+            locationManager.removeTestProvider(provider);
+        } catch (IllegalArgumentException | SecurityException ignored) {
+        }
     }
 
     //判断GPS是否打开

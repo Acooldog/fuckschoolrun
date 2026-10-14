@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -43,29 +44,59 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.gestures.Orientation
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.vibrancy
 import io.github.alexzhirkevich.cupertino.AlertDialogActionsScope
 import io.github.alexzhirkevich.cupertino.CupertinoActionSheet
 import io.github.alexzhirkevich.cupertino.CupertinoAlertDialog
-import io.github.alexzhirkevich.cupertino.CupertinoCheckBox
+import io.github.alexzhirkevich.cupertino.CupertinoButton
 import io.github.alexzhirkevich.cupertino.CupertinoText
 import io.github.alexzhirkevich.cupertino.CupertinoTextField
 import io.github.alexzhirkevich.cupertino.cancel
 import io.github.alexzhirkevich.cupertino.default
 import io.github.alexzhirkevich.cupertino.destructive
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
+import java.util.Collections
 import java.util.function.BooleanSupplier
 
 object CupertinoDialogs {
+    private val activeHandles = Collections.synchronizedSet(
+        mutableSetOf<DialogHandle>()
+    )
+
     class DialogHandle internal constructor(
         private val onDismissAction: () -> Unit
     ) {
         private var dismissed = false
+        private var onRegistryDismissAction: (() -> Unit)? = null
+
+        internal fun setRegistryDismissAction(action: (() -> Unit)?) {
+            onRegistryDismissAction = action
+        }
 
         fun dismiss() {
             if (dismissed) return
             dismissed = true
+            activeHandles.remove(this)
             onDismissAction()
         }
+
+        internal fun dismissFromRegistry() {
+            if (dismissed) return
+            dismissed = true
+            activeHandles.remove(this)
+            onDismissAction()
+            onRegistryDismissAction?.invoke()
+        }
+    }
+
+    @JvmStatic
+    fun dismissAll() {
+        val handles = synchronized(activeHandles) { activeHandles.toList() }
+        handles.forEach { it.dismissFromRegistry() }
     }
 
     interface ChoiceListener {
@@ -95,53 +126,44 @@ object CupertinoDialogs {
         agreementContent: String,
         privacyTitle: String,
         privacyContent: String,
-        checkboxLabel: String,
         cancelLabel: String,
         confirmLabel: String,
         listener: Listener
     ) {
         show(activity) { dialog ->
-            var checked by remember { mutableStateOf(false) }
             DialogShell(
                 dialog = dialog,
                 title = title,
                 onDismiss = { listener.onLegalCancelled() },
-                buttonsOrientation = Orientation.Vertical,
                 content = {
                     CupertinoText(message, modifier = Modifier.fillMaxWidth(), style = BodyStyle)
                     Spacer(Modifier.height(12.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .cupertinoClickable { checked = !checked }
-                            .padding(horizontal = 8.dp, vertical = 10.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        CupertinoCheckBox(
-                            checked = checked,
-                            onCheckedChange = { checked = it },
-                            modifier = Modifier.size(24.dp)
+                        CupertinoText(
+                            text = bookTitle(agreementTitle),
+                            style = LinkStyle,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .cupertinoClickable {
+                                    listener.onOpenDocument(agreementTitle, agreementContent)
+                                }
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
                         )
-                        Spacer(Modifier.size(8.dp))
-                        CupertinoText(checkboxLabel, style = BodyStyle)
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    DialogActionRow(agreementTitle) {
-                        listener.onOpenDocument(agreementTitle, agreementContent)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    DialogActionRow(privacyTitle) {
-                        listener.onOpenDocument(privacyTitle, privacyContent)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    DialogActionRow(confirmLabel, enabled = checked) {
-                        if (checked) {
-                            dialog.dismiss()
-                            listener.onLegalConfirmed()
-                        } else {
-                            listener.onLegalRejected()
-                        }
+                        CupertinoText("和", style = BodyStyle)
+                        CupertinoText(
+                            text = bookTitle(privacyTitle),
+                            style = LinkStyle,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .cupertinoClickable {
+                                    listener.onOpenDocument(privacyTitle, privacyContent)
+                                }
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
+                        )
                     }
                 },
                 actions = {
@@ -151,6 +173,12 @@ object CupertinoDialogs {
                             listener.onLegalCancelled()
                         }
                     ) { CupertinoText(cancelLabel) }
+                    default(
+                        onClick = {
+                            dialog.dismiss()
+                            listener.onLegalConfirmed()
+                        }
+                    ) { CupertinoText(confirmLabel) }
                 }
             )
         }
@@ -194,7 +222,7 @@ object CupertinoDialogs {
             DialogShell(
                 dialog = dialog,
                 title = title,
-                onDismiss = {},
+                onDismiss = { dialog.dismiss() },
                 buttonsOrientation = Orientation.Vertical,
                 content = {
                     CupertinoText(
@@ -205,20 +233,18 @@ object CupertinoDialogs {
                             .verticalScroll(rememberScrollState()),
                         style = BodyStyle
                     )
+                },
+                actions = {
                     if (groupLabel.isNotEmpty()) {
-                        Spacer(Modifier.height(10.dp))
-                        DialogActionRow(groupLabel) {
-                            listener.onCopyGroup()
+                        default(onClick = { listener.onCopyGroup() }) {
+                            CupertinoText(groupLabel)
                         }
                     }
                     if (bilibiliLabel.isNotEmpty()) {
-                        Spacer(Modifier.height(6.dp))
-                        DialogActionRow(bilibiliLabel) {
-                            listener.onOpenBilibili()
+                        default(onClick = { listener.onOpenBilibili() }) {
+                            CupertinoText(bilibiliLabel)
                         }
                     }
-                },
-                actions = {
                     default(
                         onClick = {
                             dialog.dismiss()
@@ -481,7 +507,7 @@ object CupertinoDialogs {
         confirmListener: BooleanSupplier,
         cancelListener: Runnable?
     ): DialogHandle {
-        return showHost(activity) { dialog ->
+        val handle = showHost(activity) { dialog ->
             var visible by remember { mutableStateOf(true) }
             CupertinoActionSheet(
                 visible = visible,
@@ -521,6 +547,8 @@ object CupertinoDialogs {
                 }
             )
         }
+        handle.setRegistryDismissAction { cancelListener?.run() }
+        return handle
     }
 
     @JvmStatic
@@ -541,7 +569,7 @@ object CupertinoDialogs {
         closeLabel: String,
         onDismiss: Runnable?
     ): DialogHandle {
-        return showHost(activity) { dialog ->
+        val handle = showHost(activity) { dialog ->
             var visible by remember { mutableStateOf(true) }
             CupertinoActionSheet(
                 visible = visible,
@@ -573,6 +601,8 @@ object CupertinoDialogs {
                 }
             )
         }
+        handle.setRegistryDismissAction { onDismiss?.run() }
+        return handle
     }
 
     private fun show(activity: Activity, content: @Composable (DialogHandle) -> Unit) {
@@ -594,7 +624,26 @@ object CupertinoDialogs {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
                 CupertinoTheme {
-                    content(handle)
+                    val backdrop = rememberLayerBackdrop()
+                    Box(Modifier.fillMaxSize()) {
+                        Box(Modifier.fillMaxSize().layerBackdrop(backdrop))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .drawBackdrop(
+                                    backdrop = backdrop,
+                                    shape = { RoundedCornerShape(0.dp) },
+                                    effects = {
+                                        vibrancy()
+                                        blur(18.dp.toPx())
+                                    },
+                                    onDrawSurface = {
+                                        drawRect(Color.Black.copy(alpha = 0.24f))
+                                    }
+                                )
+                        )
+                        content(handle)
+                    }
                 }
             }
         }
@@ -606,12 +655,15 @@ object CupertinoDialogs {
             )
         )
         root?.addView(host)
+        activeHandles.add(handle)
         return handle
     }
 }
 
 private val PrimaryText = Color(0xFF1C1C1E)
 private val BodyStyle = TextStyle(color = PrimaryText, fontSize = 15.sp, lineHeight = 22.sp)
+private val LinkStyle = BodyStyle.copy(color = Color(0xFF007AFF))
+private val DialogSurfaceColor = Color.White.copy(alpha = 0.82f)
 private val EmphasisStyle = TextStyle(
     color = PrimaryText,
     fontSize = 16.sp,
@@ -686,6 +738,7 @@ private fun DialogShell(
                 content()
             }
         },
+        containerColor = DialogSurfaceColor,
         properties = DialogProperties(
             dismissOnBackPress = true,
             dismissOnClickOutside = false,
@@ -694,4 +747,13 @@ private fun DialogShell(
         buttonsOrientation = buttonsOrientation,
         buttons = actions
     )
+}
+
+private fun bookTitle(value: String): String {
+    val trimmed = value.trim()
+    return if (trimmed.startsWith("《") && trimmed.endsWith("》")) {
+        trimmed
+    } else {
+        "《$trimmed》"
+    }
 }

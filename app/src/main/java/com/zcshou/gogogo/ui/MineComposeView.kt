@@ -1,5 +1,7 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.foundation.Canvas
@@ -77,6 +79,7 @@ class MineComposeView @JvmOverloads constructor(
     interface Actions {
         fun openSettings()
         fun openInternalLogin()
+        fun openTutorial()
         fun loadMinePageData(callback: DataCallback)
         fun openApp(appId: String)
         fun openAuthorQq()
@@ -161,7 +164,12 @@ private fun MineScreen(actions: MineComposeView.Actions?, reloadSignal: Int) {
                 actions = {
                     CupertinoIconButton(
                         onClick = { actions?.openSettings() },
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier
+                            .size(44.dp)
+                            .tutorialAnchor(
+                                "mine.settings",
+                                onClick = { actions?.openSettings() }
+                            )
                     ) {
                         CupertinoIcon(
                             imageVector = CupertinoIcons.Outlined.Gearshape,
@@ -192,6 +200,24 @@ private fun MineScreen(actions: MineComposeView.Actions?, reloadSignal: Int) {
             item {
                 MineCard(title = "应用列表") {
                     AppGrid(onOpenApp = { appId -> actions?.openApp(appId) })
+                }
+            }
+            item {
+                MineCard(title = "使用教程") {
+                    CupertinoButton(
+                        onClick = { actions?.openTutorial() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .tutorialAnchor("mine.tutorial"),
+                        colors = CupertinoButtonDefaults.plainButtonColors(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
+                    ) {
+                        CupertinoText(
+                            text = "重新查看教程",
+                            modifier = Modifier.fillMaxWidth(),
+                            style = TextStyle(color = MineAccent, fontSize = 15.sp)
+                        )
+                    }
                 }
             }
             item {
@@ -262,6 +288,7 @@ private fun ProfileHeader(isLoggedIn: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
+            .tutorialAnchor("mine.login", onClick = onClick)
             .cupertinoClickable(onClick)
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically

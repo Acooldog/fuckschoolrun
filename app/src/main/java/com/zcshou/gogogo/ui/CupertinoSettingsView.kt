@@ -1,5 +1,8 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+import com.acooldog.toolbox.tutorial.tutorialNamedAnchor
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -139,7 +142,9 @@ private fun SettingsContent(
                 navigationIcon = {
                     CupertinoIconButton(
                         onClick = onBack,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier
+                            .size(44.dp)
+                            .tutorialAnchor("settings.back", onClick = onBack)
                     ) {
                         CupertinoIcon(
                             CupertinoIcons.Outlined.ChevronBackward,
@@ -304,6 +309,7 @@ private fun SectionScope.SectionInput(
     onValueChange: (String) -> Unit
 ) {
     SectionItem(
+        modifier = Modifier.tutorialNamedAnchor(label, "settings"),
         title = {
             CupertinoText(
                 label,
@@ -363,7 +369,15 @@ private fun SectionScope.SectionSwitch(
             }
         },
         trailingContent = {
-            CupertinoSwitch(checked = checked, onCheckedChange = onCheckedChange)
+            CupertinoSwitch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier.tutorialNamedAnchor(
+                    label,
+                    "settings",
+                    onClick = { onCheckedChange(!checked) }
+                )
+            )
         }
     )
 }
@@ -400,7 +414,9 @@ private fun SectionScope.SectionInfo(label: String, value: String) {
 @Composable
 private fun SectionScope.SectionLink(label: String, onClick: () -> Unit) {
     SectionItem(
-        modifier = Modifier.cupertinoClickable(onClick),
+        modifier = Modifier
+            .tutorialNamedAnchor(label, "settings", onClick = onClick)
+            .cupertinoClickable(onClick),
         title = {
             CupertinoText(
                 label,

@@ -1,5 +1,7 @@
 package com.acooldog.toolbox.ui
 
+import com.acooldog.toolbox.tutorial.tutorialAnchor
+
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.animation.AnimatedVisibility
@@ -39,6 +41,7 @@ import io.github.alexzhirkevich.cupertino.CupertinoButton
 import io.github.alexzhirkevich.cupertino.CupertinoIconButton
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.Gearshape
+import io.github.alexzhirkevich.cupertino.icons.outlined.Location
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
 
 class CupertinoRouteRunOverlayView @JvmOverloads constructor(
@@ -47,6 +50,7 @@ class CupertinoRouteRunOverlayView @JvmOverloads constructor(
 ) : AbstractComposeView(context, attrs) {
 
     interface Actions {
+        fun onInitializeSimulation()
         fun onStartSimulation()
         fun onSelectRoute()
         fun onStartRealRun()
@@ -117,6 +121,7 @@ private fun RouteRunOverlay(
             ) {
                 RunAction(
                     label = if (state.running) "停止模拟" else "开始模拟",
+                    key = "simulation.start",
                     icon = Icons.Outlined.PlayArrow,
                     onClick = {
                         expanded = false
@@ -125,6 +130,7 @@ private fun RouteRunOverlay(
                 )
                 RunAction(
                     label = "选择路线",
+                    key = "simulation.route",
                     icon = Icons.Outlined.List,
                     onClick = {
                         expanded = false
@@ -133,6 +139,7 @@ private fun RouteRunOverlay(
                 )
                 RunAction(
                     label = if (state.realRunLinkRunning) "停止跑步联动" else "跑步联动",
+                    key = "simulation.real_run",
                     icon = Icons.Outlined.Accessibility,
                     onClick = {
                         expanded = false
@@ -141,6 +148,7 @@ private fun RouteRunOverlay(
                 )
                 RunAction(
                     label = "NFC 联动",
+                    key = "simulation.nfc",
                     icon = Icons.Outlined.Nfc,
                     onClick = {
                         expanded = false
@@ -150,9 +158,38 @@ private fun RouteRunOverlay(
             }
         }
 
-        CupertinoIconButton(
-            onClick = { expanded = !expanded },
+        androidx.compose.foundation.layout.Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CupertinoIconButton(
+                onClick = {
+                    expanded = false
+                    actions?.onInitializeSimulation()
+                },
+                modifier = Modifier
+                    .tutorialAnchor(
+                        "simulation.initialize",
+                        onClick = {
+                            expanded = false
+                            actions?.onInitializeSimulation()
+                        },
+                    )
+                    .padding(2.dp)
+                    .background(
+                        color = Color.White.copy(alpha = 0.92f),
+                        shape = RoundedCornerShape(24.dp),
+                    ),
+            ) {
+                Icon(
+                    imageVector = CupertinoIcons.Outlined.Location,
+                    contentDescription = "模拟初始化",
+                )
+            }
+            CupertinoIconButton(
+                onClick = { expanded = !expanded },
             modifier = Modifier
+                .tutorialAnchor("simulation.tools", onClick = { expanded = !expanded })
                 .padding(2.dp)
                 .background(
                     color = Color.White.copy(alpha = 0.92f),
@@ -166,17 +203,19 @@ private fun RouteRunOverlay(
             )
         }
     }
+    }
 }
 
 @Composable
 private fun RunAction(
     label: String,
+    key: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
     CupertinoButton(
         onClick = onClick,
-        modifier = Modifier.widthIn(min = 180.dp, max = 236.dp)
+        modifier = Modifier.widthIn(min = 180.dp, max = 236.dp).tutorialAnchor(key, onClick = onClick)
     ) {
         androidx.compose.foundation.layout.Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),

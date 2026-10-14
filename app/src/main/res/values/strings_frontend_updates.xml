@@ -4,7 +4,7 @@
     <string name="home_operation_click_more">点击卡片查看完整操作说明</string>
     <string name="home_tab_start">开始</string>
     <string name="home_tab_mine">我的</string>
-    <string name="home_operation_steps_detail">1. 首页点击“绘制路线”进入绘制页面，可以先搜索地点，再点击地图添加路径点。\n\n2. 绘制路线完成后，可以保存到本地，也可以直接分享给其他用户；现在也支持选择本地已有路线进行分享。\n\n3. 进入“路线模拟”后，默认速度是 15m/s，默认循环次数是 100；你也可以通过下拉框切换为按步频模拟，并且会自动记住你上次使用的参数和路线。\n\n4. 开始路线模拟后，请把目标应用开成小窗或分屏，否则无法继续进行模拟。\n\n5. 点击“NFC 工具”可以读取公开 NFC、手动填写 URL 和包名进行模拟，也支持共享和下载别人上传的数据。\n\n6. 如果下载的是隐私路线，模拟时地图会变成白色遮罩，但路线仍会正常执行。\n\n7. 如果你修改了包名或签名，请同步更新 local.properties 中的 MAPS_SAFE_CODE 和百度地图 AK 绑定。</string>
+    <string name="home_operation_steps_detail">1. 首页点击“绘制路线”进入绘制页面，可以先搜索地点，再点击地图添加路径点。\n\n2. 绘制路线完成后，可以保存到本地，也可以直接分享给其他用户；现在也支持选择本地已有路线进行分享。\n\n3. 进入“路线模拟”后，默认速度是 15m/s，默认循环次数是 100；你也可以通过下拉框切换为按步频模拟，并且会自动记住你上次使用的参数和路线。\n\n4. 开始路线模拟后，请把目标应用开成小窗或分屏，否则无法继续进行模拟。\n\n5. 点击“NFC 工具”可以读取公开 NDEF，手动填写 URL 和包名进行模拟，也支持共享和下载别人上传的数据。\n\n6. 如果下载的是隐私路线，模拟时地图会变成白色遮罩，但路线仍会正常执行。\n\n7. 地图服务配置会在启动时从 FSR 独立后端获取，客户端不保存服务端配置。</string>
     <string name="route_search_hint">搜索地点后移动到目标位置，再点击地图绘制路线</string>
     <string name="route_search_placeholder">输入地点名称</string>
     <string name="route_search_use_result">已定位到搜索结果，可继续在地图上绘制路线</string>
@@ -48,6 +48,7 @@
     <string name="route_share_select_local_title">选择本地路线</string>
     <string name="app_entry_notice_title">使用说明</string>
     <string name="app_entry_notice_message">本软件为完全免费开源软件，基于影梭打造，仅供学习交流，禁止盈利，目前仅测试过阳光校园跑，其他的你们自行测试，QQ群号：951300122</string>
+    <string name="app_entry_notice_offline_message">此为bilibiliup主 牢大_科比 制作的免费开源软件，如果你是通过购买教程或购买软件得到的本软件，请立即退款，并向作者汇报，作者会帮你进行维权；如果是先用后付，请不要付款！！！</string>
     <string name="app_entry_notice_group_number">951300122</string>
     <string name="app_entry_notice_copy_group">复制群号</string>
     <string name="app_entry_notice_known">我知道了</string>
@@ -58,6 +59,9 @@
     <string name="app_error_agreement_dialog_title">请先确认协议</string>
     <string name="app_error_agreement_dialog_message">继续进入主页前，请先阅读并勾选用户协议与免责声明。</string>
     <string name="app_error_agreement_dialog_button">我知道了</string>
+    <string name="app_map_init_failed_title">地图服务不可用</string>
+    <string name="app_map_init_failed_message">暂时无法获取地图服务配置，请检查网络后重试。</string>
+    <string name="app_retry">重试</string>
     <string name="welcome_splash_title">Laoda SchoolRun</string>
     <string name="welcome_splash_subtitle">路线模拟 · NFC 工具 · 测试联动</string>
     <string name="legal_consent_message">继续使用前，请先阅读并同意以下内容：</string>

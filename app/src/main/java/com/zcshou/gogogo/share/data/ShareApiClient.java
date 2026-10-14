@@ -12,6 +12,7 @@ import com.acooldog.toolbox.route.domain.model.RouteSimulationConfig;
 import com.acooldog.toolbox.route.data.RoutePointJsonCodec;
 import com.acooldog.toolbox.route.domain.model.RoutePoint;
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
+import com.acooldog.toolbox.share.domain.model.BaiduMapRuntimeConfig;
 import com.acooldog.toolbox.share.domain.model.EmailVerificationState;
 import com.acooldog.toolbox.share.domain.model.FsrBindingState;
 import com.acooldog.toolbox.share.domain.model.InternalAccountProfile;
@@ -165,6 +166,15 @@ public final class ShareApiClient {
                 .get()
                 .build();
         return parseAppClientConfig(executeObject(request));
+    }
+
+    public BaiduMapRuntimeConfig getBaiduMapRuntimeConfig() throws IOException {
+        Request request = clientRequestBuilder(buildUrl("api/map/android-config"))
+                .header("Cache-Control", "no-cache")
+                .header("Pragma", "no-cache")
+                .get()
+                .build();
+        return parseBaiduMapRuntimeConfig(executeObject(request));
     }
 
     public InternalLoginResult loginInternalAccount(
@@ -475,6 +485,20 @@ public final class ShareApiClient {
         return parseSharedSimulationConfig(executeObject(request));
     }
 
+    public JSONObject getTutorialConfig(String token) throws IOException {
+        return executeObject(newRequestBuilder(buildUrl("api/tutorial/config"), token).get().build());
+    }
+
+    public JSONObject getTutorialProgress(String token) throws IOException {
+        return executeObject(newRequestBuilder(buildUrl("api/tutorial/progress"), token).get().build());
+    }
+
+    public void saveTutorialProgress(String token, JSONObject progress) throws IOException {
+        executeObject(newRequestBuilder(buildUrl("api/tutorial/progress"), token)
+                .put(RequestBody.create(progress.toString(), JSON_MEDIA_TYPE))
+                .build());
+    }
+
     private HttpUrl parseBaseUrl(String configuredBaseUrl) throws IOException {
         if (configuredBaseUrl == null || configuredBaseUrl.trim().isEmpty()) {
             return null;
@@ -731,6 +755,17 @@ public final class ShareApiClient {
                 optBoolean(jsonObject, "forceShutdown"),
                 optString(jsonObject, "forceShutdownMessage", "shutdownMessage")
         );
+    }
+
+    private BaiduMapRuntimeConfig parseBaiduMapRuntimeConfig(JSONObject jsonObject) throws IOException {
+        if (jsonObject == null) {
+            throw new IOException("Map runtime configuration is empty");
+        }
+        String runtimeValue = optString(jsonObject, "value");
+        if (TextUtils.isEmpty(runtimeValue)) {
+            throw new IOException("Map runtime configuration is unavailable");
+        }
+        return new BaiduMapRuntimeConfig(runtimeValue);
     }
 
     private InternalAccountProfile parseInternalAccount(JSONObject jsonObject) throws IOException {

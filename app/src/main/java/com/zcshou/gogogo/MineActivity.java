@@ -66,6 +66,11 @@ public class MineActivity extends BaseActivity implements MineComposeView.Action
     }
 
     @Override
+    public void openTutorial() {
+        com.acooldog.toolbox.tutorial.TutorialController.replay(this);
+    }
+
+    @Override
     public void loadMinePageData(MineComposeView.DataCallback callback) {
         boolean loggedIn = authStore != null && authStore.isLoggedIn();
         ioExecutor.execute(() -> {

@@ -127,10 +127,9 @@ namespace 'com.acooldog.toolbox'
 修改：
 
 ```properties
-MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
 ```
 
-如果你改了包名或签名证书，还需要去百度地图 / 百度 LBS 后台重新绑定 Android AK。
+地图服务配置由 FSR 独立后端在启动时提供，客户端构建配置中不保存地图服务凭据。
 
 ### 4.4 重新编译
 
