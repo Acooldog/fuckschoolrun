@@ -1,12 +1,5 @@
 sdk.dir=C\:\\path\\to\\Android\\Sdk
 
-# Baidu Android map SDK authentication.
-# Create an Android AK in Baidu LBS console and bind it to:
-#   package: com.acooldog.toolbox
-#   SHA1: your signing certificate SHA1
-MAPS_API_KEY=
-MAPS_SAFE_CODE=SHA1;com.acooldog.toolbox
-
 # Keep the real backend URL in ignored local.private.properties.
 SHARE_API_BASE_URL=
 

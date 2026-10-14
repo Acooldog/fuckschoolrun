@@ -35,14 +35,7 @@ def escapeBuildConfigString = { value ->
     value.replace('\\', '\\\\').replace('"', '\\"')
 }
 
-def mapsApiKey = readLocalConfig("MAPS_API_KEY")
-def mapsSafeCode = readLocalConfig("MAPS_SAFE_CODE")
 def shareApiBaseUrl = readLocalConfig("SHARE_API_BASE_URL", "https://www.daoges.cn/schoolrun-api/")
-if (mapsApiKey.trim().isEmpty()) {
-    throw new GradleException(
-            "MAPS_API_KEY is required to build the Android app. Configure local.private.properties, local.properties, or the MAPS_API_KEY environment variable."
-    )
-}
 def isPublicShareApiBaseUrl = { value ->
     try {
         def uri = new URI(value.trim())
@@ -53,7 +46,6 @@ def isPublicShareApiBaseUrl = { value ->
         return false
     }
 }
-def baiduManifestApiKey = mapsApiKey.trim().isEmpty() ? "NO_BAIDU_MAPS_API_KEY_CONFIGURED" : mapsApiKey
 def preferredKeystore = file('..\\keystore\\SchoolRun.jks')
 def legacyKeystore = file('..\\keystore\\GoGoGo.jks')
 def projectKeystore = preferredKeystore.exists() ? preferredKeystore : legacyKeystore
@@ -85,8 +77,8 @@ android {
         applicationId "com.acooldog.toolbox"
         minSdkVersion 28
         targetSdkVersion 36
-        versionCode 20314
-        versionName 'v2.3.14'
+        versionCode 20317
+        versionName 'v2.3.17'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['zh', 'zh-rCN', 'en', 'en-rUS']
         ndk {
@@ -96,11 +88,6 @@ android {
         if (hasLocalSigningConfig) {
             signingConfig signingConfigs.local
         }
-        manifestPlaceholders = [
-                BAIDU_MAPS_API_KEY: baiduManifestApiKey
-        ]
-        buildConfigField "String", "MAPS_SAFE_CODE", "\"${escapeBuildConfigString(mapsSafeCode)}\""
-        buildConfigField "String", "MAPS_API_KEY", "\"${escapeBuildConfigString(mapsApiKey)}\""
         buildConfigField "String", "SHARE_API_BASE_URL", "\"${escapeBuildConfigString(shareApiBaseUrl)}\""
     }
     buildTypes {

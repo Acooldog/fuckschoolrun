@@ -83,6 +83,7 @@ public class RouteCreateActivity extends BaseActivity {
     private static final int DEFAULT_RECORD_INTERVAL_SECONDS = 3;
     private static final int MIN_RECORD_INTERVAL_SECONDS = 1;
     private static final int LOCATION_REFRESH_INTERVAL_MS = 1000;
+    private static final long REAL_LOCATION_RESTART_DELAY_MS = 800L;
     private static final int TOOL_MODE_DRAW = 0;
     private static final int TOOL_MODE_EDIT = 1;
     private static final double ROUTE_INSERT_MAX_DISTANCE_METERS = 20d;
@@ -123,6 +124,8 @@ public class RouteCreateActivity extends BaseActivity {
     private boolean updatingRecordModeSwitch;
     private boolean isRecording;
     private boolean hasCenteredOnLocation;
+    private boolean waitingForFreshRealLocation;
+    private long locationResetAtMillis;
     private int recordIntervalSeconds;
     private int toolMode = TOOL_MODE_DRAW;
     private int selectedPointIndex = -1;
@@ -406,6 +409,7 @@ public class RouteCreateActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         stopRecordScheduler();
+        recordHandler.removeCallbacksAndMessages(null);
         if (locationClient != null) {
             locationClient.stop();
         }
@@ -756,6 +760,24 @@ public class RouteCreateActivity extends BaseActivity {
                 if (bdLocation == null || bdLocation.getLatitude() == 0 || bdLocation.getLongitude() == 0) {
                     return;
                 }
+                BDLocation realLocation = bdLocation.getReallLocation();
+                if (realLocation != null) {
+                    if (realLocation.getLatitude() == 0 || realLocation.getLongitude() == 0) {
+                        return;
+                    }
+                    bdLocation = realLocation;
+                }
+                if (waitingForFreshRealLocation
+                        && (bdLocation.getMockGpsProbability() > BDLocation.MOCK_GPS_PROBABILITY_ZERO
+                        || bdLocation.getMockGnssProbability() > BDLocation.MOCK_GNSS_PROBABILITY_ZERO)) {
+                    return;
+                }
+                if (waitingForFreshRealLocation
+                        && (bdLocation.getTimeStamp() <= 0
+                        || bdLocation.getTimeStamp() < locationResetAtMillis)) {
+                    return;
+                }
+                waitingForFreshRealLocation = false;
                 lastLocationFix = bdLocation;
                 currentLocation = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
                 MyLocationData locationData = new MyLocationData.Builder()
@@ -782,13 +804,17 @@ public class RouteCreateActivity extends BaseActivity {
         });
         LocationClientOption option = new LocationClientOption();
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
+        option.setOpenGps(true);
         option.setOpenGnss(true);
+        option.setEnableSimulateGps(false);
+        option.setEnableSimulateGnss(false);
         option.setCoorType("bd09ll");
         option.setScanSpan(LOCATION_REFRESH_INTERVAL_MS);
         option.setIsNeedAddress(true);
         option.setLocationNotify(true);
         option.setIgnoreKillProcess(true);
         option.SetIgnoreCacheException(true);
+        option.disableCache(true);
         option.setIsNeedAltitude(true);
         locationClient.setLocOption(option);
         locationClient.start();
@@ -917,14 +943,21 @@ public class RouteCreateActivity extends BaseActivity {
     }
 
     protected final void resetMockLocationAndRequestRealLocation(boolean showToast) {
+        locationResetAtMillis = System.currentTimeMillis();
+        waitingForFreshRealLocation = true;
         GoUtils.clearMockLocation(this);
         currentLocation = null;
         lastLocationFix = null;
         hasCenteredOnLocation = false;
         if (locationClient != null) {
             locationClient.stop();
-            locationClient.start();
-            locationClient.requestLocation();
+            recordHandler.postDelayed(() -> {
+                if (isFinishing() || isDestroyed() || locationClient == null) {
+                    return;
+                }
+                locationClient.start();
+                locationClient.requestLocation();
+            }, REAL_LOCATION_RESTART_DELAY_MS);
         }
         if (showToast) {
             GoUtils.DisplayToast(this, "已清除模拟定位，正在获取真实位置");

@@ -25,6 +25,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
 import com.acooldog.toolbox.share.domain.model.AppClientConfig;
+import com.acooldog.toolbox.share.domain.model.BaiduMapRuntimeConfig;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.ui.WelcomeComposeView;
@@ -51,7 +52,10 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
     private boolean agreementAccepted;
     private boolean disclaimerAccepted;
     private boolean startupFlowStarted;
+    private boolean waitingForMapBeforeHome;
+    private boolean mapInitializationDialogVisible;
     private EntryNoticeContent activeEntryNotice;
+    private final AtomicBoolean mapInitializationInFlight = new AtomicBoolean(false);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +80,7 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
                 preferences.getBoolean(KEY_ACCEPT_PRIVACY, false)
         );
 
+        startMapInitialization();
         mainHandler.postDelayed(this::beginStartupFlow, SPLASH_DURATION_MILLIS);
     }
 
@@ -111,6 +116,67 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
             return;
         }
         showEntryNoticeThenContinue();
+    }
+
+    private void startMapInitialization() {
+        if (GoApplication.isBaiduSdkInitialized()
+                || ioExecutor == null
+                || !mapInitializationInFlight.compareAndSet(false, true)) {
+            return;
+        }
+        ioExecutor.execute(() -> {
+            BaiduMapRuntimeConfig config = null;
+            try {
+                config = ShareModule.from(getApplicationContext())
+                        .shareApiClient()
+                        .getBaiduMapRuntimeConfig();
+            } catch (Exception ignored) {
+                // Keep response details and runtime values out of logs.
+            }
+            BaiduMapRuntimeConfig finalConfig = config;
+            runOnUiThread(() -> finishMapInitialization(finalConfig));
+        });
+    }
+
+    private void finishMapInitialization(BaiduMapRuntimeConfig config) {
+        mapInitializationInFlight.set(false);
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        boolean initialized = config != null
+                && GoApplication.initializeBaiduSdk(this, config.getRuntimeValue());
+        if (initialized) {
+            mapInitializationDialogVisible = false;
+            if (waitingForMapBeforeHome) {
+                enterHome();
+            }
+            return;
+        }
+        if (waitingForMapBeforeHome) {
+            showMapInitializationFailure();
+        }
+    }
+
+    private void showMapInitializationFailure() {
+        if (mapInitializationDialogVisible || isFinishing() || isDestroyed()) {
+            return;
+        }
+        mapInitializationDialogVisible = true;
+        CupertinoDialogs.showConfirm(
+                this,
+                getString(R.string.app_map_init_failed_title),
+                getString(R.string.app_map_init_failed_message),
+                getString(R.string.app_exit),
+                getString(R.string.app_retry),
+                () -> {
+                    mapInitializationDialogVisible = false;
+                    finish();
+                },
+                () -> {
+                    mapInitializationDialogVisible = false;
+                    startMapInitialization();
+                }
+        );
     }
 
     private void showLegalConsentDialog() {
@@ -356,6 +422,15 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
     }
 
     private void enterHome() {
+        if (!GoApplication.isBaiduSdkInitialized()) {
+            waitingForMapBeforeHome = true;
+            startMapInitialization();
+            if (!mapInitializationInFlight.get()) {
+                showMapInitializationFailure();
+            }
+            return;
+        }
+        waitingForMapBeforeHome = false;
         startActivity(new Intent(this, HomeActivity.class));
         finish();
     }

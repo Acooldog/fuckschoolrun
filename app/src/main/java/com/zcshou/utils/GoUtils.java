@@ -87,6 +87,24 @@ public class GoUtils {
                 .setPackage(context.getPackageName());
         context.sendBroadcast(stopIntent);
         context.stopService(new Intent(context, ServiceGo.class));
+        removeMockProvider(context, LocationManager.GPS_PROVIDER);
+        removeMockProvider(context, LocationManager.NETWORK_PROVIDER);
+    }
+
+    private static void removeMockProvider(Context context, String provider) {
+        LocationManager locationManager =
+                (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) {
+            return;
+        }
+        try {
+            locationManager.setTestProviderEnabled(provider, false);
+        } catch (IllegalArgumentException | SecurityException ignored) {
+        }
+        try {
+            locationManager.removeTestProvider(provider);
+        } catch (IllegalArgumentException | SecurityException ignored) {
+        }
     }
 
     //判断GPS是否打开
