@@ -77,8 +77,8 @@ android {
         applicationId "com.acooldog.toolbox"
         minSdkVersion 28
         targetSdkVersion 36
-        versionCode 20317
-        versionName 'v2.3.17'
+        versionCode 20318
+        versionName 'v2.3.18'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['zh', 'zh-rCN', 'en', 'en-rUS']
         ndk {

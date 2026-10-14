@@ -125,7 +125,6 @@ public class RouteCreateActivity extends BaseActivity {
     private boolean isRecording;
     private boolean hasCenteredOnLocation;
     private boolean waitingForFreshRealLocation;
-    private long locationResetAtMillis;
     private int recordIntervalSeconds;
     private int toolMode = TOOL_MODE_DRAW;
     private int selectedPointIndex = -1;
@@ -772,11 +771,6 @@ public class RouteCreateActivity extends BaseActivity {
                         || bdLocation.getMockGnssProbability() > BDLocation.MOCK_GNSS_PROBABILITY_ZERO)) {
                     return;
                 }
-                if (waitingForFreshRealLocation
-                        && (bdLocation.getTimeStamp() <= 0
-                        || bdLocation.getTimeStamp() < locationResetAtMillis)) {
-                    return;
-                }
                 waitingForFreshRealLocation = false;
                 lastLocationFix = bdLocation;
                 currentLocation = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
@@ -943,7 +937,6 @@ public class RouteCreateActivity extends BaseActivity {
     }
 
     protected final void resetMockLocationAndRequestRealLocation(boolean showToast) {
-        locationResetAtMillis = System.currentTimeMillis();
         waitingForFreshRealLocation = true;
         GoUtils.clearMockLocation(this);
         currentLocation = null;
