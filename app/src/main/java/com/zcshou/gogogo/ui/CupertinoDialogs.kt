@@ -53,26 +53,50 @@ import io.github.alexzhirkevich.cupertino.AlertDialogActionsScope
 import io.github.alexzhirkevich.cupertino.CupertinoActionSheet
 import io.github.alexzhirkevich.cupertino.CupertinoAlertDialog
 import io.github.alexzhirkevich.cupertino.CupertinoButton
-import io.github.alexzhirkevich.cupertino.CupertinoCheckBox
 import io.github.alexzhirkevich.cupertino.CupertinoText
 import io.github.alexzhirkevich.cupertino.CupertinoTextField
 import io.github.alexzhirkevich.cupertino.cancel
 import io.github.alexzhirkevich.cupertino.default
 import io.github.alexzhirkevich.cupertino.destructive
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
+import java.util.Collections
 import java.util.function.BooleanSupplier
 
 object CupertinoDialogs {
+    private val activeHandles = Collections.synchronizedSet(
+        mutableSetOf<DialogHandle>()
+    )
+
     class DialogHandle internal constructor(
         private val onDismissAction: () -> Unit
     ) {
         private var dismissed = false
+        private var onRegistryDismissAction: (() -> Unit)? = null
+
+        internal fun setRegistryDismissAction(action: (() -> Unit)?) {
+            onRegistryDismissAction = action
+        }
 
         fun dismiss() {
             if (dismissed) return
             dismissed = true
+            activeHandles.remove(this)
             onDismissAction()
         }
+
+        internal fun dismissFromRegistry() {
+            if (dismissed) return
+            dismissed = true
+            activeHandles.remove(this)
+            onDismissAction()
+            onRegistryDismissAction?.invoke()
+        }
+    }
+
+    @JvmStatic
+    fun dismissAll() {
+        val handles = synchronized(activeHandles) { activeHandles.toList() }
+        handles.forEach { it.dismissFromRegistry() }
     }
 
     interface ChoiceListener {
@@ -102,13 +126,11 @@ object CupertinoDialogs {
         agreementContent: String,
         privacyTitle: String,
         privacyContent: String,
-        checkboxLabel: String,
         cancelLabel: String,
         confirmLabel: String,
         listener: Listener
     ) {
         show(activity) { dialog ->
-            var checked by remember { mutableStateOf(false) }
             DialogShell(
                 dialog = dialog,
                 title = title,
@@ -117,42 +139,31 @@ object CupertinoDialogs {
                     CupertinoText(message, modifier = Modifier.fillMaxWidth(), style = BodyStyle)
                     Spacer(Modifier.height(12.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .cupertinoClickable { checked = !checked }
-                            .padding(horizontal = 8.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CupertinoCheckBox(
-                            checked = checked,
-                            onCheckedChange = { checked = it },
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.size(8.dp))
-                        CupertinoText(checkboxLabel, style = BodyStyle)
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        CupertinoButton(
-                            onClick = {
-                                listener.onOpenDocument(agreementTitle, agreementContent)
-                            }
-                        ) {
-                            CupertinoText(bookTitle(agreementTitle), style = LinkStyle)
-                        }
-                        Spacer(Modifier.size(8.dp))
-                        CupertinoButton(
-                            onClick = {
-                                listener.onOpenDocument(privacyTitle, privacyContent)
-                            }
-                        ) {
-                            CupertinoText(bookTitle(privacyTitle), style = LinkStyle)
-                        }
+                        CupertinoText(
+                            text = bookTitle(agreementTitle),
+                            style = LinkStyle,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .cupertinoClickable {
+                                    listener.onOpenDocument(agreementTitle, agreementContent)
+                                }
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
+                        )
+                        CupertinoText("和", style = BodyStyle)
+                        CupertinoText(
+                            text = bookTitle(privacyTitle),
+                            style = LinkStyle,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .cupertinoClickable {
+                                    listener.onOpenDocument(privacyTitle, privacyContent)
+                                }
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
+                        )
                     }
                 },
                 actions = {
@@ -164,14 +175,9 @@ object CupertinoDialogs {
                     ) { CupertinoText(cancelLabel) }
                     default(
                         onClick = {
-                            if (!checked) {
-                                listener.onLegalRejected()
-                            } else {
-                                dialog.dismiss()
-                                listener.onLegalConfirmed()
-                            }
-                        },
-                        enabled = checked
+                            dialog.dismiss()
+                            listener.onLegalConfirmed()
+                        }
                     ) { CupertinoText(confirmLabel) }
                 }
             )
@@ -501,7 +507,7 @@ object CupertinoDialogs {
         confirmListener: BooleanSupplier,
         cancelListener: Runnable?
     ): DialogHandle {
-        return showHost(activity) { dialog ->
+        val handle = showHost(activity) { dialog ->
             var visible by remember { mutableStateOf(true) }
             CupertinoActionSheet(
                 visible = visible,
@@ -541,6 +547,8 @@ object CupertinoDialogs {
                 }
             )
         }
+        handle.setRegistryDismissAction { cancelListener?.run() }
+        return handle
     }
 
     @JvmStatic
@@ -561,7 +569,7 @@ object CupertinoDialogs {
         closeLabel: String,
         onDismiss: Runnable?
     ): DialogHandle {
-        return showHost(activity) { dialog ->
+        val handle = showHost(activity) { dialog ->
             var visible by remember { mutableStateOf(true) }
             CupertinoActionSheet(
                 visible = visible,
@@ -593,6 +601,8 @@ object CupertinoDialogs {
                 }
             )
         }
+        handle.setRegistryDismissAction { onDismiss?.run() }
+        return handle
     }
 
     private fun show(activity: Activity, content: @Composable (DialogHandle) -> Unit) {
@@ -645,6 +655,7 @@ object CupertinoDialogs {
             )
         )
         root?.addView(host)
+        activeHandles.add(handle)
         return handle
     }
 }

@@ -17,8 +17,10 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.appcompat.app.AppCompatActivity
+import com.acooldog.toolbox.CupertinoDockInstaller
 import com.acooldog.toolbox.HomeActivity
 import com.acooldog.toolbox.RouteRunActivity
+import com.acooldog.toolbox.ui.CupertinoDialogs
 import com.acooldog.toolbox.config.InternalAuthStore
 import com.acooldog.toolbox.share.data.ShareApiClient
 import org.json.JSONArray
@@ -26,7 +28,9 @@ import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 
-internal data class TutorialElement(val key: String, val name: String, val page: String, val canClick: Boolean)
+internal data class TutorialElement(val key: String, val name: String, val page: String, val canClick: Boolean) {
+    val isAction: Boolean get() = page == "action"
+}
 internal data class TutorialStep(val id: String, val element: TutorialElement, val text: String, val autoClick: Boolean)
 internal data class TutorialConfig(val revision: Int, val enabled: Boolean, val loginRequired: Boolean,
                                    val title: String, val entryMessage: String, val steps: List<TutorialStep>)
@@ -243,9 +247,11 @@ object TutorialController {
 
     private fun prepare(activity: Activity) {
         val step = config?.steps?.getOrNull(index) ?: return
-        if (step.element.key == "dialog") {
+        if (step.element.key == "dialog" || step.element.isAction) {
             alignWindow(activity, null)
-            if (activity is RouteRunActivity) activity.dismissSimulationSettingsForTutorial()
+            if (step.element.key == "dialog" && activity is RouteRunActivity) {
+                activity.dismissSimulationSettingsForTutorial()
+            }
             return
         }
         if (preparedStep == step.id) return
@@ -254,11 +260,30 @@ object TutorialController {
             "routes" to "RouteActivity", "mine" to "MineActivity", "settings" to "SettingsActivity",
             "login" to "InternalLoginActivity", "register" to "EmailRegisterActivity", "nfc" to "NfcToolsActivity",
             "tips" to "UsageTipsActivity", "history" to "HistoryActivity",
-            "simulation_settings" to "RouteRunActivity")
+            "simulation_settings" to "RouteRunActivity", "floating_window" to "RouteRunActivity")
         val destination = pageActivities[step.element.page]
         if (destination != null && activity.javaClass.simpleName != destination &&
             !(step.element.page == "draw" && activity.javaClass.simpleName == "RouteCreateActivity")) {
-            activity.startActivity(Intent().setClassName(activity, "${activity.packageName}.$destination"))
+            val tab = when (step.element.page) {
+                "draw" -> CupertinoDockInstaller.TAB_DRAW
+                "simulation", "simulation_settings", "floating_window" ->
+                    CupertinoDockInstaller.TAB_SIMULATION
+                "routes" -> CupertinoDockInstaller.TAB_ROUTES
+                "mine" -> CupertinoDockInstaller.TAB_MINE
+                else -> null
+            }
+            if (tab != null) {
+                val dockKey = when (tab) {
+                    CupertinoDockInstaller.TAB_SIMULATION -> "dock.simulation"
+                    CupertinoDockInstaller.TAB_ROUTES -> "dock.routes"
+                    CupertinoDockInstaller.TAB_MINE -> "dock.mine"
+                    else -> "dock.draw"
+                }
+                TutorialAnchors.get(activity, dockKey)?.click?.invoke()
+                    ?: CupertinoDockInstaller.openTabForTutorial(activity, tab)
+            } else {
+                activity.startActivity(Intent().setClassName(activity, "${activity.packageName}.$destination"))
+            }
             preparedStep = ""
             return
         }
@@ -305,12 +330,18 @@ object TutorialController {
                     Toast.makeText(activity, "教程或登录要求已更新，请重新加载", Toast.LENGTH_SHORT).show()
                     return@runOnUiThread
                 }
-                val target = if (step.element.key == "dialog") null else anchor(activity, step.element)
-                if (step.element.key != "dialog" && (target == null || target.bounds.isEmpty)) {
+                val target = if (step.element.key == "dialog" || step.element.isAction) {
+                    null
+                } else {
+                    anchor(activity, step.element)
+                }
+                if (step.element.key != "dialog" && !step.element.isAction &&
+                    (target == null || target.bounds.isEmpty)) {
                     Toast.makeText(activity, "目标控件尚未出现", Toast.LENGTH_SHORT).show()
                     return@runOnUiThread
                 }
-                if (step.autoClick && (target?.enabled != true || target.click == null)) {
+                if (!step.element.isAction && step.autoClick &&
+                    (target?.enabled != true || target.click == null)) {
                     Toast.makeText(activity, "当前控件不可点击", Toast.LENGTH_SHORT).show()
                     return@runOnUiThread
                 }
@@ -320,9 +351,23 @@ object TutorialController {
                 val done = index == document.steps.size
                 save(if (done) "completed" else "in_progress")
                 if (done) { running = false; detach() }
-                if (step.autoClick) target?.click?.invoke()
+                if (step.autoClick) {
+                    if (step.element.isAction) {
+                        executeAction(activity, step.element.key)
+                    } else {
+                        target?.click?.invoke()
+                    }
+                }
                 if (!done && generation == currentGeneration) prepare(activity)
             }
+        }
+    }
+
+    private fun executeAction(activity: Activity, key: String) {
+        when (key) {
+            "action.close_dialogs" -> CupertinoDialogs.dismissAll()
+            "action.go_background" -> activity.moveTaskToBack(true)
+            "action.return_to_app" -> Unit
         }
     }
 

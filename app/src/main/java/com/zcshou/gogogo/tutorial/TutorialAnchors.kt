@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import java.util.WeakHashMap
 import java.lang.ref.WeakReference
 import android.view.View
+import android.graphics.Rect as AndroidRect
 
 internal data class TutorialAnchor(
     val bounds: Rect, val enabled: Boolean, val click: (() -> Unit)?, val reveal: () -> Unit,
@@ -29,6 +30,7 @@ internal data class TutorialAnchor(
 
 internal object TutorialAnchors {
     private val entries = WeakHashMap<Activity, MutableMap<String, Pair<Any, TutorialAnchor>>>()
+    private val nativeListeners = WeakHashMap<View, View.OnLayoutChangeListener>()
     fun set(activity: Activity, key: String, owner: Any, anchor: TutorialAnchor) {
         entries.getOrPut(activity) { mutableMapOf() }[key] = owner to anchor
     }
@@ -40,6 +42,53 @@ internal object TutorialAnchors {
         val entry = entries[activity]?.get(key) ?: return
         if (entry.first === owner) entries[activity]?.set(key, owner to entry.second.copy(enabled = enabled, click = click))
     }
+    @JvmStatic
+    fun registerView(activity: Activity, key: String, view: View) {
+        val update = {
+            val visible = AndroidRect()
+            val location = IntArray(2)
+            activity.window.decorView.getLocationOnScreen(location)
+            val anchor = if (view.isShown && view.getGlobalVisibleRect(visible)) {
+                TutorialAnchor(
+                    Rect(
+                        (visible.left - location[0]).toFloat(),
+                        (visible.top - location[1]).toFloat(),
+                        (visible.right - location[0]).toFloat(),
+                        (visible.bottom - location[1]).toFloat()
+                    ),
+                    view.isEnabled,
+                    { view.performClick() },
+                    { view.requestRectangleOnScreen(AndroidRect(0, 0, view.width, view.height)) },
+                    WeakReference(view)
+                )
+            } else {
+                TutorialAnchor(
+                    Rect.Zero,
+                    false,
+                    { view.performClick() },
+                    {},
+                    WeakReference(view)
+                )
+            }
+            entries.getOrPut(activity) { mutableMapOf() }[key] = view to anchor
+        }
+        nativeListeners[view]?.let { view.removeOnLayoutChangeListener(it) }
+        val listener = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> update() }
+        nativeListeners[view] = listener
+        view.addOnLayoutChangeListener(listener)
+        view.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                update()
+            }
+
+            override fun onViewDetachedFromWindow(v: View) {
+                remove(activity, key, view)
+                nativeListeners.remove(view)?.let { view.removeOnLayoutChangeListener(it) }
+            }
+        })
+        view.post(update)
+    }
+
     fun clear(activity: Activity) { entries.remove(activity) }
 }
 

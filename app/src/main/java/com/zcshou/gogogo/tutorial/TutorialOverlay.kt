@@ -49,19 +49,28 @@ internal fun TutorialOverlay(activity: Activity) {
         if (!TutorialController.running) return@CupertinoTheme
         val step = document.steps.getOrNull(TutorialController.index) ?: return@CupertinoTheme
         BackHandler { TutorialController.exit() }
-        if (step.element.key == "dialog") {
+        if (step.element.key == "dialog" || step.element.isAction) {
             CupertinoAlertDialog(
                 onDismissRequest = { TutorialController.exit() },
                 title = { CupertinoText(document.title) },
                 message = {
-                    Column(Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState())) {
-                        CupertinoText(step.text, style = TextStyle(fontSize = 15.sp, lineHeight = 22.sp))
-                        CupertinoButton(onClick = { TutorialController.next() }, enabled = !TutorialController.busy) {
-                            CupertinoText(if (TutorialController.busy) "请稍候" else "下一步")
-                        }
+                    CupertinoText(
+                        text = step.text,
+                        modifier = Modifier
+                            .heightIn(max = 340.dp)
+                            .verticalScroll(rememberScrollState()),
+                        style = TextStyle(fontSize = 15.sp, lineHeight = 22.sp)
+                    )
+                },
+                buttons = {
+                    cancel(onClick = { TutorialController.exit() }) { CupertinoText("结束教程") }
+                    default(
+                        onClick = { TutorialController.next() },
+                        enabled = !TutorialController.busy
+                    ) {
+                        CupertinoText(if (TutorialController.busy) "请稍候" else "下一步")
                     }
                 },
-                buttons = { cancel(onClick = { TutorialController.exit() }) { CupertinoText("结束教程") } },
             )
         } else {
             HighlightStep(activity, step)

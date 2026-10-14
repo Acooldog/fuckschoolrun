@@ -104,6 +104,10 @@ public final class CupertinoDockInstaller {
         activity.overridePendingTransition(0, 0);
     }
 
+    public static void openTabForTutorial(@NonNull Activity activity, int tab) {
+        openTab(activity, tab);
+    }
+
     private static int currentTab(@NonNull Activity activity) {
         if (activity instanceof RouteRunActivity) {
             return TAB_SIMULATION;

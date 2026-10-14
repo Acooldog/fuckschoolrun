@@ -140,8 +140,19 @@ fun CupertinoDock(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxSize()
-                            .tutorialAnchor(listOf("dock.draw", "dock.simulation", "dock.routes", "dock.mine")[index],
-                                onClick = { onTabSelected(index) })
+                            .let { base ->
+                                val click = { onTabSelected(index) }
+                                if (index == 1 && simulationPage) {
+                                    base
+                                        .tutorialAnchor("dock.simulation", onClick = click)
+                                        .tutorialAnchor("simulation.settings_entry", onClick = click)
+                                } else {
+                                    base.tutorialAnchor(
+                                        listOf("dock.draw", "dock.simulation", "dock.routes", "dock.mine")[index],
+                                        onClick = click
+                                    )
+                                }
+                            }
                             .clip(RoundedCornerShape(22.dp))
                             .drawBehind {
                                 if (pressed) {

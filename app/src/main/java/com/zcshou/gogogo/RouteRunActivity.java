@@ -94,6 +94,7 @@ import com.acooldog.toolbox.share.domain.model.SharedRouteSummary;
 import com.acooldog.toolbox.share.domain.model.SharedSimulationConfigEntry;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.service.ServiceGo;
+import com.acooldog.toolbox.tutorial.TutorialAnchors;
 import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.ui.CupertinoRingtoneOptionsView;
 import com.acooldog.toolbox.ui.CupertinoRouteRunOverlayView;
@@ -394,6 +395,11 @@ public class RouteRunActivity extends BaseActivity {
     private void installRunOverlay() {
         runOverlayView = new CupertinoRouteRunOverlayView(this);
         runOverlayView.setActions(new CupertinoRouteRunOverlayView.Actions() {
+            @Override
+            public void onInitializeSimulation() {
+                initializeSimulationLocation();
+            }
+
             @Override
             public void onStartSimulation() {
                 toggleSimulation();
@@ -975,6 +981,22 @@ public class RouteRunActivity extends BaseActivity {
             stopLocationSimulationService();
             GoUtils.DisplayToast(this, buildDetailedToast(R.string.route_simulation_start_failed, exception));
         }
+    }
+
+    private void initializeSimulationLocation() {
+        if (realRunLinkRunning) {
+            stopLinkedSimulationState();
+        }
+        if (Boolean.TRUE.equals(viewModel.isRunning().getValue())) {
+            hideCompletionOverlay();
+            hideFloatingWindow();
+            viewModel.pauseSimulation();
+        }
+        pendingMotion = null;
+        stopLocationSimulationService();
+        GoUtils.clearMockLocation(this);
+        renderToggleButtonState();
+        GoUtils.DisplayToast(this, "模拟定位已初始化");
     }
 
     private void pauseSimulationFromFloatingWindow() {
@@ -4166,6 +4188,11 @@ public class RouteRunActivity extends BaseActivity {
         floatingWindowResumeButton = resumeButton;
         floatingWindowResizeHandle = resizeHandle;
         floatingWindowHandle = handle;
+        TutorialAnchors.registerView(this, "floating_window.map", mapView);
+        TutorialAnchors.registerView(this, "floating_window.pause", pauseButton);
+        TutorialAnchors.registerView(this, "floating_window.resume", resumeButton);
+        TutorialAnchors.registerView(this, "floating_window.resize", resizeHandle);
+        TutorialAnchors.registerView(this, "floating_window.drag", handle);
         applyFloatingWindowButtonSize();
         updateFloatingWindowControlsState();
     }

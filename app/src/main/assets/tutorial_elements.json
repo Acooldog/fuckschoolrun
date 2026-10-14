@@ -196,6 +196,13 @@
     "autoClickAllowed": false
   },
   {
+    "key": "simulation.initialize",
+    "name": "模拟初始化",
+    "description": "模拟初始化",
+    "page": "simulation",
+    "autoClickAllowed": true
+  },
+  {
     "key": "simulation.tools",
     "name": "模拟操作齿轮",
     "description": "模拟操作齿轮",
@@ -257,6 +264,69 @@
     "description": "重新查看教程",
     "page": "mine",
     "autoClickAllowed": false
+  },
+  {
+    "key": "simulation.settings_entry",
+    "name": "模拟设置入口",
+    "description": "模拟设置入口",
+    "page": "simulation",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "action.close_dialogs",
+    "name": "关闭所有对话框",
+    "description": "关闭所有对话框",
+    "page": "action",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "action.go_background",
+    "name": "退出到桌面",
+    "description": "退出到桌面",
+    "page": "action",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "action.return_to_app",
+    "name": "回到软件",
+    "description": "回到软件",
+    "page": "action",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "floating_window.map",
+    "name": "悬浮窗地图",
+    "description": "悬浮窗地图",
+    "page": "floating_window",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "floating_window.pause",
+    "name": "悬浮窗暂停",
+    "description": "悬浮窗暂停",
+    "page": "floating_window",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "floating_window.resume",
+    "name": "悬浮窗继续",
+    "description": "悬浮窗继续",
+    "page": "floating_window",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "floating_window.resize",
+    "name": "悬浮窗大小调整",
+    "description": "悬浮窗大小调整",
+    "page": "floating_window",
+    "autoClickAllowed": true
+  },
+  {
+    "key": "floating_window.drag",
+    "name": "悬浮窗位置调整",
+    "description": "悬浮窗位置调整",
+    "page": "floating_window",
+    "autoClickAllowed": true
   },
   {
     "key": "settings.walk",

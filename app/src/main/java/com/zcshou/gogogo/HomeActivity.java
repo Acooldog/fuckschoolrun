@@ -7,7 +7,6 @@ import android.provider.Settings;
 import android.view.View;
 import androidx.annotation.Nullable;
 
-import com.acooldog.toolbox.service.ServiceGo;
 import com.acooldog.toolbox.ui.CupertinoDialogs;
 import com.acooldog.toolbox.update.GiteeReleaseChecker;
 import com.acooldog.toolbox.update.GiteeReleaseInfo;
@@ -28,9 +27,7 @@ public class HomeActivity extends RouteCreateActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        sendBroadcast(new Intent(ServiceGo.ACTION_STOP_MOCK_LOCATION)
-                .setPackage(getPackageName()));
-        stopService(new Intent(this, ServiceGo.class));
+        GoUtils.clearMockLocation(this);
         super.onCreate(savedInstanceState);
         ioExecutor = Executors.newSingleThreadExecutor();
         sharedPreferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);

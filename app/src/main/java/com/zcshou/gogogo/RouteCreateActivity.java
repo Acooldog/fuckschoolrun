@@ -297,7 +297,7 @@ public class RouteCreateActivity extends BaseActivity {
 
             @Override
             public void onLocation() {
-                moveToCurrentLocation();
+                resetMockLocationAndRequestRealLocation();
             }
 
             @Override
@@ -602,7 +602,7 @@ public class RouteCreateActivity extends BaseActivity {
         recordButton.setOnClickListener(v -> toggleRecording());
         closeRouteButton.setOnClickListener(v -> closeCurrentRoute());
         recordSettingsButton.setOnClickListener(v -> showRecordSettingsDialog());
-        locationButton.setOnClickListener(v -> moveToCurrentLocation());
+        locationButton.setOnClickListener(v -> resetMockLocationAndRequestRealLocation());
         drawToolButton.setOnClickListener(v -> switchToolMode(TOOL_MODE_DRAW));
         editToolButton.setOnClickListener(v -> switchToolMode(TOOL_MODE_EDIT));
         autoAddToolButton.setOnClickListener(v -> showAutoAddPointsDialog());
@@ -912,12 +912,17 @@ public class RouteCreateActivity extends BaseActivity {
 
     }
 
-    private void moveToCurrentLocation() {
-        if (currentLocation == null) {
-            GoUtils.DisplayToast(this, "正在定位，请稍后重试");
-            return;
+    private void resetMockLocationAndRequestRealLocation() {
+        GoUtils.clearMockLocation(this);
+        currentLocation = null;
+        lastLocationFix = null;
+        hasCenteredOnLocation = false;
+        if (locationClient != null) {
+            locationClient.stop();
+            locationClient.start();
+            locationClient.requestLocation();
         }
-        baiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLngZoom(currentLocation, DEFAULT_ZOOM_LEVEL));
+        GoUtils.DisplayToast(this, "已清除模拟定位，正在获取真实位置");
     }
 
     private void toggleRecording() {

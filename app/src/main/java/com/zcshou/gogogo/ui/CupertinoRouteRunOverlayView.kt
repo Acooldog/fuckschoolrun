@@ -41,6 +41,7 @@ import io.github.alexzhirkevich.cupertino.CupertinoButton
 import io.github.alexzhirkevich.cupertino.CupertinoIconButton
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.Gearshape
+import io.github.alexzhirkevich.cupertino.icons.outlined.Location
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
 
 class CupertinoRouteRunOverlayView @JvmOverloads constructor(
@@ -49,6 +50,7 @@ class CupertinoRouteRunOverlayView @JvmOverloads constructor(
 ) : AbstractComposeView(context, attrs) {
 
     interface Actions {
+        fun onInitializeSimulation()
         fun onStartSimulation()
         fun onSelectRoute()
         fun onStartRealRun()
@@ -156,8 +158,36 @@ private fun RouteRunOverlay(
             }
         }
 
-        CupertinoIconButton(
-            onClick = { expanded = !expanded },
+        androidx.compose.foundation.layout.Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CupertinoIconButton(
+                onClick = {
+                    expanded = false
+                    actions?.onInitializeSimulation()
+                },
+                modifier = Modifier
+                    .tutorialAnchor(
+                        "simulation.initialize",
+                        onClick = {
+                            expanded = false
+                            actions?.onInitializeSimulation()
+                        },
+                    )
+                    .padding(2.dp)
+                    .background(
+                        color = Color.White.copy(alpha = 0.92f),
+                        shape = RoundedCornerShape(24.dp),
+                    ),
+            ) {
+                Icon(
+                    imageVector = CupertinoIcons.Outlined.Location,
+                    contentDescription = "模拟初始化",
+                )
+            }
+            CupertinoIconButton(
+                onClick = { expanded = !expanded },
             modifier = Modifier
                 .tutorialAnchor("simulation.tools", onClick = { expanded = !expanded })
                 .padding(2.dp)
@@ -172,6 +202,7 @@ private fun RouteRunOverlay(
                 contentDescription = "模拟操作"
             )
         }
+    }
     }
 }
 

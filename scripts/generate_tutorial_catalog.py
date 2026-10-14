@@ -33,6 +33,7 @@ COMPOSE = {
     "draw.redo": ("重做", "draw"),
     "draw.keep": ("保留选中的路线点", "draw"),
     "draw.delete": ("删除选中的路线点", "draw"),
+    "simulation.initialize": ("模拟初始化", "simulation"),
     "simulation.tools": ("模拟操作齿轮", "simulation"),
     "simulation.start": ("开始或停止模拟", "simulation"),
     "simulation.route": ("选择模拟路线", "simulation"),
@@ -43,6 +44,17 @@ COMPOSE = {
     "mine.update": ("版本更新入口", "mine"),
     "mine.tutorial": ("重新查看教程", "mine"),
 }
+COMPOSE.update({
+    "simulation.settings_entry": ("\u6a21\u62df\u8bbe\u7f6e\u5165\u53e3", "simulation"),
+    "action.close_dialogs": ("\u5173\u95ed\u6240\u6709\u5bf9\u8bdd\u6846", "action"),
+    "action.go_background": ("\u9000\u51fa\u5230\u684c\u9762", "action"),
+    "action.return_to_app": ("\u56de\u5230\u8f6f\u4ef6", "action"),
+    "floating_window.map": ("\u60ac\u6d6e\u7a97\u5730\u56fe", "floating_window"),
+    "floating_window.pause": ("\u60ac\u6d6e\u7a97\u6682\u505c", "floating_window"),
+    "floating_window.resume": ("\u60ac\u6d6e\u7a97\u7ee7\u7eed", "floating_window"),
+    "floating_window.resize": ("\u60ac\u6d6e\u7a97\u5927\u5c0f\u8c03\u6574", "floating_window"),
+    "floating_window.drag": ("\u60ac\u6d6e\u7a97\u4f4d\u7f6e\u8c03\u6574", "floating_window"),
+})
 UNSAFE = {"draw.clear", "draw.delete", "draw.record", "simulation.start", "simulation.real_run",
           "draw.search_input", "draw.search_result", "mine.tutorial"}
 UNSAFE_VIEW_TOKENS = (

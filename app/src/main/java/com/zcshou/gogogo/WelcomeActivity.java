@@ -122,7 +122,6 @@ public class WelcomeActivity extends AppCompatActivity implements CupertinoDialo
                 getString(R.string.app_agreement_content),
                 getString(R.string.app_privacy),
                 getString(R.string.app_privacy_content),
-                getString(R.string.legal_consent_checkbox),
                 getString(R.string.legal_consent_cancel),
                 getString(R.string.legal_consent_confirm),
                 this
