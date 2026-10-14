@@ -35,6 +35,7 @@ public final class RouteRunViewModel extends AndroidViewModel {
     private LocationSimulationGateway locationSimulationGateway;
     private RouteSimulationConfig simulationConfig;
     private String activeRouteId;
+    private double lastCompletedSimulationDistanceMeters;
 
     private final Runnable simulationRunnable = new Runnable() {
         @Override
@@ -147,6 +148,7 @@ public final class RouteRunViewModel extends AndroidViewModel {
                 nextFrame.getBearing()
         );
         if (nextFrame.isFinished()) {
+            lastCompletedSimulationDistanceMeters = simulationEngine.getTotalSimulationDistanceMeters();
             simulationCompletedEvent.setValue(SystemClock.elapsedRealtime());
             stopSimulation();
             return nextFrame;
@@ -156,6 +158,10 @@ public final class RouteRunViewModel extends AndroidViewModel {
 
     public boolean advanceSimulationOnce() {
         return advanceSimulationOnceAndGetFrame() != null;
+    }
+
+    public double getLastCompletedSimulationDistanceMeters() {
+        return lastCompletedSimulationDistanceMeters;
     }
 
     public void pauseSimulation() {
@@ -172,6 +178,7 @@ public final class RouteRunViewModel extends AndroidViewModel {
         simulationConfig = config;
         simulationEngine.updateConfig(config);
         if (simulationEngine.isFinished()) {
+            lastCompletedSimulationDistanceMeters = simulationEngine.getTotalSimulationDistanceMeters();
             simulationCompletedEvent.setValue(SystemClock.elapsedRealtime());
             stopSimulation();
             return;

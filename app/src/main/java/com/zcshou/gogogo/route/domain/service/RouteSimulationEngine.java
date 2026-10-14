@@ -103,6 +103,10 @@ public final class RouteSimulationEngine {
         return finished;
     }
 
+    public double getTotalSimulationDistanceMeters() {
+        return routeDistanceMeters * Math.max(1, config.getLoopCount());
+    }
+
     public void updateConfig(RouteSimulationConfig config) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");

@@ -107,6 +107,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import android.view.ViewGroup;
@@ -174,6 +175,7 @@ public class RouteRunActivity extends BaseActivity {
     private double pendingLinkedDistanceMeters;
     private PendingMotion pendingMotion;
     private long lastHandledCompletionToken = -1L;
+    private String activeSimulationSessionId = "";
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Ringtone activeReminderRingtone;
     private CupertinoDialogs.DialogHandle simulationSettingsDialog;
@@ -238,6 +240,7 @@ public class RouteRunActivity extends BaseActivity {
     private WindowManager.LayoutParams floatingWindowLayoutParams;
     private Marker floatingWindowMarker;
     private boolean floatingWindowVisible;
+    private boolean activityInForeground;
     private double floatingWindowBdLongitude;
     private double floatingWindowBdLatitude;
     private boolean floatingWindowHasPoint;
@@ -448,6 +451,7 @@ public class RouteRunActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        activityInForeground = true;
         mainHandler.removeCallbacks(showFloatingWindowRetryRunnable);
         mapView.onResume();
         hideFloatingWindow();
@@ -459,6 +463,7 @@ public class RouteRunActivity extends BaseActivity {
 
     @Override
     protected void onPause() {
+        activityInForeground = false;
         stopReminderFeedback();
         persistSimulationPrefs();
         mapView.onPause();
@@ -468,6 +473,7 @@ public class RouteRunActivity extends BaseActivity {
 
     @Override
     protected void onStop() {
+        activityInForeground = false;
         maybeShowFloatingWindow();
         mainHandler.postDelayed(showFloatingWindowRetryRunnable, 600L);
         super.onStop();
@@ -561,6 +567,7 @@ public class RouteRunActivity extends BaseActivity {
                 return;
             }
             lastHandledCompletionToken = token;
+            reportSimulationCompleted();
             stopLinkedSimulationState();
             prefsStore.setRouteCompletionPending(true);
             completionNoticePending = true;
@@ -577,6 +584,33 @@ public class RouteRunActivity extends BaseActivity {
         } catch (Exception exception) {
             GoUtils.DisplayToast(this, "读取路线失败");
         }
+    }
+
+    private void reportSimulationCompleted() {
+        String token = new InternalAuthStore(getApplicationContext()).getToken();
+        if (TextUtils.isEmpty(token)) {
+            return;
+        }
+        String sessionId = TextUtils.isEmpty(activeSimulationSessionId)
+                ? "simulation-" + UUID.randomUUID()
+                : activeSimulationSessionId;
+        activeSimulationSessionId = "";
+        double simulatedMeters = viewModel.getLastCompletedSimulationDistanceMeters();
+        ioExecutor.execute(() -> {
+            try {
+                ShareModule.from(getApplicationContext())
+                        .shareApiClient()
+                        .reportSimulationCompleted(
+                                token,
+                                sessionId,
+                                simulatedMeters,
+                                null,
+                                getPackageName()
+                        );
+            } catch (Exception exception) {
+                XLog.w("RouteRunActivity: simulation usage report failed", exception);
+            }
+        });
     }
 
     private void showLoadOptions() {
@@ -958,6 +992,9 @@ public class RouteRunActivity extends BaseActivity {
         try {
             RouteSimulationConfig config = buildSimulationConfig(null);
             boolean resumeCurrentRoute = viewModel.hasResumableSimulationForSelectedRoute();
+            if (!resumeCurrentRoute) {
+                activeSimulationSessionId = "simulation-" + UUID.randomUUID();
+            }
             prefsStore.setRouteCompletionPending(false);
             completionNoticePending = false;
             hideCompletionOverlay();
@@ -2048,6 +2085,9 @@ public class RouteRunActivity extends BaseActivity {
             RouteSimulationConfig config = buildSimulationConfig(RouteSimulationConfig.Mode.SPEED);
             double ratioNumerator = config.getLinkRatioNumerator();
             boolean resumeCurrentRoute = viewModel.hasResumableSimulationForSelectedRoute();
+            if (!resumeCurrentRoute) {
+                activeSimulationSessionId = "simulation-" + UUID.randomUUID();
+            }
             RoutePoint seedPoint = resolveSimulationSeedPoint(routeDefinition, resumeCurrentRoute);
             ensureServiceStarted(routeDefinition, seedPoint);
             viewModel.startLinkedSimulation(config, new ServiceGateway());
@@ -3960,6 +4000,7 @@ public class RouteRunActivity extends BaseActivity {
 
     private boolean shouldShowFloatingWindow() {
         return prefsStore.isRouteFloatingWindowEnabled()
+                && !activityInForeground
                 && !isFinishing()
                 && !isDestroyed()
                 && (Boolean.TRUE.equals(viewModel.isRunning().getValue()) || viewModel.hasActiveSimulation() || realRunLinkRunning);

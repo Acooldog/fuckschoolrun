@@ -60,7 +60,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddLocationAlt
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Route
+import androidx.compose.material.icons.outlined.Nfc
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.withFrameNanos
@@ -89,7 +89,7 @@ fun CupertinoDock(
     val tabs = listOf(
         CupertinoDockTab("绘制", Icons.Outlined.AddLocationAlt),
         CupertinoDockTab("模拟", Icons.Outlined.DirectionsRun),
-        CupertinoDockTab("路线", Icons.Outlined.Route),
+        CupertinoDockTab("NFC", Icons.Outlined.Nfc),
         CupertinoDockTab("我的", Icons.Outlined.Person)
     )
 

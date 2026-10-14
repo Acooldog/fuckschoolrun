@@ -76,12 +76,17 @@ public final class ShareApiClient {
     }
 
     public SharedRoutePayload uploadRoute(String name, boolean privacyMode, List<RoutePoint> points) throws IOException {
+        if (points == null || points.size() < 2) {
+            throw new IOException("A shared route requires at least 2 points");
+        }
+        List<RoutePoint> snapshot = new ArrayList<>(points);
         JSONObject bodyJson = new JSONObject();
         try {
             bodyJson.put("name", name);
             bodyJson.put("privacyMode", privacyMode);
+            bodyJson.put("pointCount", snapshot.size());
             JSONArray pointsArray = new JSONArray();
-            for (RoutePoint point : points) {
+            for (RoutePoint point : snapshot) {
                 pointsArray.put(RoutePointJsonCodec.encode(point));
             }
             bodyJson.put("points", pointsArray);
@@ -92,7 +97,16 @@ public final class ShareApiClient {
         Request request = clientRequestBuilder(buildUrl("api/shared/routes"))
                 .post(RequestBody.create(bodyJson.toString(), JSON_MEDIA_TYPE))
                 .build();
-        return parseSharedRoute(executeObject(request));
+        SharedRoutePayload payload = parseSharedRoute(executeObject(request));
+        if (payload.getPoints().size() != snapshot.size()) {
+            throw new IOException(
+                    "Shared route upload was truncated: expected "
+                            + snapshot.size()
+                            + " points, received "
+                            + payload.getPoints().size()
+            );
+        }
+        return payload;
     }
 
     public List<SharedRouteSummary> getSharedRoutes() throws IOException {
@@ -298,6 +312,38 @@ public final class ShareApiClient {
         return parseInternalAccount(root);
     }
 
+    public void reportSimulationCompleted(
+            String token,
+            String sessionId,
+            double simulatedMeters,
+            RouteSimulationConfig config,
+            String packageName
+    ) throws IOException {
+        if (TextUtils.isEmpty(token)) {
+            throw new IOException("Missing auth token");
+        }
+        if (TextUtils.isEmpty(sessionId)) {
+            throw new IOException("Missing simulation session id");
+        }
+        JSONObject bodyJson = new JSONObject();
+        try {
+            bodyJson.put("eventType", "simulation_complete");
+            bodyJson.put("packageName", packageName == null ? "" : packageName);
+            bodyJson.put("simulatedMeters", Math.max(0d, simulatedMeters));
+            bodyJson.put("sessionId", sessionId);
+            bodyJson.put("config", encodeSimulationConfig(config));
+            bodyJson.put("parameters", new JSONObject()
+                    .put("appVersion", BuildConfig.VERSION_NAME)
+                    .put("clientVariant", CLIENT_VARIANT));
+        } catch (JSONException exception) {
+            throw new IOException("Unable to encode simulation usage report", exception);
+        }
+        Request request = newRequestBuilder(buildUrl("api/account-usage/report"), token)
+                .post(RequestBody.create(bodyJson.toString(), JSON_MEDIA_TYPE))
+                .build();
+        executeObject(request);
+    }
+
     public List<UsageTipSummary> getUsageTips(String query, int page, int pageSize, String token) throws IOException {
         HttpUrl url = buildUrl("api/tips").newBuilder()
                 .addQueryParameter("q", query == null ? "" : query)
@@ -450,6 +496,21 @@ public final class ShareApiClient {
         } catch (IllegalArgumentException exception) {
             throw new IOException("Invalid SHARE_API_BASE_URL", exception);
         }
+    }
+
+    private JSONObject encodeSimulationConfig(RouteSimulationConfig config) throws JSONException {
+        JSONObject json = new JSONObject();
+        if (config == null) {
+            return json;
+        }
+        json.put("mode", config.getMode() == RouteSimulationConfig.Mode.CADENCE ? "cadence" : "speed");
+        json.put("speed", config.getSpeedMetersPerSecond());
+        json.put("cadence", config.getCadenceStepsPerMinute());
+        json.put("loopCount", config.getLoopCount());
+        json.put("dynamicIntensityEnabled", config.isDynamicIntensityEnabled());
+        json.put("naturalPathVariationEnabled", config.isNaturalPathVariationEnabled());
+        json.put("naturalAltitudeVariationEnabled", config.isNaturalAltitudeVariationEnabled());
+        return json;
     }
 
     private HttpUrl buildUrl(String relativePath) throws IOException {
@@ -616,6 +677,15 @@ public final class ShareApiClient {
         JSONArray pointArray = jsonObject.optJSONArray("points");
         if (pointArray == null) {
             throw new IOException("Shared route points are missing");
+        }
+        int declaredPointCount = optInt(jsonObject, "pointCount", "pointsCount");
+        if (declaredPointCount > 0 && declaredPointCount != pointArray.length()) {
+            throw new IOException(
+                    "Shared route point count mismatch: declared "
+                            + declaredPointCount
+                            + ", received "
+                            + pointArray.length()
+            );
         }
         List<RoutePoint> points = new ArrayList<>();
         for (int index = 0; index < pointArray.length(); index++) {

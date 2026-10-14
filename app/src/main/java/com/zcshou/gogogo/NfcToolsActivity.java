@@ -30,6 +30,7 @@ import com.acooldog.toolbox.nfc.domain.ReadNfcPayloadUseCase;
 import com.acooldog.toolbox.share.domain.model.SharedNfcEntry;
 import com.acooldog.toolbox.share.presentation.ShareModule;
 import com.acooldog.toolbox.ui.CupertinoDialogs;
+import com.acooldog.toolbox.ui.CupertinoNfcToolsView;
 import com.acooldog.toolbox.utils.GoUtils;
 import com.acooldog.toolbox.utils.SearchSortUtils;
 
@@ -50,10 +51,7 @@ public class NfcToolsActivity extends BaseActivity {
     private NfcAdapter nfcAdapter;
     private PendingIntent foregroundDispatchIntent;
     private ReadNfcPayloadUseCase readNfcPayloadUseCase;
-    private TextView hardwareStatusView;
-    private TextView mockStatusView;
-    private TextInputEditText urlInput;
-    private TextInputEditText packageInput;
+    private CupertinoNfcToolsView nfcView;
     private ExecutorService ioExecutor;
     private String currentPayloadSource = "manual";
     private boolean startupActionHandled;
@@ -62,7 +60,9 @@ public class NfcToolsActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_nfc_tools);
+        nfcView = new CupertinoNfcToolsView(this);
+        setContentView(nfcView);
+        CupertinoDockInstaller.install(this, CupertinoDockInstaller.TAB_NFC);
 
         readNfcPayloadUseCase = new ReadNfcPayloadUseCase(
                 new AndroidNfcPayloadReader(),
@@ -116,27 +116,16 @@ public class NfcToolsActivity extends BaseActivity {
     }
 
     private void bindViews() {
-        MaterialToolbar toolbar = findViewById(R.id.toolbar_nfc);
-        toolbar.setNavigationOnClickListener(v -> finish());
-
-        hardwareStatusView = findViewById(R.id.nfc_tv_hardware_status);
-        mockStatusView = findViewById(R.id.nfc_tv_mock_status);
-        urlInput = findViewById(R.id.nfc_et_mock_url);
-        packageInput = findViewById(R.id.nfc_et_mock_package);
-
-        findViewById(R.id.nfc_btn_copy_url).setOnClickListener(v -> copyText(
-                getString(R.string.nfc_copy_link),
-                getInputText(urlInput)
-        ));
-        findViewById(R.id.nfc_btn_copy_package).setOnClickListener(v -> copyText(
-                getString(R.string.nfc_copy_package),
-                getInputText(packageInput)
-        ));
-        findViewById(R.id.nfc_btn_save).setOnClickListener(v -> showSaveConfigDialog());
-        findViewById(R.id.nfc_btn_load_local).setOnClickListener(v -> showLocalConfigPicker(false));
-        findViewById(R.id.nfc_btn_mock).setOnClickListener(v -> sendMockNfc());
-        findViewById(R.id.nfc_btn_share).setOnClickListener(v -> showShareDialog());
-        findViewById(R.id.nfc_btn_download).setOnClickListener(v -> loadSharedNfcEntries());
+        nfcView.setActions(new CupertinoNfcToolsView.Actions() {
+            @Override public void onBack() { finish(); }
+            @Override public void onCopyUrl(String value) { copyText(getString(R.string.nfc_copy_link), value); }
+            @Override public void onCopyPackage(String value) { copyText(getString(R.string.nfc_copy_package), value); }
+            @Override public void onSave() { showSaveConfigDialog(); }
+            @Override public void onLoadLocal() { showLocalConfigPicker(false); }
+            @Override public void onMock() { sendMockNfc(); }
+            @Override public void onShare() { showShareDialog(); }
+            @Override public void onDownload() { loadSharedNfcEntries(); }
+        });
     }
 
     private PendingIntent createForegroundDispatchIntent() {
@@ -150,11 +139,11 @@ public class NfcToolsActivity extends BaseActivity {
 
     private void updateHardwareStatus() {
         if (nfcAdapter == null) {
-            setStatus(hardwareStatusView, getString(R.string.nfc_status_no_hardware), true);
+            nfcView.setHardwareStatus(getString(R.string.nfc_status_no_hardware), true);
         } else if (!nfcAdapter.isEnabled()) {
-            setStatus(hardwareStatusView, getString(R.string.nfc_status_disabled), true);
+            nfcView.setHardwareStatus(getString(R.string.nfc_status_disabled), true);
         } else {
-            setStatus(hardwareStatusView, getString(R.string.nfc_status_ready), false);
+            nfcView.setHardwareStatus(getString(R.string.nfc_status_ready), false);
         }
     }
 
@@ -165,19 +154,19 @@ public class NfcToolsActivity extends BaseActivity {
 
         NfcPayload payload = readNfcPayloadUseCase.read(intent);
         if (payload.isEmpty()) {
-            setStatus(mockStatusView, getString(R.string.nfc_read_empty), true);
+            setStatus(getString(R.string.nfc_read_empty), true);
             return;
         }
 
         currentPayloadSource = TextUtils.isEmpty(payload.getSource()) ? "tag" : payload.getSource();
         if (payload.hasUrl()) {
-            urlInput.setText(payload.getUrl());
+            nfcView.setUrl(payload.getUrl());
         }
         if (payload.hasPackageName()) {
-            packageInput.setText(payload.getPackageName());
+            nfcView.setPackageName(payload.getPackageName());
         }
         persistNfcConfig();
-        setStatus(mockStatusView, getString(R.string.nfc_read_ok), false);
+        setStatus(getString(R.string.nfc_read_ok), false);
     }
 
     private void maybeHandleStartupAction() {
@@ -189,7 +178,7 @@ public class NfcToolsActivity extends BaseActivity {
         if (TextUtils.isEmpty(action)) {
             return;
         }
-        mockStatusView.post(() -> {
+        nfcView.post(() -> {
             if (ACTION_SHARE.equals(action)) {
                 showShareDialog();
             } else if (ACTION_DOWNLOAD.equals(action)) {
@@ -210,15 +199,15 @@ public class NfcToolsActivity extends BaseActivity {
 
     private void sendMockNfc() {
         vibrate();
-        String url = getInputText(urlInput);
-        String packageName = getInputText(packageInput);
+        String url = nfcView.getUrl();
+        String packageName = nfcView.getPackageName();
 
         if (TextUtils.isEmpty(url)) {
-            setStatus(mockStatusView, getString(R.string.nfc_mock_need_url), true);
+            setStatus(getString(R.string.nfc_mock_need_url), true);
             return;
         }
         if (TextUtils.isEmpty(packageName)) {
-            setStatus(mockStatusView, getString(R.string.nfc_mock_need_package), true);
+            setStatus(getString(R.string.nfc_mock_need_package), true);
             return;
         }
 
@@ -228,7 +217,7 @@ public class NfcToolsActivity extends BaseActivity {
         intent.putExtra(RouteRunActivity.EXTRA_PENDING_NFC_PACKAGE, packageName);
         intent.putExtra(RouteRunActivity.EXTRA_PENDING_NFC_SOURCE, currentPayloadSource);
         startActivity(intent);
-        setStatus(mockStatusView, getString(R.string.nfc_mock_waiting_route_start), false);
+        setStatus(getString(R.string.nfc_mock_waiting_route_start), false);
     }
 
     private void showShareDialog() {
@@ -260,8 +249,8 @@ public class NfcToolsActivity extends BaseActivity {
     private void showManualShareDialog() {
         showShareDetailDialog(
                 buildDefaultNfcName(),
-                getInputText(urlInput),
-                getInputText(packageInput),
+                nfcView.getUrl(),
+                nfcView.getPackageName(),
                 currentPayloadSource
         );
     }
@@ -287,20 +276,20 @@ public class NfcToolsActivity extends BaseActivity {
                     String url = urlEdit.getText() == null ? "" : urlEdit.getText().toString().trim();
                     String packageName = packageEdit.getText() == null ? "" : packageEdit.getText().toString().trim();
                     if (TextUtils.isEmpty(name)) {
-                        setStatus(mockStatusView, getString(R.string.nfc_share_need_name), true);
+                        setStatus(getString(R.string.nfc_share_need_name), true);
                         return false;
                     }
                     if (TextUtils.isEmpty(url)) {
-                        setStatus(mockStatusView, getString(R.string.nfc_mock_need_url), true);
+                        setStatus(getString(R.string.nfc_mock_need_url), true);
                         return false;
                     }
                     if (TextUtils.isEmpty(packageName)) {
-                        setStatus(mockStatusView, getString(R.string.nfc_mock_need_package), true);
+                        setStatus(getString(R.string.nfc_mock_need_package), true);
                         return false;
                     }
 
-                    urlInput.setText(url);
-                    packageInput.setText(packageName);
+                    nfcView.setUrl(url);
+                    nfcView.setPackageName(packageName);
                     currentPayloadSource = TextUtils.isEmpty(source) ? "manual" : source;
                     persistNfcConfig();
                     uploadSharedNfc(name, url, packageName);
@@ -311,14 +300,14 @@ public class NfcToolsActivity extends BaseActivity {
     }
 
     private void showSaveConfigDialog() {
-        String url = getInputText(urlInput);
-        String packageName = getInputText(packageInput);
+        String url = nfcView.getUrl();
+        String packageName = nfcView.getPackageName();
         if (TextUtils.isEmpty(url)) {
-            setStatus(mockStatusView, getString(R.string.nfc_mock_need_url), true);
+            setStatus(getString(R.string.nfc_mock_need_url), true);
             return;
         }
         if (TextUtils.isEmpty(packageName)) {
-            setStatus(mockStatusView, getString(R.string.nfc_mock_need_package), true);
+            setStatus(getString(R.string.nfc_mock_need_package), true);
             return;
         }
 
@@ -333,14 +322,14 @@ public class NfcToolsActivity extends BaseActivity {
                 value -> {
                     String name = value == null ? "" : value.trim();
                     if (TextUtils.isEmpty(name)) {
-                        setStatus(mockStatusView, getString(R.string.nfc_save_need_name), true);
+                        setStatus(getString(R.string.nfc_save_need_name), true);
                         return;
                     }
                     prefsStore.saveSavedNfcConfig(
                             new SavedNfcConfig(name, url, packageName, currentPayloadSource)
                     );
                     persistNfcConfig();
-                    setStatus(mockStatusView, getString(R.string.nfc_save_success), false);
+                    setStatus(getString(R.string.nfc_save_success), false);
                 }
         );
     }
@@ -348,7 +337,7 @@ public class NfcToolsActivity extends BaseActivity {
     private void showLocalConfigPicker(boolean shareAfterPick) {
         List<SavedNfcConfig> configs = prefsStore.getSavedNfcConfigs();
         if (configs.isEmpty()) {
-            setStatus(mockStatusView, getString(R.string.nfc_local_empty), true);
+            setStatus(getString(R.string.nfc_local_empty), true);
             return;
         }
 
@@ -384,20 +373,20 @@ public class NfcToolsActivity extends BaseActivity {
     }
 
     private void applySavedNfcConfig(SavedNfcConfig config) {
-        urlInput.setText(config.getUrl());
-        packageInput.setText(config.getPackageName());
+        nfcView.setUrl(config.getUrl());
+        nfcView.setPackageName(config.getPackageName());
         currentPayloadSource = TextUtils.isEmpty(config.getSource()) ? "saved" : config.getSource();
         persistNfcConfig();
-        setStatus(mockStatusView, getString(R.string.nfc_local_loaded), false);
+        setStatus(getString(R.string.nfc_local_loaded), false);
     }
 
     private void uploadSharedNfc(String name, String url, String packageName) {
         if (!GoUtils.isNetworkAvailable(this)) {
-            setStatus(mockStatusView, getString(R.string.app_error_network), true);
+            setStatus(getString(R.string.app_error_network), true);
             return;
         }
         String payloadSource = TextUtils.isEmpty(currentPayloadSource) ? "manual" : currentPayloadSource;
-        setStatus(mockStatusView, getString(R.string.nfc_share_uploading), false);
+        setStatus(getString(R.string.nfc_share_uploading), false);
         ioExecutor.execute(() -> {
             try {
                 ShareModule.from(getApplicationContext())
@@ -406,20 +395,20 @@ public class NfcToolsActivity extends BaseActivity {
                 runOnUiThread(() -> {
                     currentPayloadSource = payloadSource;
                     persistNfcConfig();
-                    setStatus(mockStatusView, getString(R.string.nfc_share_success), false);
+                    setStatus(getString(R.string.nfc_share_success), false);
                 });
             } catch (Exception exception) {
-                runOnUiThread(() -> setStatus(mockStatusView, buildDetailedToast(R.string.nfc_share_failed, exception), true));
+                runOnUiThread(() -> setStatus(buildDetailedToast(R.string.nfc_share_failed, exception), true));
             }
         });
     }
 
     private void loadSharedNfcEntries() {
         if (!GoUtils.isNetworkAvailable(this)) {
-            setStatus(mockStatusView, getString(R.string.app_error_network), true);
+            setStatus(getString(R.string.app_error_network), true);
             return;
         }
-        setStatus(mockStatusView, getString(R.string.nfc_download_loading), false);
+        setStatus(getString(R.string.nfc_download_loading), false);
         ioExecutor.execute(() -> {
             try {
                 List<SharedNfcEntry> entries = ShareModule.from(getApplicationContext())
@@ -427,14 +416,14 @@ public class NfcToolsActivity extends BaseActivity {
                         .getSharedNfcEntries();
                 runOnUiThread(() -> showSharedNfcPicker(entries));
             } catch (Exception exception) {
-                runOnUiThread(() -> setStatus(mockStatusView, buildDetailedToast(R.string.nfc_download_failed, exception), true));
+                runOnUiThread(() -> setStatus(buildDetailedToast(R.string.nfc_download_failed, exception), true));
             }
         });
     }
 
     private void showSharedNfcPicker(List<SharedNfcEntry> entries) {
         if (entries == null || entries.isEmpty()) {
-            setStatus(mockStatusView, getString(R.string.nfc_download_empty), true);
+            setStatus(getString(R.string.nfc_download_empty), true);
             return;
         }
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_searchable_picker, null);
@@ -469,33 +458,27 @@ public class NfcToolsActivity extends BaseActivity {
     }
 
     private void applySharedNfc(SharedNfcEntry entry) {
-        urlInput.setText(entry.getUrl());
-        packageInput.setText(entry.getPackageName());
+        nfcView.setUrl(entry.getUrl());
+        nfcView.setPackageName(entry.getPackageName());
         currentPayloadSource = TextUtils.isEmpty(entry.getSource()) ? "shared" : entry.getSource();
         persistNfcConfig();
-        setStatus(mockStatusView, getString(R.string.nfc_download_loaded), false);
-    }
-
-    private String getInputText(TextInputEditText input) {
-        return input.getText() == null ? "" : input.getText().toString().trim();
+        setStatus(getString(R.string.nfc_download_loaded), false);
     }
 
     private void copyText(String label, String value) {
         if (TextUtils.isEmpty(value)) {
-            setStatus(mockStatusView, getString(R.string.nfc_copy_empty), true);
+            setStatus(getString(R.string.nfc_copy_empty), true);
             return;
         }
         ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
         if (clipboard != null) {
             clipboard.setPrimaryClip(ClipData.newPlainText(label, value));
-            setStatus(mockStatusView, getString(R.string.nfc_copied), false);
+            setStatus(getString(R.string.nfc_copied), false);
         }
     }
 
-    private void setStatus(TextView view, String text, boolean warning) {
-        view.setText(text);
-        view.setVisibility(View.VISIBLE);
-        view.setTextColor(getColor(warning ? R.color.nfc_status_warning : R.color.nfc_status_success));
+    private void setStatus(String text, boolean warning) {
+        nfcView.setStatus(text, warning);
     }
 
     private String buildDetailedToast(int prefixResId, Exception exception) {
@@ -511,7 +494,7 @@ public class NfcToolsActivity extends BaseActivity {
     }
 
     private String buildDefaultLocalConfigName() {
-        String packageName = getInputText(packageInput);
+        String packageName = nfcView.getPackageName();
         if (TextUtils.isEmpty(packageName)) {
             return buildDefaultNfcName();
         }
@@ -526,16 +509,16 @@ public class NfcToolsActivity extends BaseActivity {
         String cachedUrl = prefsStore.getNfcUrl();
         String cachedPackage = prefsStore.getNfcPackageName();
         if (!TextUtils.isEmpty(cachedUrl)) {
-            urlInput.setText(cachedUrl);
+            nfcView.setUrl(cachedUrl);
         }
         if (!TextUtils.isEmpty(cachedPackage)) {
-            packageInput.setText(cachedPackage);
+            nfcView.setPackageName(cachedPackage);
         }
         currentPayloadSource = prefsStore.getNfcSource();
     }
 
     private void persistNfcConfig() {
-        prefsStore.saveNfcConfig(getInputText(urlInput), getInputText(packageInput), currentPayloadSource);
+        prefsStore.saveNfcConfig(nfcView.getUrl(), nfcView.getPackageName(), currentPayloadSource);
     }
 
     private void vibrate() {

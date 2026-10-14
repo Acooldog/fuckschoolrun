@@ -14,7 +14,7 @@ import com.acooldog.toolbox.ui.CupertinoDockView;
 public final class CupertinoDockInstaller {
     public static final int TAB_DRAW = 0;
     public static final int TAB_SIMULATION = 1;
-    public static final int TAB_ROUTES = 2;
+    public static final int TAB_NFC = 2;
     public static final int TAB_MINE = 3;
     private static final String EXTRA_PREVIOUS_TAB = "extra_previous_tab";
     private static final int DOCK_BOTTOM_RESERVE_DP = 96;
@@ -83,8 +83,8 @@ public final class CupertinoDockInstaller {
             case TAB_SIMULATION:
                 target = RouteRunActivity.class;
                 break;
-            case TAB_ROUTES:
-                target = RouteActivity.class;
+            case TAB_NFC:
+                target = NfcToolsActivity.class;
                 break;
             case TAB_MINE:
                 target = MineActivity.class;
@@ -108,8 +108,8 @@ public final class CupertinoDockInstaller {
         if (activity instanceof RouteRunActivity) {
             return TAB_SIMULATION;
         }
-        if (activity instanceof RouteActivity) {
-            return TAB_ROUTES;
+        if (activity instanceof NfcToolsActivity) {
+            return TAB_NFC;
         }
         if (activity instanceof MineActivity) {
             return TAB_MINE;

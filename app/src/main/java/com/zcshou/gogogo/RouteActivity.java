@@ -68,7 +68,6 @@ public class RouteActivity extends BaseActivity {
         if (actionBar != null) {
             actionBar.hide();
         }
-        CupertinoDockInstaller.install(this, CupertinoDockInstaller.TAB_ROUTES);
 
         viewModel = new ViewModelProvider(this).get(RouteListViewModel.class);
         ioExecutor = Executors.newSingleThreadExecutor();
